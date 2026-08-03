@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OCI Day 1 Training Module — Cloud Foundations, Infrastructure &amp; IAM</title>
+<style>
+  :root{
+    --navy:#0b2f52;
+    --navy-dark:#081f38;
+    --blue:#1a5490;
+    --blue-light:#e8f1fa;
+    --accent:#c98a2b;
+    --row-alt:#f2f6fa;
+    --border:#c9d6e3;
+    --text:#1c2530;
+    --green:#1e7d4d;
+    --red:#b53a3a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:"Segoe UI", Calibri, Arial, sans-serif;
+    color:var(--text);
+    line-height:1.55;
+    margin:0;
+    background:#f7f9fb;
+  }
+  header.doc-header{
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy-dark) 100%);
+    color:#fff;
+    padding:40px 6% 30px;
+  }
+  header.doc-header h1{margin:0 0 8px;font-size:2rem;}
+  header.doc-header p{margin:2px 0;color:#cfe0f2;font-size:0.95rem;}
+  nav.toc{
+    background:#fff;
+    border:1px solid var(--border);
+    margin:24px 6%;
+    padding:18px 24px;
+    border-radius:8px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  }
+  nav.toc h2{color:var(--navy);margin-top:0;font-size:1.1rem;border-bottom:2px solid var(--accent);padding-bottom:6px;}
+  nav.toc ol{columns:2;column-gap:40px;padding-left:20px;font-size:0.92rem;}
+  nav.toc a{color:var(--blue);text-decoration:none;}
+  nav.toc a:hover{text-decoration:underline;}
+  main{max-width:1200px;margin:0 auto;padding:0 6% 80px;}
+  section{margin-top:56px;}
+  section h2{
+    background:var(--navy);
+    color:#fff;
+    padding:12px 18px;
+    border-radius:6px;
+    font-size:1.35rem;
+    margin-bottom:18px;
+  }
+  section h2 .num{color:var(--accent);margin-right:8px;}
+  h3.topic-title{
+    color:var(--navy);
+    border-left:5px solid var(--accent);
+    padding:6px 12px;
+    background:var(--blue-light);
+    margin-top:34px;
+    font-size:1.12rem;
+  }
+  h4{color:var(--blue);margin-bottom:4px;}
+  .card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px 22px;
+    margin:14px 0;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:14px 0 22px;
+    background:#fff;
+    font-size:0.93rem;
+  }
+  table caption{
+    text-align:left;
+    font-weight:600;
+    color:var(--navy);
+    margin-bottom:6px;
+  }
+  th{
+    background:var(--navy);
+    color:#fff;
+    text-align:left;
+    padding:9px 12px;
+    font-size:0.9rem;
+  }
+  td{
+    padding:8px 12px;
+    border-bottom:1px solid var(--border);
+    vertical-align:top;
+  }
+  tr:nth-child(even) td{background:var(--row-alt);}
+  pre.ascii{
+    background:#0d1b2a;
+    color:#7fd0ff;
+    padding:18px 20px;
+    border-radius:8px;
+    overflow-x:auto;
+    font-family:"Consolas","Courier New",monospace;
+    font-size:0.85rem;
+    line-height:1.35;
+    border:1px solid #12283f;
+  }
+  pre.console{
+    background:#f4f7fa;
+    color:#0b2f52;
+    padding:16px 18px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    font-family:"Consolas","Courier New",monospace;
+    font-size:0.85rem;
+    line-height:1.4;
+    overflow-x:auto;
+  }
+  .analogy{
+    background:#fff8ec;
+    border:1px dashed var(--accent);
+    padding:8px 14px;
+    border-radius:6px;
+    margin:8px 0;
+    font-style:italic;
+  }
+  .tip{
+    background:#eaf7ee;
+    border-left:4px solid var(--green);
+    padding:8px 14px;
+    margin:8px 0;
+    border-radius:4px;
+  }
+  .trap{
+    background:#fdecec;
+    border-left:4px solid var(--red);
+    padding:8px 14px;
+    margin:8px 0;
+    border-radius:4px;
+  }
+  .lab{
+    background:#fff;
+    border:1px solid var(--border);
+    border-top:5px solid var(--blue);
+    border-radius:8px;
+    padding:18px 22px;
+    margin:20px 0;
+  }
+  .lab h4{margin-top:0;color:var(--navy);font-size:1.05rem;}
+  .lab .meta{display:flex;gap:22px;flex-wrap:wrap;font-size:0.85rem;color:#4a5a6a;margin-bottom:10px;}
+  .lab .meta span b{color:var(--navy);}
+  .badge{
+    display:inline-block;
+    background:var(--blue);
+    color:#fff;
+    border-radius:4px;
+    padding:2px 8px;
+    font-size:0.75rem;
+    margin-right:6px;
+  }
+  ol.steps li, ul.plain li{margin-bottom:6px;}
+  .qbox{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:16px 20px;
+    margin:10px 0;
+  }
+  .qbox summary{cursor:pointer;font-weight:600;color:var(--navy);}
+  .footer-note{
+    text-align:center;
+    color:#6b7a89;
+    font-size:0.85rem;
+    margin-top:60px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:800px){.grid2{grid-template-columns:1fr;} nav.toc ol{columns:1;}}
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <h1>Oracle Cloud Infrastructure (OCI) — Day 1 Training Module</h1>
+  <p><b>Track:</b> OCI Foundations / Associate Certification-Aligned Beginner Program</p>
+  <p><b>Day 1 Focus:</b> Cloud Computing Foundations · OCI Global Infrastructure &amp; Resiliency · Identity and Access Management (IAM) · Users, Groups &amp; Policies · Compartments, Tagging &amp; Governance</p>
+  <p><b>Bloom's Levels:</b> BT2 (Understand) · BT3 (Apply) &nbsp;|&nbsp; <b>Course Outcomes:</b> CO1, CO2</p>
+</header>
+
+<nav class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Visual Learning Roadmap</a></li>
+    <li><a href="#s2">Visual Explanation of Every Topic</a></li>
+    <li><a href="#s3">Real World Analogies</a></li>
+    <li><a href="#s4">OCI Console Walkthrough</a></li>
+    <li><a href="#s5">OCI Console Visualization (Mockups)</a></li>
+    <li><a href="#s6">Step-by-Step Hands-On Labs (1–14)</a></li>
+    <li><a href="#s7">Mini Exercises</a></li>
+    <li><a href="#s8">Troubleshooting Guide</a></li>
+    <li><a href="#s9">Interview Questions</a></li>
+    <li><a href="#s10">Certification Notes</a></li>
+    <li><a href="#s11">End-of-Day Practical Challenge</a></li>
+    <li><a href="#s12">Knowledge Check (40 Questions)</a></li>
+    <li><a href="#s13">Instructor Notes</a></li>
+    <li><a href="#s14">Console Navigation Summary Table</a></li>
+    <li><a href="#s15">Day 1 Recap</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============================================================ -->
+<section id="s1">
+<h2><span class="num">1.</span>Visual Learning Roadmap</h2>
+<div class="card">
+<p>This roadmap shows how every Day 1 concept connects — from the abstract idea of "cloud computing" all the way down to a single IAM policy statement inside a compartment.</p>
+<pre class="ascii">
+                                   CLOUD COMPUTING
+                                          │
+        ┌─────────────────────┬──────────┴───────────┬─────────────────────┐
+        │                     │                       │                     │
+   VIRTUALIZATION      DEPLOYMENT MODELS        SERVICE MODELS        ECONOMICS
+        │                     │                       │                     │
+  ┌─────┴─────┐      ┌────────┼────────┐      ┌────────┼────────┐    ┌──────┴──────┐
+  │           │      │        │        │      │        │        │    │             │
+Hypervisor  VM vs   Public  Private  Hybrid  IaaS     PaaS     SaaS  CapEx        OpEx
+ (Type1/2)  Physical Cloud   Cloud   /Community                          │
+                Server                                             Shared Responsibility
+                                                                          Model
+                                          │
+                                          ▼
+                              ORACLE CLOUD INFRASTRUCTURE (OCI)
+                                          │
+        ┌─────────────────────────────────┼─────────────────────────────────┐
+        │                                 │                                 │
+  GLOBAL INFRASTRUCTURE            IDENTITY & ACCESS               GOVERNANCE
+        │                          MANAGEMENT (IAM)                        │
+  ┌─────┼─────┐                            │                       ┌───────┼────────┐
+  │     │     │                            │                       │       │        │
+Realm  Region Tenancy               ┌───────┼────────┐          Compart-  Tagging  Quotas
+  │           │                     │       │        │          ments      │
+  ▼           ▼                Identity  Auth(N/Z)  Federation    │    ┌───┴───┐
+Availability  Free Tier         Domains    │          / SSO       │  Defined  Free-form
+Domains (AD)                              Users                    │    Tags     Tags
+  │                                         │                 Nested Compartments
+  ▼                                      Groups                    │
+Fault Domains                              │                  Compartment Design
+  │                                  Dynamic Groups            Naming Standards
+  ▼                                        │
+Edge Locations                        Principals
+                                            │
+                                          RBAC
+                                            │
+                                            ▼
+                                    IAM POLICIES
+                                            │
+                        ┌───────────────────┼───────────────────┐
+                        │                   │                   │
+                 Policy Syntax        Policy Verbs        Policy Inheritance
+                        │           (Inspect/Read/          &amp; Best Practices
+                        │            Use/Manage)
+                        ▼
+                 Resource Types
+                        │
+                        ▼
+        "Allow &lt;Subject&gt; to &lt;Verb&gt; &lt;Resource-Type&gt; in &lt;Location&gt; [where &lt;Condition&gt;]"
+</pre>
+<p><b>How to read this roadmap:</b> Everything above the OCI line is <i>vendor-neutral cloud theory</i> (works for AWS, Azure, GCP too). Everything below is <i>OCI-specific</i>. The arrow chain Identity → IAM → Policies → Governance is the exact order you will configure things in a real tenancy, and it is also the order the OCI Foundations exam tests most heavily.</p>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s2">
+<h2><span class="num">2.</span>Visual Explanation of Every Topic</h2>
+
+<h3 class="topic-title">2.1 Cloud Computing Foundations</h3>
+
+<div class="card">
+<h4>Data Center</h4>
+<p><b>Definition:</b> A physical facility that houses servers, storage, networking equipment, power, and cooling systems.</p>
+<p><b>Why it exists:</b> Computing hardware needs a controlled physical environment (power backup, cooling, security, network links) to run reliably 24×7.</p>
+<div class="analogy">Real-life analogy: A data center is like a giant warehouse that stores and protects goods (data/compute) instead of physical products.</div>
+<p><b>OCI example:</b> Every OCI region is built on one or more physical data centers grouped into Availability Domains.</p>
+<p><b>Where visible in Console:</b> Not directly clickable — but reflected in <i>Region</i> and <i>Availability Domain</i> selectors top-right of the Console.</p>
+<p><b>Interview explanation:</b> "A data center is the physical backbone; the cloud is the software/service layer built on top of it."</p>
+<div class="tip">Certification tip: Exam may ask you to distinguish "data center" (physical) from "region" (logical/geographic grouping of data centers).</div>
+</div>
+
+<div class="card">
+<h4>Virtualization &amp; Hypervisors</h4>
+<p><b>Definition:</b> Virtualization is the technology that lets one physical machine run multiple isolated virtual machines. A <b>hypervisor</b> is the software layer that creates and manages these VMs.</p>
+<p><b>Why it exists:</b> Buying a dedicated physical server per application wastes resources. Virtualization lets many workloads share one machine safely.</p>
+<div class="analogy">Real-life analogy: A physical server is an apartment building; the hypervisor is the building manager; each VM is a separate flat with its own locked door, even though they share the same building foundation.</div>
+<p><b>Types:</b> Type 1 (bare-metal, e.g., OCI's KVM-based hypervisor running directly on hardware) vs Type 2 (hosted, runs on top of an OS, e.g., VirtualBox).</p>
+<p><b>OCI example:</b> When you launch a "VM.Standard" shape Compute instance, OCI's hypervisor is silently slicing a physical host into your isolated VM.</p>
+<p><b>Where visible in Console:</b> Compute → Instances → Create Instance → Shape selection (VM vs Bare Metal shapes).</p>
+<div class="tip">Certification tip: Know that OCI Bare Metal shapes = no hypervisor overhead, dedicated hardware; VM shapes = shared hardware via hypervisor.</div>
+</div>
+
+<div class="card">
+<h4>Physical Server vs Virtual Machine</h4>
+<table>
+<tr><th>Aspect</th><th>Physical Server</th><th>Virtual Machine</th></tr>
+<tr><td>Hardware</td><td>Dedicated</td><td>Shared (via hypervisor)</td></tr>
+<tr><td>Provisioning time</td><td>Days/weeks</td><td>Minutes/seconds</td></tr>
+<tr><td>Scalability</td><td>Manual, slow</td><td>Elastic, fast</td></tr>
+<tr><td>Cost model</td><td>CapEx (buy hardware)</td><td>OpEx (pay-as-you-go)</td></tr>
+<tr><td>OCI equivalent</td><td>Bare Metal instance</td><td>VM.Standard instance</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>Service Models — IaaS, PaaS, SaaS</h4>
+<pre class="ascii">
+Responsibility split (you manage the lower you go):
+
+  On-Premises   IaaS          PaaS            SaaS
+  ───────────   ───────────   ─────────────   ─────────────
+  Application    Application   Application     [Provider]
+  Data           Data          Data            [Provider]
+  Runtime        Runtime       [Provider]       [Provider]
+  Middleware     Middleware    [Provider]       [Provider]
+  O/S            O/S           [Provider]       [Provider]
+  Virtualization [Provider]    [Provider]       [Provider]
+  Servers        [Provider]    [Provider]       [Provider]
+  Storage        [Provider]    [Provider]       [Provider]
+  Networking     [Provider]    [Provider]       [Provider]
+
+  You manage everything    You manage less        You manage almost nothing
+</pre>
+<div class="analogy">Analogy: IaaS = renting an empty plot of land (you build the house). PaaS = renting a furnished flat (you bring your own belongings). SaaS = staying in a hotel room (everything is provided).</div>
+<p><b>OCI examples:</b> IaaS → OCI Compute/Block Storage/VCN. PaaS → OCI Autonomous Database, OKE (managed Kubernetes). SaaS → Oracle Fusion Applications, NetSuite.</p>
+<div class="tip">Certification tip: A very common exam trap is classifying Autonomous Database — it is PaaS, not IaaS, because Oracle manages patching, tuning, and backups.</div>
+</div>
+
+<div class="card">
+<h4>Deployment Models — Public, Private, Hybrid, Community Cloud</h4>
+<table>
+<tr><th>Model</th><th>Description</th><th>Analogy</th></tr>
+<tr><td>Public Cloud</td><td>Shared infrastructure, owned by provider (e.g., OCI), available to any customer</td><td>A public bus — shared by everyone, scheduled routes</td></tr>
+<tr><td>Private Cloud</td><td>Dedicated infrastructure for a single organization, on-prem or hosted (e.g., Oracle Dedicated Region)</td><td>A personal car — only for you</td></tr>
+<tr><td>Hybrid Cloud</td><td>Mix of public + private, connected together</td><td>Using your own car for local trips, but renting a car for long trips</td></tr>
+<tr><td>Community Cloud</td><td>Shared infrastructure among a group of organizations with common concerns (e.g., government agencies)</td><td>A carpool — shared by a defined group with a common purpose</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>CapEx vs OpEx</h4>
+<p><b>CapEx (Capital Expenditure):</b> Large upfront investment in owned hardware/infrastructure.</p>
+<p><b>OpEx (Operational Expenditure):</b> Ongoing pay-as-you-go spending for services consumed.</p>
+<div class="analogy">Analogy: CapEx is buying a car outright; OpEx is paying for a cab ride only when you need it.</div>
+<p><b>OCI example:</b> Cloud adoption shifts spending from CapEx (buying servers) to OpEx (paying OCI monthly compute/storage bills).</p>
+<div class="tip">Certification tip: Cloud's core financial pitch is "CapEx → OpEx" — expect at least one direct question on this.</div>
+</div>
+
+<div class="card">
+<h4>Shared Responsibility Model</h4>
+<pre class="ascii">
+   ┌───────────────────────────────┐
+   │   CUSTOMER RESPONSIBILITY     │  ← Data, Identity, OS patching (IaaS),
+   │   "Security IN the cloud"     │    Access control, configuration
+   ├───────────────────────────────┤
+   │   ORACLE RESPONSIBILITY       │  ← Physical data centers, hypervisor,
+   │   "Security OF the cloud"     │    network fabric, hardware, global infra
+   └───────────────────────────────┘
+</pre>
+<div class="analogy">Analogy: The apartment building owner (Oracle) secures the building, locks, and fire exits; you (customer) are responsible for locking your own flat door and not giving your key to strangers.</div>
+<div class="tip">Certification tip: Misconfigured IAM policies and public buckets are customer responsibility — not an Oracle failure. This is a favorite exam and interview trap.</div>
+</div>
+
+<h3 class="topic-title">2.2 OCI Global Infrastructure &amp; Resiliency</h3>
+
+<div class="grid2">
+<div class="card">
+<h4>Region</h4>
+<p><b>Definition:</b> A localized geographic area (e.g., Mumbai, Hyderabad, Ashburn) containing one or more data centers.</p>
+<div class="analogy">Analogy: Region = Country</div>
+<p><b>OCI example:</b> ap-mumbai-1, us-ashburn-1.</p>
+<p><b>Console location:</b> Top-right region dropdown.</p>
+</div>
+<div class="card">
+<h4>Realm</h4>
+<p><b>Definition:</b> A logical collection of regions, isolated from other realms for security/compliance (commercial, government, etc.).</p>
+<div class="analogy">Analogy: Realm = Continent/Political Bloc grouping countries under one governance framework.</div>
+<p><b>OCI example:</b> OC1 (commercial), OC2/OC3/OC4 (US government realms).</p>
+</div>
+<div class="card">
+<h4>Availability Domain (AD)</h4>
+<p><b>Definition:</b> One or more physically separate data centers within a region, with independent power/cooling/network.</p>
+<div class="analogy">Analogy: AD = City within a country.</div>
+<p><b>OCI example:</b> Some regions have 1 AD (single-AD regions), some have 3 (like Ashburn).</p>
+</div>
+<div class="card">
+<h4>Fault Domain (FD)</h4>
+<p><b>Definition:</b> A grouping of hardware within an AD; each AD has 3 fault domains to isolate hardware failures.</p>
+<div class="analogy">Analogy: FD = Building within a city (city = AD).</div>
+<p><b>OCI example:</b> Placing app servers across 3 FDs so a single rack failure doesn't take all servers down.</p>
+</div>
+<div class="card">
+<h4>Edge Locations</h4>
+<p><b>Definition:</b> Points of presence closer to end users to cache/accelerate content delivery (used by services like OCI CDN, DNS).</p>
+<div class="analogy">Analogy: Edge Location = Local courier depot close to your house for faster delivery.</div>
+</div>
+<div class="card">
+<h4>Tenancy</h4>
+<p><b>Definition:</b> The root/top-level container representing your organization's OCI account — everything you own lives inside it.</p>
+<div class="analogy">Analogy: Tenancy = the Company itself.</div>
+<p><b>Console location:</b> Profile icon (top-right) → Tenancy: [name].</p>
+</div>
+<div class="card">
+<h4>Free Tier</h4>
+<p><b>Definition:</b> A no-cost OCI offering combining "Always Free" resources and a time-limited free credit for new accounts.</p>
+<div class="tip">Certification tip: Know which services are "Always Free" (e.g., 2 AMD Compute VMs, Autonomous Database) vs the 30-day trial credit.</div>
+</div>
+</div>
+
+<pre class="ascii">
+REALM (OC1)
+   └── REGION (ap-mumbai-1)
+          └── AVAILABILITY DOMAIN 1 (AD-1)
+                 ├── FAULT DOMAIN 1  ── [rack, power, switch]
+                 ├── FAULT DOMAIN 2  ── [rack, power, switch]
+                 └── FAULT DOMAIN 3  ── [rack, power, switch]
+          └── AVAILABILITY DOMAIN 2 (AD-2)   ... same structure
+          └── AVAILABILITY DOMAIN 3 (AD-3)   ... same structure
+</pre>
+
+<h3 class="topic-title">2.3 Identity and Access Management (IAM)</h3>
+
+<div class="grid2">
+<div class="card">
+<h4>Identity Domain</h4>
+<p><b>Definition:</b> A container that manages users, groups, and their authentication/security settings, isolated from other domains.</p>
+<div class="analogy">Analogy: Identity Domain = Security Office of a company campus.</div>
+<p><b>Console location:</b> Identity &amp; Security → Identity → Domains.</p>
+</div>
+<div class="card">
+<h4>Authentication vs Authorization</h4>
+<p><b>Authentication (AuthN):</b> Proving who you are (login + password/MFA).</p>
+<p><b>Authorization (AuthZ):</b> What you are allowed to do once identified (governed by IAM policies).</p>
+<div class="analogy">Analogy: Authentication = showing your ID card at the gate; Authorization = the specific rooms your ID card badge can unlock.</div>
+</div>
+<div class="card">
+<h4>Federation &amp; SSO</h4>
+<p><b>Definition:</b> Federation lets an external identity provider (e.g., Microsoft Entra ID, Okta) authenticate users for OCI. SSO lets one login session work across multiple linked applications.</p>
+<div class="analogy">Analogy: Federation/SSO = using your one company badge to enter multiple partner buildings without separate ID cards for each.</div>
+</div>
+<div class="card">
+<h4>Users, Groups, Dynamic Groups</h4>
+<p><b>User:</b> An individual identity (person or service) that can authenticate.</p>
+<p><b>Group:</b> A collection of users who share the same permissions.</p>
+<p><b>Dynamic Group:</b> A group whose membership is defined by matching rules on resource attributes (e.g., all Compute instances in a compartment) — used to grant permissions to non-human resources.</p>
+<div class="analogy">Analogy: User = Employee, Group = Team/Department, Dynamic Group = "anyone wearing a red badge" — membership by rule, not by name.</div>
+</div>
+<div class="card">
+<h4>Principals</h4>
+<p><b>Definition:</b> Any entity (user, group, dynamic group, resource) that IAM can authenticate and authorize.</p>
+</div>
+<div class="card">
+<h4>RBAC (Role-Based Access Control)</h4>
+<p><b>Definition:</b> Assigning permissions to roles/groups rather than to individual users directly, then adding users to the right role/group.</p>
+<div class="tip">Certification tip: OCI implements RBAC through Groups + Policies, not "roles" as a separate named object like some other clouds.</div>
+</div>
+</div>
+
+<h3 class="topic-title">2.4 IAM Policies</h3>
+<div class="card">
+<h4>Policy Syntax</h4>
+<pre class="console">Allow &lt;subject&gt; to &lt;verb&gt; &lt;resource-type&gt; in &lt;location&gt; [where &lt;condition&gt;]
+
+Example:
+Allow group NetworkAdmins to manage virtual-network-family in compartment NetworkOps
+Allow group DBAdmins to use database-family in compartment Production where request.region = 'ap-mumbai-1'
+</pre>
+<h4>Policy Verbs (least → most access)</h4>
+<pre class="ascii">
+ INSPECT  &lt;  READ  &lt;  USE  &lt;  MANAGE
+   │           │        │         │
+list only   +view      +update   +create/delete
+metadata    details    existing  everything
+</pre>
+<table>
+<tr><th>Verb</th><th>What it allows</th><th>Analogy</th></tr>
+<tr><td>Inspect</td><td>List resources, see names/metadata only</td><td>Reading the label on a locked box</td></tr>
+<tr><td>Read</td><td>Inspect + view full details/contents</td><td>Opening the box and reading contents (no editing)</td></tr>
+<tr><td>Use</td><td>Read + use/update existing resource (no create/delete)</td><td>Using a company car, but not allowed to buy/sell it</td></tr>
+<tr><td>Manage</td><td>Full control — create, update, delete</td><td>Owning the car outright</td></tr>
+</table>
+<h4>Resource Types &amp; Policy Inheritance</h4>
+<p>Resource-types group related OCI resources (e.g., <code>instance-family</code> covers instances, images, boot-volume-attachments). Policies attached at a parent compartment are <b>inherited</b> by all child (nested) compartments automatically.</p>
+<div class="trap">Exam trap: Students often forget that a policy written at the root/tenancy level cascades down to every compartment unless scoped narrower — this can accidentally over-grant access.</div>
+<h4>Best Practices</h4>
+<ul class="plain">
+<li>Always grant the least-privilege verb needed (avoid blanket <code>manage all-resources</code>).</li>
+<li>Attach policies to Groups, never directly to individual Users.</li>
+<li>Scope policies to the smallest compartment possible.</li>
+<li>Use clear, self-explanatory policy names/descriptions.</li>
+</ul>
+</div>
+
+<h3 class="topic-title">2.5 Governance — Compartments, Tagging, Quotas</h3>
+<div class="grid2">
+<div class="card">
+<h4>Compartments &amp; Nested Compartments</h4>
+<p><b>Definition:</b> Logical containers used to organize, isolate, and control access to cloud resources.</p>
+<div class="analogy">Analogy: Compartment = Department in a company; Nested Compartment = Sub-team inside a department.</div>
+<p><b>Console location:</b> Identity &amp; Security → Compartments.</p>
+</div>
+<div class="card">
+<h4>Compartment Design &amp; Naming Standards</h4>
+<p>Common patterns: by environment (Dev/Test/Prod), by project, or by business unit. Naming should be consistent, short, and unambiguous (e.g., <code>PROD-Networking</code>, <code>DEV-AppTeam</code>).</p>
+</div>
+<div class="card">
+<h4>Tagging — Free-form vs Defined Tags</h4>
+<p><b>Free-form tag:</b> Simple key-value pair, no validation, created on the fly.</p>
+<p><b>Defined tag:</b> Structured, namespace-controlled key-value pair with governance (who can apply/edit it).</p>
+<div class="analogy">Analogy: Tag = Sticker on a box. Free-form = a sticky note you write yourself; Defined tag = an official barcode label controlled by the warehouse.</div>
+</div>
+<div class="card">
+<h4>Quotas</h4>
+<p><b>Definition:</b> Limits set on how many resources (e.g., VM cores, storage GB) a compartment can consume, used to control cost and prevent runaway usage.</p>
+</div>
+</div>
+
+</section>
+
+<!-- ============================================================ -->
+<section id="s3">
+<h2><span class="num">3.</span>Real World Analogies — Master Table</h2>
+<div class="card">
+<table>
+<tr><th>OCI Concept</th><th>Real-World Analogy</th></tr>
+<tr><td>Tenancy</td><td>The Company itself</td></tr>
+<tr><td>Realm</td><td>Continent / political bloc</td></tr>
+<tr><td>Region</td><td>Country</td></tr>
+<tr><td>Availability Domain</td><td>City</td></tr>
+<tr><td>Fault Domain</td><td>Building</td></tr>
+<tr><td>Edge Location</td><td>Local courier depot</td></tr>
+<tr><td>Compartment</td><td>Department</td></tr>
+<tr><td>Nested Compartment</td><td>Sub-team inside a department</td></tr>
+<tr><td>IAM User</td><td>Employee</td></tr>
+<tr><td>Group</td><td>Team</td></tr>
+<tr><td>Dynamic Group</td><td>"Anyone with a red badge" — rule-based membership</td></tr>
+<tr><td>Policy</td><td>Company rulebook</td></tr>
+<tr><td>Identity Domain</td><td>Security office</td></tr>
+<tr><td>Authentication</td><td>Showing ID at the gate</td></tr>
+<tr><td>Authorization</td><td>Which rooms your badge can open</td></tr>
+<tr><td>Federation/SSO</td><td>One badge works across partner buildings</td></tr>
+<tr><td>Tag (free-form)</td><td>Hand-written sticky note</td></tr>
+<tr><td>Tag (defined)</td><td>Official barcode label</td></tr>
+<tr><td>Quota</td><td>Department's monthly budget cap</td></tr>
+<tr><td>IaaS</td><td>Renting empty land</td></tr>
+<tr><td>PaaS</td><td>Renting a furnished flat</td></tr>
+<tr><td>SaaS</td><td>Staying at a hotel</td></tr>
+<tr><td>CapEx</td><td>Buying a car</td></tr>
+<tr><td>OpEx</td><td>Paying per cab ride</td></tr>
+<tr><td>Shared Responsibility Model</td><td>Building owner secures the building; you lock your own flat</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s4">
+<h2><span class="num">4.</span>OCI Console Walkthrough</h2>
+
+<div class="card">
+<h4>Navigating to Identity &amp; Security</h4>
+<ol class="steps">
+<li><b>☰ Menu</b> (top-left hamburger icon) — opens the full service catalog.</li>
+<li>Click <b>Identity &amp; Security</b> — expands into: Identity, Compartments, Domains, Policies, Tag Namespaces, Vault.</li>
+<li>Click <b>Domains</b> — shows the default <code>Default</code> identity domain plus any custom domains.</li>
+</ol>
+</div>
+
+<div class="card">
+<h4>Create User — field-by-field</h4>
+<table>
+<tr><th>Field / Button</th><th>What it means</th></tr>
+<tr><td>Name</td><td>Unique username within the identity domain (often the email or a login handle).</td></tr>
+<tr><td>Email</td><td>Used for notifications and password recovery. If "Use the email as the username" is checked, Name auto-fills.</td></tr>
+<tr><td>Description</td><td>Free text for admins — not shown to the user, purely for internal documentation.</td></tr>
+<tr><td>Groups (optional at creation)</td><td>Assign the user directly to one or more groups.</td></tr>
+<tr><td>[Create] button</td><td>Commits the user — triggers a welcome email with a temporary password/setup link.</td></tr>
+<tr><td>[Cancel] button</td><td>Discards the form without creating anything.</td></tr>
+</table>
+<div class="trap">Warning users will see: "This user has no assigned groups" — a soft warning, not a blocker; the user can still be created but will have zero permissions until added to a group with policies.</div>
+</div>
+
+<div class="card">
+<h4>Create Group</h4>
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>Group identifier used inside policy statements (e.g., <code>group NetworkAdmins</code>) — cannot contain spaces.</td></tr>
+<tr><td>Description</td><td>Documents the group's purpose.</td></tr>
+<tr><td>Add Users</td><td>Optional — attach existing users immediately.</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>Create Compartment</h4>
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>Short, unique-within-parent identifier (referenced in policies as <code>in compartment Name</code>).</td></tr>
+<tr><td>Description</td><td>Purpose of the compartment.</td></tr>
+<tr><td>Parent Compartment</td><td>Determines nesting — defaults to root unless changed, which enables "nested compartments."</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>Create Policy</h4>
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Name</td><td>Policy object's identifier (for admin reference only, not used inside statements).</td></tr>
+<tr><td>Compartment</td><td>Where the policy is <i>attached</i> — this determines the top scope it can grant access to.</td></tr>
+<tr><td>Policy Builder / Show manual editor toggle</td><td>Builder = guided dropdowns for beginners; Manual editor = raw text statements for full control.</td></tr>
+<tr><td>Statement box</td><td>One or more lines like <code>Allow group X to manage Y in compartment Z</code>.</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>Create Tag Namespace &amp; Tag Key</h4>
+<table>
+<tr><th>Field</th><th>Meaning</th></tr>
+<tr><td>Namespace Name</td><td>Groups related tag keys (e.g., <code>CostCenter</code>) — cannot be edited after creation, only retired.</td></tr>
+<tr><td>Tag Key Definition</td><td>The actual key name inside the namespace (e.g., <code>Department</code>).</td></tr>
+<tr><td>Cost-tracking checkbox</td><td>Marks this tag for use in the Cost Analysis / Billing reports.</td></tr>
+<tr><td>Validation type</td><td>"Any value" (free text) or "List of values" (dropdown-restricted, closer to defined-tag governance).</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>Region &amp; Availability Domain Selection</h4>
+<p>Top-right of every Console page: clicking the current region name opens a dropdown of all subscribed regions — switching it changes the entire working context (a Compute instance created in Mumbai is invisible while viewing Hyderabad). Availability Domain is chosen inside the "Placement" section when creating a resource like a Compute instance.</p>
+</div>
+
+</section>
+
+<!-- ============================================================ -->
+<section id="s5">
+<h2><span class="num">5.</span>OCI Console Visualization (Text Mockups)</h2>
+
+<div class="card">
+<h4>Main Console Shell</h4>
+<pre class="console">
+----------------------------------------------------------------
+Oracle Cloud Console            Region: ap-mumbai-1 ▾   👤 Profile ▾
+----------------------------------------------------------------
+☰  Search resources, services, and documentation...........🔍
+----------------------------------------------------------------
+  Dashboard
+  Identity &amp; Security   ▸
+  Compute
+  Storage
+  Networking
+  Databases
+  Observability &amp; Management
+  Developer Services
+  Governance &amp; Administration
+----------------------------------------------------------------
+</pre>
+</div>
+
+<div class="card">
+<h4>Identity &amp; Security Expanded</h4>
+<pre class="console">
+Identity &amp; Security
+  ├── Domains
+  ├── Compartments
+  ├── Policies
+  ├── Tag Namespaces
+  ├── Cost-Tracking Tags
+  └── Vault
+</pre>
+</div>
+
+<div class="card">
+<h4>Domain Details → Users list</h4>
+<pre class="console">
+----------------------------------------------------------------
+Domain: Default                                    [ Create User ]
+----------------------------------------------------------------
+  Users | Groups | Dynamic Groups | Security | Settings
+----------------------------------------------------------------
+  Name          Email                  Status     Groups
+  ------------  ---------------------  ---------  -----------
+  aviraj.b      aviraj@company.com     Active     NetworkAdmins
+  test.user1    test1@company.com      Active     -
+----------------------------------------------------------------
+</pre>
+</div>
+
+<div class="card">
+<h4>Create User Form</h4>
+<pre class="console">
+----------------------------------------------------------------
+Create User
+----------------------------------------------------------------
+  First name        [                    ]
+  Last name         [                    ]
+  ☑ Use the email address as the username
+  Email             [                    ]
+  Description       [                    ]
+
+  Groups (optional)
+   ☐ NetworkAdmins
+   ☐ DBAdmins
+   ☐ StorageOps
+
+                                    [ Create ]   [ Cancel ]
+----------------------------------------------------------------
+</pre>
+</div>
+
+<div class="card">
+<h4>Create Compartment Form</h4>
+<pre class="console">
+----------------------------------------------------------------
+Create Compartment
+----------------------------------------------------------------
+  Name             [ DEV-AppTeam                    ]
+  Description      [ Sandbox for app dev team        ]
+  Parent Compartment  [ root ▾ ]
+
+                                    [ Create Compartment ] [ Cancel ]
+----------------------------------------------------------------
+</pre>
+</div>
+
+<div class="card">
+<h4>Policy Manual Editor</h4>
+<pre class="console">
+----------------------------------------------------------------
+Create Policy                         Compartment: [ DEV-AppTeam ▾ ]
+----------------------------------------------------------------
+  Name          [ dev-appteam-policy                ]
+  Description   [ Grants app team compute access     ]
+
+  ( ) Policy Builder     (•) Show manual editor
+
+  Statement:
+  ┌──────────────────────────────────────────────────────────┐
+  │ Allow group AppTeam to manage instance-family in          │
+  │ compartment DEV-AppTeam                                    │
+  └──────────────────────────────────────────────────────────┘
+  [ + Another Statement ]
+
+                                    [ Create ]   [ Cancel ]
+----------------------------------------------------------------
+</pre>
+</div>
+
+<div class="card">
+<h4>Apply Tag to a Resource (e.g., Compute Instance)</h4>
+<pre class="console">
+----------------------------------------------------------------
+Instance: web-server-01           [ Add Tags ]
+----------------------------------------------------------------
+  Tag Namespace     [ CostCenter ▾ ]     (or "None" for free-form)
+  Tag Key           [ Department        ]
+  Tag Value         [ Engineering       ]
+
+                                    [ Add Tag ]   [ Cancel ]
+----------------------------------------------------------------
+</pre>
+</div>
+
+</section>
+
+<!-- ============================================================ -->
+<section id="s6">
+<h2><span class="num">6.</span>Step-by-Step Hands-On Labs</h2>
+<p>All 14 labs below can be completed entirely within OCI's <b>Always Free</b> resources / Free Tier trial — none require paid resources.</p>
+
+<div class="lab">
+<h4>Lab 1 — Create Free Tier Account</h4>
+<div class="meta"><span><b>Objective:</b> Sign up for an OCI account</span><span><b>Time:</b> 15–20 min</span><span><b>Prerequisites:</b> Valid email, phone number, payment card (for verification only, not charged)</span></div>
+<ol class="steps">
+<li>Go to the Oracle Cloud Free Tier sign-up page.</li>
+<li>Enter country, name, and email; verify email via the OTP link sent.</li>
+<li>Set your cloud account name (this becomes part of your tenancy identity) and password.</li>
+<li>Provide address and card details for identity verification.</li>
+<li>Wait for account provisioning confirmation email.</li>
+</ol>
+<p><b>Expected Output:</b> Welcome email + ability to log in to the Console.</p>
+<p><b>Verification:</b> Successful login at cloud.oracle.com with your tenancy name.</p>
+<div class="trap"><b>Common mistakes:</b> Using a temporary/disposable email (verification fails); choosing a home region you can't change later without support intervention.</div>
+<p><b>Cleanup:</b> None needed.</p>
+<div class="tip">Certification note: "Home region" is chosen once at signup and is where IAM resources live by default.</div>
+</div>
+
+<div class="lab">
+<h4>Lab 2 — Explore Console</h4>
+<div class="meta"><span><b>Objective:</b> Get comfortable with Console navigation</span><span><b>Time:</b> 10 min</span><span><b>Prerequisites:</b> Lab 1 complete</span></div>
+<ol class="steps">
+<li>Log in to the Console.</li>
+<li>Click ☰ menu and expand each top-level category once (Compute, Storage, Networking, Identity &amp; Security, Governance).</li>
+<li>Use the top search bar to search "compartments" and click the result.</li>
+<li>Locate the region selector and the profile menu (top-right).</li>
+</ol>
+<p><b>Expected Output:</b> Familiarity with menu layout; you can locate Identity &amp; Security within 10 seconds.</p>
+<p><b>Verification:</b> Ask yourself: can I find "Policies" without help? If yes, passed.</p>
+<div class="trap"><b>Common mistake:</b> Confusing "Governance &amp; Administration" (budgets, announcements) with "Identity &amp; Security" (compartments, policies) — they are different menus.</div>
+<p><b>Cleanup:</b> None.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 3 — Locate Region</h4>
+<div class="meta"><span><b>Objective:</b> Identify your tenancy's subscribed region(s)</span><span><b>Time:</b> 5 min</span><span><b>Prerequisites:</b> Lab 1</span></div>
+<ol class="steps">
+<li>Click the region name in the top-right corner.</li>
+<li>Note your home region (marked with a star/label).</li>
+<li>If multiple regions are subscribed, list them all.</li>
+</ol>
+<p><b>Expected Output:</b> A written list of your subscribed region(s), e.g., "ap-mumbai-1 (home)".</p>
+<p><b>Verification:</b> Region name matches what you selected at sign-up.</p>
+<div class="trap"><b>Common mistake:</b> Creating resources while accidentally viewing a non-home region, then "losing" them.</div>
+<p><b>Cleanup:</b> None.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 4 — Locate Availability Domain</h4>
+<div class="meta"><span><b>Objective:</b> Discover how many ADs your home region has</span><span><b>Time:</b> 10 min</span><span><b>Prerequisites:</b> Lab 3</span></div>
+<ol class="steps">
+<li>Navigate to Compute → Instances → Create Instance.</li>
+<li>Open the "Placement" section.</li>
+<li>Open the Availability Domain dropdown and count the entries.</li>
+<li>Do not click Create — just observe, then Cancel.</li>
+</ol>
+<p><b>Expected Output:</b> Count of ADs (e.g., "AD-1" only, for a single-AD region).</p>
+<p><b>Verification:</b> Matches publicly documented AD count for your region.</p>
+<div class="trap"><b>Common mistake:</b> Assuming every region has 3 ADs — many regions (including some in India) have only 1.</div>
+<p><b>Cleanup:</b> Cancel the instance form without submitting.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 5 — Create Compartment</h4>
+<div class="meta"><span><b>Objective:</b> Create a nested compartment for practice</span><span><b>Time:</b> 10 min</span><span><b>Prerequisites:</b> Lab 2</span></div>
+<ol class="steps">
+<li>Navigate to Identity &amp; Security → Compartments.</li>
+<li>Click Create Compartment.</li>
+<li>Name it <code>Training-Sandbox</code>, add a description, leave Parent as root.</li>
+<li>Click Create.</li>
+<li>Optionally create a nested compartment <code>Training-Sandbox-Labs</code> under it.</li>
+</ol>
+<p><b>Expected Output:</b> New compartment visible in the compartments list with status "Active".</p>
+<p><b>Verification:</b> Switch the compartment filter (left sidebar on resource list pages) to <code>Training-Sandbox</code> — it should appear.</p>
+<div class="trap"><b>Common mistake:</b> Forgetting to select the correct compartment before creating resources later, causing "missing resource" confusion.</div>
+<p><b>Cleanup:</b> Keep for later labs; delete at end of course via Compartments → Actions → Delete (compartment must be empty).</p>
+</div>
+
+<div class="lab">
+<h4>Lab 6 — Create User</h4>
+<div class="meta"><span><b>Objective:</b> Create a practice IAM user</span><span><b>Time:</b> 10 min</span><span><b>Prerequisites:</b> Lab 2</span></div>
+<ol class="steps">
+<li>Identity &amp; Security → Domains → Default.</li>
+<li>Click Create User.</li>
+<li>Fill Name/Email, leave Groups unassigned for now.</li>
+<li>Click Create.</li>
+</ol>
+<p><b>Expected Output:</b> New user appears in the Users list, status "Active", no groups.</p>
+<p><b>Verification:</b> Search the user by name in the Users list.</p>
+<div class="trap"><b>Common mistake:</b> Expecting the new user to have any access immediately — a user with zero group membership can log in but do nothing.</div>
+<p><b>Cleanup:</b> Keep for Lab 8; delete after course completion.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 7 — Create Group</h4>
+<div class="meta"><span><b>Objective:</b> Create a group to hold permissions</span><span><b>Time:</b> 5 min</span><span><b>Prerequisites:</b> Lab 6</span></div>
+<ol class="steps">
+<li>Identity &amp; Security → Domains → Default → Groups.</li>
+<li>Click Create Group.</li>
+<li>Name it <code>Training-Compute-Users</code>, add description.</li>
+<li>Click Create (leave "Add Users" empty for now — done in Lab 8).</li>
+</ol>
+<p><b>Expected Output:</b> Group appears in Groups list with 0 members.</p>
+<p><b>Verification:</b> Group name is visible and searchable.</p>
+<div class="trap"><b>Common mistake:</b> Using spaces in the group name — not allowed; use hyphens/underscores.</div>
+<p><b>Cleanup:</b> Keep; delete after course.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 8 — Assign User to Group</h4>
+<div class="meta"><span><b>Objective:</b> Link the Lab 6 user to the Lab 7 group</span><span><b>Time:</b> 5 min</span><span><b>Prerequisites:</b> Labs 6 &amp; 7</span></div>
+<ol class="steps">
+<li>Open the Group created in Lab 7.</li>
+<li>Click "Add User to Group".</li>
+<li>Select the user from Lab 6.</li>
+<li>Confirm.</li>
+</ol>
+<p><b>Expected Output:</b> Group membership count becomes 1; user's profile shows the group under "Groups".</p>
+<p><b>Verification:</b> Check both the Group's member list and the User's group list — they must match.</p>
+<div class="trap"><b>Common mistake:</b> Assigning the policy directly to the User instead of the Group (violates best practice and breaks scalability).</div>
+<p><b>Cleanup:</b> Keep for Lab 9–10.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 9 — Write IAM Policy</h4>
+<div class="meta"><span><b>Objective:</b> Grant the group access to manage Compute instances in the Training-Sandbox compartment</span><span><b>Time:</b> 15 min</span><span><b>Prerequisites:</b> Labs 5, 7</span></div>
+<ol class="steps">
+<li>Identity &amp; Security → Policies → Create Policy.</li>
+<li>Set Compartment to <code>Training-Sandbox</code>.</li>
+<li>Name: <code>training-compute-policy</code>.</li>
+<li>Switch to "Show manual editor" and enter:<br><code>Allow group Training-Compute-Users to manage instance-family in compartment Training-Sandbox</code></li>
+<li>Click Create.</li>
+</ol>
+<p><b>Expected Output:</b> Policy appears in the Policies list attached to Training-Sandbox.</p>
+<p><b>Verification:</b> Open the policy and confirm the statement text is saved exactly as written.</p>
+<div class="trap"><b>Common mistake:</b> Attaching the policy to the wrong (parent/root) compartment, granting broader access than intended.</div>
+<p><b>Cleanup:</b> Keep for Lab 10; delete after course.</p>
+<div class="tip">Certification note: <code>instance-family</code> is a resource-type group — using the exact family name matters for the exam.</div>
+</div>
+
+<div class="lab">
+<h4>Lab 10 — Test Permissions</h4>
+<div class="meta"><span><b>Objective:</b> Verify the policy actually works</span><span><b>Time:</b> 15 min</span><span><b>Prerequisites:</b> Lab 9</span></div>
+<ol class="steps">
+<li>Log in as the Lab 6 user (reset temp password if needed) in an incognito window.</li>
+<li>Switch compartment filter to Training-Sandbox.</li>
+<li>Attempt to create a small Compute instance ("Always Free" eligible shape).</li>
+<li>Observe success or a permission-denied message.</li>
+</ol>
+<p><b>Expected Output:</b> Instance creation succeeds inside Training-Sandbox; fails if attempted in a different compartment.</p>
+<p><b>Verification:</b> Instance shows up under Compute → Instances filtered to Training-Sandbox.</p>
+<div class="trap"><b>Common mistake:</b> Testing in the wrong compartment and wrongly concluding the policy "doesn't work".</div>
+<p><b>Cleanup:</b> Terminate the test instance immediately after verification to avoid consuming Free Tier limits elsewhere.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 11 — Create Free-form Tag</h4>
+<div class="meta"><span><b>Objective:</b> Apply a quick, ungoverned tag</span><span><b>Time:</b> 5 min</span><span><b>Prerequisites:</b> Lab 10 (an instance to tag)</span></div>
+<ol class="steps">
+<li>Open the test instance from Lab 10.</li>
+<li>Click Add Tags.</li>
+<li>Select Tag Namespace = "None (free-form tag)".</li>
+<li>Key: <code>Owner</code>, Value: your name.</li>
+<li>Click Add Tag.</li>
+</ol>
+<p><b>Expected Output:</b> Tag visible under the instance's Tags tab.</p>
+<p><b>Verification:</b> Tag key/value appear exactly as entered, with no namespace prefix.</p>
+<div class="trap"><b>Common mistake:</b> Relying on free-form tags for cost-tracking — they cannot be marked as cost-tracking tags.</div>
+<p><b>Cleanup:</b> Not required — free-form tags carry no governance overhead.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 12 — Create Defined Tag</h4>
+<div class="meta"><span><b>Objective:</b> Create a governed tag namespace + key</span><span><b>Time:</b> 10 min</span><span><b>Prerequisites:</b> Lab 5</span></div>
+<ol class="steps">
+<li>Identity &amp; Security → Tag Namespaces → Create Tag Namespace.</li>
+<li>Name: <code>CostCenter</code>, Compartment: Training-Sandbox.</li>
+<li>Inside the namespace, Create Tag Key Definition: Key = <code>Department</code>.</li>
+<li>Optionally check "Cost-tracking tag".</li>
+<li>Click Create.</li>
+</ol>
+<p><b>Expected Output:</b> Namespace "CostCenter" with key "Department" listed and active.</p>
+<p><b>Verification:</b> Namespace status = Active; key appears when adding tags to any resource.</p>
+<div class="trap"><b>Common mistake:</b> Trying to rename the namespace later — namespaces can only be retired, not renamed.</div>
+<p><b>Cleanup:</b> Retire namespace at end of course if not needed.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 13 — Apply Tag to Resource</h4>
+<div class="meta"><span><b>Objective:</b> Apply the Lab 12 defined tag to a resource</span><span><b>Time:</b> 5 min</span><span><b>Prerequisites:</b> Labs 10, 12</span></div>
+<ol class="steps">
+<li>Open the test Compute instance.</li>
+<li>Add Tags → Namespace: CostCenter → Key: Department → Value: Engineering.</li>
+<li>Click Add Tag.</li>
+</ol>
+<p><b>Expected Output:</b> Tag appears with format <code>CostCenter.Department = Engineering</code>.</p>
+<p><b>Verification:</b> Tag is visible in Cost Analysis filters (may take a few hours to reflect in billing dashboards).</p>
+<div class="trap"><b>Common mistake:</b> Confusing free-form and defined tag namespaces when the same key name exists in both.</div>
+<p><b>Cleanup:</b> None required.</p>
+</div>
+
+<div class="lab">
+<h4>Lab 14 — Explore Identity Domain</h4>
+<div class="meta"><span><b>Objective:</b> Understand the Default identity domain's settings</span><span><b>Time:</b> 10 min</span><span><b>Prerequisites:</b> Lab 2</span></div>
+<ol class="steps">
+<li>Identity &amp; Security → Domains → Default.</li>
+<li>Review tabs: Users, Groups, Dynamic Groups, Security (MFA/password policy), Settings.</li>
+<li>Open "Security" tab and note the default password policy.</li>
+</ol>
+<p><b>Expected Output:</b> Written summary of domain type (Free/Oracle Apps Premium), password policy rules, and MFA status.</p>
+<p><b>Verification:</b> You can explain, in your own words, what an identity domain controls.</p>
+<div class="trap"><b>Common mistake:</b> Confusing "Default" domain (auto-created) with a custom domain you might create for a separate business unit.</div>
+<p><b>Cleanup:</b> None.</p>
+</div>
+
+</section>
+
+<!-- ============================================================ -->
+<section id="s7">
+<h2><span class="num">7.</span>Mini Exercises (5 per Topic Cluster)</h2>
+
+<div class="card">
+<h4>Cloud Foundations</h4>
+<ol class="steps">
+<li>Write one real-world analogy each for IaaS, PaaS, and SaaS in your own words.</li>
+<li>Classify these as CapEx or OpEx: buying a server rack; paying an OCI monthly invoice.</li>
+<li>Name one thing Oracle secures and one thing you must secure, under the Shared Responsibility Model.</li>
+<li>Explain the difference between a hypervisor and a virtual machine to a non-technical friend.</li>
+<li>Give one example each of public, private, hybrid, and community cloud usage.</li>
+</ol>
+</div>
+
+<div class="card">
+<h4>OCI Infrastructure</h4>
+<ol class="steps">
+<li>Find your tenancy OCID (Profile → Tenancy: [name] → copy OCID).</li>
+<li>Locate your current home region.</li>
+<li>Count the Availability Domains in your home region.</li>
+<li>Find the Fault Domains available when placing a Compute instance.</li>
+<li>Locate the Identity Domains page and note how many domains exist in your tenancy.</li>
+</ol>
+</div>
+
+<div class="card">
+<h4>IAM</h4>
+<ol class="steps">
+<li>Create one test user and note its OCID.</li>
+<li>Create a group and describe its intended purpose in one sentence.</li>
+<li>Explain, in one line, the difference between a static Group and a Dynamic Group.</li>
+<li>Identify one scenario where Federation/SSO would be useful for your organization.</li>
+<li>Write down the four IAM policy verbs from least to most powerful.</li>
+</ol>
+</div>
+
+<div class="card">
+<h4>IAM Policies</h4>
+<ol class="steps">
+<li>Write a policy statement granting "read" access to object storage in a compartment named <code>Reports</code>.</li>
+<li>Identify the resource-type family for Compute instances.</li>
+<li>Explain what happens if a policy is attached at the root compartment.</li>
+<li>Rewrite an overly broad policy (<code>manage all-resources</code>) using least privilege.</li>
+<li>List two IAM policy best practices you will follow going forward.</li>
+</ol>
+</div>
+
+<div class="card">
+<h4>Governance</h4>
+<ol class="steps">
+<li>Design a 2-level compartment structure for a fictional 3-team company.</li>
+<li>Create one free-form tag and one defined tag and explain the difference.</li>
+<li>Propose a naming standard for compartments in your organization.</li>
+<li>Explain why quotas matter for cost control.</li>
+<li>List one risk of NOT using nested compartments in a large organization.</li>
+</ol>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s8">
+<h2><span class="num">8.</span>Troubleshooting Guide</h2>
+<div class="card">
+<table>
+<tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr>
+<tr><td>Resource not visible in Console</td><td>Wrong region selected</td><td>Check top-right region selector; switch to the region where the resource was created</td></tr>
+<tr><td>Resource not visible in resource list</td><td>Wrong compartment filter</td><td>Change the compartment dropdown on the left sidebar of the resource list page</td></tr>
+<tr><td>"Authorization failed" / permission denied</td><td>Policy not written, wrong verb, or wrong compartment scope</td><td>Re-check policy statement syntax, verb level, and compartment; wait 1–2 min for propagation</td></tr>
+<tr><td>User can log in but can't do anything</td><td>User not added to any group with a policy</td><td>Add user to the correct group; verify group has an active policy</td></tr>
+<tr><td>Policy exists but "still no access"</td><td>Policy attached to wrong compartment (doesn't cascade upward, only downward)</td><td>Attach the policy to the parent compartment of the target resource, or a level above</td></tr>
+<tr><td>Tag missing on a resource</td><td>Tag applied at wrong resource, or tag key typo</td><td>Re-open the resource's Tags tab, verify namespace and key spelling exactly</td></tr>
+<tr><td>Wrong identity domain used for login</td><td>Multiple domains exist; user tried logging into the wrong one</td><td>Confirm the correct domain URL/sign-in page with the user; check Domains list</td></tr>
+<tr><td>Can't rename a tag namespace</td><td>Tag namespaces are immutable after creation</td><td>Retire the old namespace and create a new one with the correct name</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s9">
+<h2><span class="num">9.</span>Interview Questions</h2>
+
+<div class="card">
+<h4>Beginner</h4>
+<ul class="plain">
+<li>What is cloud computing, in your own words?</li>
+<li>What is the difference between IaaS, PaaS, and SaaS?</li>
+<li>What is a Region in OCI?</li>
+<li>What is the difference between Availability Domain and Fault Domain?</li>
+<li>What is a compartment, and why do we need it?</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Intermediate</h4>
+<ul class="plain">
+<li>Explain the difference between authentication and authorization with an example.</li>
+<li>What is the purpose of a Dynamic Group, and how does its membership differ from a static Group?</li>
+<li>Walk through the four IAM policy verbs and give a real business scenario for each.</li>
+<li>How does policy inheritance work across nested compartments?</li>
+<li>What is the difference between a free-form tag and a defined tag, and when would you use each?</li>
+</ul>
+</div>
+
+<div class="card">
+<h4>Scenario-Based</h4>
+<ul class="plain">
+<li>Why do we need compartments if we could just put everything in the root compartment?</li>
+<li>A new hire says they can log in to OCI but can't launch any Compute instances — walk through your troubleshooting steps.</li>
+<li>Why should you avoid granting <code>manage all-resources</code> to everyone in the tenancy?</li>
+<li>Your team wants automated scripts (not humans) to manage storage buckets — how would you design IAM for this using Dynamic Groups?</li>
+<li>Design a compartment and tagging strategy for a company with Dev, Test, and Prod environments and 3 project teams.</li>
+</ul>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s10">
+<h2><span class="num">10.</span>Certification Notes</h2>
+<div class="card">
+<h4>Frequently Tested Topics</h4>
+<ul class="plain">
+<li>Policy syntax structure and correct placement of verbs/resource-types/compartments.</li>
+<li>AD vs FD vs Region vs Realm distinctions.</li>
+<li>IaaS/PaaS/SaaS classification of specific OCI services (Autonomous DB is a classic trap — it's PaaS).</li>
+<li>Shared Responsibility Model — what's Oracle's job vs the customer's job.</li>
+<li>Free-form vs Defined tags, and cost-tracking tag behavior.</li>
+</ul>
+<h4>Exam Traps</h4>
+<div class="trap">Thinking a policy attached to a child compartment affects the parent — it does NOT; inheritance flows downward only, parent to child.</div>
+<div class="trap">Assuming all OCI regions have 3 Availability Domains — several regions (including some in India) are single-AD regions.</div>
+<div class="trap">Confusing "Identity Domain" (a container for users/auth settings, newer IAM model) with the legacy "Federation" concept.</div>
+<h4>Memory Tricks / Mnemonics</h4>
+<ul class="plain">
+<li><b>"I R U M"</b> for policy verbs in increasing power: <b>I</b>nspect → <b>R</b>ead → <b>U</b>se → <b>M</b>anage.</li>
+<li><b>"Country → City → Building"</b> for Region → AD → FD.</li>
+<li><b>"Sticky note vs Barcode"</b> for Free-form tag vs Defined tag.</li>
+</ul>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s11">
+<h2><span class="num">11.</span>End-of-Day Practical Challenge</h2>
+<div class="card">
+<p>Working independently (no step-by-step guide this time), complete the following in a fresh compartment named <code>Day1-Challenge</code>:</p>
+<ol class="steps">
+<li>Create the compartment <code>Day1-Challenge</code> under root.</li>
+<li>Create a group named <code>Day1-Challenge-Admins</code>.</li>
+<li>Create a user and add them to the group.</li>
+<li>Write and attach a policy granting the group <code>manage</code> access to <code>instance-family</code> only within <code>Day1-Challenge</code>.</li>
+<li>Log in as the new user (or use "Test Permissions" logic) and verify the policy works.</li>
+<li>Apply one free-form tag and one defined tag to any resource you create.</li>
+<li>In 4–5 sentences, explain the full architecture you just built — from Tenancy down to the Policy — as if explaining it to a new colleague.</li>
+</ol>
+<div class="tip">Instructor tip: Grade primarily on the final explanation (step 7) — it reveals whether the student understood the "why", not just the clicks.</div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s12">
+<h2><span class="num">12.</span>Knowledge Check</h2>
+
+<h3 class="topic-title">12.1 Conceptual Questions (20)</h3>
+<div class="card">
+<ol class="steps">
+<li>Define cloud computing in one sentence.</li>
+<li>What problem does virtualization solve?</li>
+<li>Name the two main types of hypervisors.</li>
+<li>List the three cloud service models.</li>
+<li>Which service model gives you the most control over the OS?</li>
+<li>Which service model is Oracle Autonomous Database?</li>
+<li>Define Public Cloud.</li>
+<li>Define Hybrid Cloud with an example.</li>
+<li>What is the difference between CapEx and OpEx?</li>
+<li>What does the Shared Responsibility Model describe?</li>
+<li>What is a Realm in OCI?</li>
+<li>What is the difference between a Region and an Availability Domain?</li>
+<li>How many Fault Domains does each Availability Domain have?</li>
+<li>What is a Tenancy?</li>
+<li>What is included in OCI's Free Tier?</li>
+<li>What is an Identity Domain?</li>
+<li>Differentiate Authentication from Authorization.</li>
+<li>What is a Dynamic Group used for?</li>
+<li>List the four IAM policy verbs in order.</li>
+<li>What is the difference between a free-form and a defined tag?</li>
+</ol>
+</div>
+
+<h3 class="topic-title">12.2 Scenario Questions (10)</h3>
+<div class="card">
+<ol class="steps">
+<li>A finance team should only view (not modify) billing reports — which policy verb applies?</li>
+<li>A startup wants to avoid upfront hardware costs — is this CapEx or OpEx thinking?</li>
+<li>An app crashes if one data center goes down — which OCI concept mitigates this at the rack level?</li>
+<li>A company wants a single login across OCI and their internal HR portal — which IAM concept applies?</li>
+<li>An automated script running on a Compute instance needs to write to Object Storage without a human user — what should you configure?</li>
+<li>Your team accidentally attached a policy to the root compartment instead of a specific project compartment — what's the risk?</li>
+<li>A regulator requires strict cost attribution per department — which tagging approach is appropriate?</li>
+<li>New employee onboarding should automatically grant standard permissions — what IAM structure supports this efficiently?</li>
+<li>A resource created in Hyderabad region isn't showing up while viewing the Mumbai console — why?</li>
+<li>Your compartment has hit its resource quota — what should you check/adjust?</li>
+</ol>
+</div>
+
+<h3 class="topic-title">12.3 Practical Console Questions (10)</h3>
+<div class="card">
+<ol class="steps">
+<li>Where in the Console do you find your tenancy OCID?</li>
+<li>Which menu path leads to creating a new Compartment?</li>
+<li>Where do you switch between Policy Builder and Manual Editor?</li>
+<li>Which tab under a Domain shows Dynamic Groups?</li>
+<li>Where do you check the Availability Domain count for your region?</li>
+<li>Which button adds a user to an existing group?</li>
+<li>Where do you create a Tag Namespace before creating a Defined Tag?</li>
+<li>Which field in Create Policy determines the compartment the policy is attached to (its top scope)?</li>
+<li>Where do you view a resource's applied tags?</li>
+<li>How do you switch the working region in the Console?</li>
+</ol>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s13">
+<h2><span class="num">13.</span>Instructor Notes</h2>
+<div class="card">
+<h4>Where students usually get confused</h4>
+<ul class="plain">
+<li>Region vs Realm vs Availability Domain vs Fault Domain — the four-level hierarchy blurs together on first exposure.</li>
+<li>Policy inheritance direction (parent → child only) is frequently assumed to be bidirectional.</li>
+<li>Free-form vs Defined tags — students often don't grasp why governance matters until they see billing reports.</li>
+<li>Dynamic Groups feel abstract until tied to a concrete "a script needs permissions too" example.</li>
+</ul>
+<h4>How to explain</h4>
+<p>Use the Country/City/Building analogy chain consistently across the day — repetition across topics builds intuition faster than one-time explanation.</p>
+<h4>Live demo ideas</h4>
+<ul class="plain">
+<li>Live-write a policy statement on the whiteboard, then have students predict Allow/Deny outcomes for different compartments.</li>
+<li>Deliberately misconfigure a policy (wrong compartment) live, then debug it together — reinforces the troubleshooting table.</li>
+</ul>
+<h4>Whiteboard diagrams</h4>
+<p>Draw the Realm → Region → AD → FD nested-boxes diagram, then the Tenancy → Compartment → Nested Compartment tree beside it, and connect them with a dotted line showing "policies flow down the compartment tree, independent of the physical AD/FD tree."</p>
+<h4>Questions to ask (with expected answers)</h4>
+<table>
+<tr><th>Question</th><th>Expected Answer</th></tr>
+<tr><td>"If I attach a policy to the root compartment, does it affect a child compartment 3 levels down?"</td><td>Yes — inheritance flows downward through all nested levels unless explicitly restricted.</td></tr>
+<tr><td>"Can a user with zero group membership log in?"</td><td>Yes, login succeeds, but they have no permissions to act on any resource.</td></tr>
+<tr><td>"Is Autonomous Database IaaS or PaaS?"</td><td>PaaS — Oracle manages patching, tuning, and backups.</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s14">
+<h2><span class="num">14.</span>Console Navigation Summary Table</h2>
+<div class="card">
+<table>
+<tr><th>Topic</th><th>OCI Menu</th><th>Submenu</th><th>Button</th><th>Action</th><th>Purpose</th></tr>
+<tr><td>Users</td><td>Identity &amp; Security</td><td>Domains → Default</td><td>Create User</td><td>Add new identity</td><td>Represent a person/service that can authenticate</td></tr>
+<tr><td>Groups</td><td>Identity &amp; Security</td><td>Domains → Default → Groups</td><td>Create Group</td><td>Add new group</td><td>Bundle permissions for multiple users</td></tr>
+<tr><td>Dynamic Groups</td><td>Identity &amp; Security</td><td>Domains → Default → Dynamic Groups</td><td>Create Dynamic Group</td><td>Define matching rule</td><td>Grant permissions to non-human resources</td></tr>
+<tr><td>Compartments</td><td>Identity &amp; Security</td><td>Compartments</td><td>Create Compartment</td><td>Add new logical container</td><td>Organize and isolate resources</td></tr>
+<tr><td>Policies</td><td>Identity &amp; Security</td><td>Policies</td><td>Create Policy</td><td>Write/attach policy statement</td><td>Grant access (authorization)</td></tr>
+<tr><td>Tag Namespaces</td><td>Identity &amp; Security</td><td>Tag Namespaces</td><td>Create Tag Namespace</td><td>Define governed tag structure</td><td>Enable defined (governed) tagging</td></tr>
+<tr><td>Region Selection</td><td>Top-right global bar</td><td>Region dropdown</td><td>N/A</td><td>Switch active region</td><td>Change resource visibility context</td></tr>
+<tr><td>Availability/Fault Domain</td><td>Compute</td><td>Create Instance → Placement</td><td>N/A</td><td>Select AD/FD</td><td>Control physical placement for resiliency</td></tr>
+<tr><td>Tenancy Info</td><td>Profile icon (top-right)</td><td>Tenancy: [name]</td><td>N/A</td><td>View OCID/settings</td><td>Identify the root account container</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="s15">
+<h2><span class="num">15.</span>Day 1 Recap — One-Page Visual Summary</h2>
+<div class="card">
+<pre class="ascii">
+ CLOUD COMPUTING (concept) ──► deployed as ──► OCI (product)
+      │
+      ├─ IaaS / PaaS / SaaS      ├─ Region ─ Realm ─ AD ─ FD ─ Tenancy
+      ├─ Public/Private/Hybrid   │
+      ├─ CapEx vs OpEx           └─ IDENTITY &amp; ACCESS MANAGEMENT
+      └─ Shared Responsibility         │
+                                       ├─ Identity Domain
+                                       ├─ Users / Groups / Dynamic Groups
+                                       ├─ Authentication + Authorization
+                                       └─ RBAC
+                                             │
+                                             ▼
+                                     IAM POLICIES
+                                  "Allow group X to VERB
+                                   resource-type in compartment Y"
+                                       (Inspect&lt;Read&lt;Use&lt;Manage)
+                                             │
+                                             ▼
+                                       GOVERNANCE
+                                 Compartments (nested) + Tags
+                                 (Free-form / Defined) + Quotas
+</pre>
+<p><b>Key takeaway for Day 1:</b> Cloud computing theory explains <i>why</i> the cloud exists; OCI's global infrastructure explains <i>where</i> your resources physically live; IAM and policies explain <i>who</i> can do <i>what</i>; and Governance (compartments, tags, quotas) explains <i>how it's all organized and controlled</i> at scale.</p>
+</div>
+</section>
+
+</main>
+
+<div class="footer-note">OCI Day 1 Training Module — Foundations, Infrastructure &amp; IAM · Certification-aligned (Bloom's BT2/BT3, CO1/CO2)</div>
+
+</body>
+</html>

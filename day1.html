@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCI Foundations — Day 1 | Interactive Learning Platform</title>
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   Palette: void black base, Oracle red signal, cool blue for
+   network/data concepts, amber for warnings/exam-tips.
+   Type: Space Grotesk-style geometric display (system stack),
+   Inter-style body (system stack), JetBrains-style mono for
+   code/terminal (system stack) — no external fonts/CDNs.
+   ============================================================ */
+:root{
+  --void:#08090b;
+  --panel:#101217;
+  --panel-2:#15171e;
+  --panel-glass: rgba(21,23,30,0.6);
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.16);
+  --text-1:#eef0f3;
+  --text-2:#a7acb8;
+  --text-3:#6b7180;
+  --red:#c74634;
+  --red-bright:#ff5a3c;
+  --red-dim: rgba(199,70,52,0.15);
+  --blue:#4f8cff;
+  --blue-dim: rgba(79,140,255,0.15);
+  --amber:#e8a33d;
+  --amber-dim: rgba(232,163,61,0.15);
+  --green:#3ec28f;
+  --green-dim: rgba(62,194,143,0.15);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font-display: "Space Grotesk","Avenir Next",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-body: "Inter","Avenir Next",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono: "JetBrains Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,0.35);
+}
+html[data-theme="light"]{
+  --void:#f3f2ee;
+  --panel:#ffffff;
+  --panel-2:#f7f6f2;
+  --panel-glass: rgba(255,255,255,0.7);
+  --border: rgba(10,10,10,0.08);
+  --border-strong: rgba(10,10,10,0.16);
+  --text-1:#15171c;
+  --text-2:#4b4f58;
+  --text-3:#83879160;
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.12);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,0.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--void);
+  color:var(--text-1);
+  font-family:var(--font-body);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  transition:background .4s ease,color .4s ease;
+}
+body::before{
+  content:"";
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 800px 500px at 15% -5%, rgba(199,70,52,0.16), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 20%, rgba(79,140,255,0.10), transparent 60%),
+    radial-gradient(ellipse 600px 400px at 50% 100%, rgba(199,70,52,0.08), transparent 60%);
+}
+h1,h2,h3,h4{font-family:var(--font-display); letter-spacing:-0.02em; font-weight:700; color:var(--text-1);}
+code, .mono{font-family:var(--font-mono);}
+a{color:inherit;}
+::selection{background:var(--red); color:#fff;}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-strong); border-radius:10px;}
+
+/* ---------- particles / ambient bg ---------- */
+#particles{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;}
+
+/* ---------- progress bar ---------- */
+#progress-bar{
+  position:fixed; top:0; left:0; height:3px; width:0%;
+  background:linear-gradient(90deg,var(--red),var(--red-bright));
+  z-index:9999; box-shadow:0 0 12px var(--red-bright);
+  transition:width .1s linear;
+}
+
+/* ---------- top bar ---------- */
+#topbar{
+  position:fixed; top:0; left:0; right:0; z-index:900;
+  height:60px; display:flex; align-items:center; gap:14px;
+  padding:0 18px; margin-top:3px;
+  background:var(--panel-glass); backdrop-filter:blur(16px) saturate(140%);
+  border-bottom:1px solid var(--border);
+}
+#topbar .brand{display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:15px; white-space:nowrap;}
+#topbar .brand .dot{width:10px; height:10px; border-radius:3px; background:linear-gradient(135deg,var(--red),var(--red-bright)); box-shadow:0 0 14px var(--red-bright);}
+#sidebar-toggle{
+  background:transparent; border:1px solid var(--border); color:var(--text-2);
+  width:36px; height:36px; border-radius:var(--radius-sm); cursor:pointer; font-size:16px;
+  display:flex; align-items:center; justify-content:center; transition:.2s;
+}
+#sidebar-toggle:hover{border-color:var(--border-strong); color:var(--text-1);}
+#search-wrap{position:relative; flex:1; max-width:420px;}
+#search{
+  width:100%; background:var(--panel); border:1px solid var(--border); color:var(--text-1);
+  padding:8px 14px 8px 34px; border-radius:999px; font-size:13px; font-family:var(--font-body);
+  outline:none; transition:.2s;
+}
+#search:focus{border-color:var(--red); box-shadow:0 0 0 3px var(--red-dim);}
+#search-wrap svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-3);}
+#search-results{
+  position:absolute; top:calc(100% + 8px); left:0; right:0; background:var(--panel);
+  border:1px solid var(--border-strong); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg);
+  max-height:320px; overflow-y:auto; display:none; z-index:50;
+}
+#search-results a{display:block; padding:9px 14px; font-size:13px; color:var(--text-2); border-bottom:1px solid var(--border);}
+#search-results a:hover{background:var(--panel-2); color:var(--text-1);}
+#search-results .sr-cat{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--red-bright); display:block; margin-bottom:2px;}
+
+.topbar-spacer{flex:1;}
+#theme-toggle{
+  background:var(--panel); border:1px solid var(--border); color:var(--text-2);
+  width:36px; height:36px; border-radius:999px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:.2s; font-size:15px;
+}
+#theme-toggle:hover{border-color:var(--red); color:var(--red-bright);}
+#score-chip{
+  display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--border);
+  padding:6px 12px; border-radius:999px; font-size:12px; color:var(--text-2); white-space:nowrap;
+}
+#score-chip b{color:var(--red-bright); font-family:var(--font-display);}
+
+/* ---------- layout ---------- */
+#shell{display:flex; padding-top:63px; position:relative; z-index:1;}
+#sidebar{
+  width:270px; flex-shrink:0; height:calc(100vh - 63px); position:sticky; top:63px;
+  overflow-y:auto; border-right:1px solid var(--border); padding:18px 10px 60px;
+  transition:margin-left .3s ease, opacity .3s ease;
+}
+#sidebar.collapsed{margin-left:-270px; opacity:0;}
+#sidebar .nav-group{margin-bottom:4px;}
+#sidebar .nav-head{
+  font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-3);
+  padding:14px 12px 6px; font-weight:700;
+}
+#sidebar a.nav-link{
+  display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:var(--radius-sm);
+  font-size:13.5px; color:var(--text-2); text-decoration:none; transition:.15s; border-left:2px solid transparent;
+}
+#sidebar a.nav-link:hover{background:var(--panel); color:var(--text-1);}
+#sidebar a.nav-link.active{background:var(--red-dim); color:var(--red-bright); border-left-color:var(--red-bright); font-weight:600;}
+#sidebar a.nav-link .num{font-family:var(--font-mono); font-size:10px; color:var(--text-3); width:18px;}
+
+main{flex:1; min-width:0; padding:0 0 100px;}
+.container{max-width:980px; margin:0 auto; padding:0 32px;}
+
+/* ---------- hero ---------- */
+#hero{position:relative; padding:100px 32px 70px; overflow:hidden; text-align:left;}
+#hero .eyebrow{
+  display:inline-flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--red-bright); background:var(--red-dim); border:1px solid rgba(199,70,52,0.3);
+  padding:6px 14px; border-radius:999px; margin-bottom:22px; font-weight:600;
+}
+#hero h1{font-size:clamp(2.4rem,5vw,4.2rem); line-height:1.02; max-width:820px;}
+#hero h1 .accent{background:linear-gradient(135deg,var(--red),var(--red-bright)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+#hero p.lede{max-width:620px; font-size:17px; color:var(--text-2); margin-top:22px;}
+#hero .hero-stats{display:flex; gap:34px; margin-top:40px; flex-wrap:wrap;}
+#hero .hstat b{font-family:var(--font-display); font-size:26px; display:block;}
+#hero .hstat span{font-size:12px; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em;}
+#hero .cta-row{display:flex; gap:14px; margin-top:38px; flex-wrap:wrap;}
+.btn{
+  font-family:var(--font-body); font-weight:600; font-size:14px; padding:12px 22px; border-radius:999px;
+  border:1px solid var(--border-strong); cursor:pointer; transition:.2s; display:inline-flex; align-items:center; gap:8px;
+}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--red-bright)); color:#fff; border:none; box-shadow:0 8px 24px rgba(199,70,52,0.35);}
+.btn-primary:hover{transform:translateY(-2px); box-shadow:0 12px 30px rgba(199,70,52,0.45);}
+.btn-ghost{background:var(--panel); color:var(--text-1);}
+.btn-ghost:hover{border-color:var(--red); color:var(--red-bright);}
+
+/* orbiting node animation in hero */
+#hero-orbit{position:absolute; right:-60px; top:40px; width:420px; height:420px; opacity:.9; pointer-events:none;}
+@media (max-width:1100px){#hero-orbit{display:none;}}
+
+/* ---------- sections ---------- */
+section.chapter{padding:70px 0 10px; border-top:1px solid var(--border); scroll-margin-top:80px;}
+section.chapter:first-of-type{border-top:none;}
+.chapter-kicker{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+.chapter-kicker .idx{
+  font-family:var(--font-mono); font-size:12px; color:var(--red-bright); background:var(--red-dim);
+  padding:4px 10px; border-radius:6px; border:1px solid rgba(199,70,52,.3);
+}
+.chapter-kicker .track{font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-3);}
+.chapter h2{font-size:clamp(1.6rem,3vw,2.3rem); margin-bottom:6px;}
+.chapter .dek{color:var(--text-2); font-size:15.5px; max-width:680px; margin-bottom:30px;}
+.chapter h3{font-size:1.15rem; margin:34px 0 14px;}
+.chapter p{color:var(--text-2); font-size:15px; margin-bottom:14px; max-width:720px;}
+.chapter ul, .chapter ol{color:var(--text-2); font-size:15px; margin:0 0 16px 20px;}
+.chapter li{margin-bottom:6px;}
+.chapter strong{color:var(--text-1);}
+
+/* scroll reveal */
+.reveal{opacity:0; transform:translateY(24px); transition:opacity .7s ease, transform .7s ease;}
+.reveal.in{opacity:1; transform:translateY(0);}
+
+/* ---------- cards / panels ---------- */
+.panel{
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border:1px solid var(--border); border-radius:var(--radius); padding:24px;
+  box-shadow:var(--shadow-sm); position:relative;
+}
+.panel-glow{position:relative; overflow:hidden;}
+.panel-glow::before{
+  content:""; position:absolute; inset:-2px; z-index:-1; border-radius:inherit;
+  background:conic-gradient(from 180deg, var(--red), transparent 30%, var(--blue), transparent 70%, var(--red));
+  opacity:0; transition:opacity .4s;
+}
+.panel-glow:hover::before{opacity:.5;}
+.panel-glow > .panel-inner{background:var(--panel); border-radius:calc(var(--radius) - 1px); height:100%; padding:22px;}
+
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+@media (max-width:800px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.card{
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:18px; transition:.25s; cursor:default;
+}
+.card:hover{border-color:var(--border-strong); transform:translateY(-3px); box-shadow:var(--shadow-sm);}
+.card h4{font-size:14px; margin-bottom:8px; display:flex; align-items:center; gap:8px;}
+.card p{font-size:13.5px; margin:0; color:var(--text-2);}
+.card .tag{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--red-bright); background:var(--red-dim); padding:3px 8px; border-radius:6px; margin-bottom:8px; display:inline-block;}
+
+/* ---------- callouts ---------- */
+.callout{border-radius:var(--radius-sm); padding:14px 16px; margin:16px 0; border:1px solid; font-size:14px; display:flex; gap:12px; align-items:flex-start;}
+.callout .ic{font-size:16px; flex-shrink:0; margin-top:1px;}
+.callout-tip{background:var(--green-dim); border-color:rgba(62,194,143,.35); color:var(--text-1);}
+.callout-warn{background:var(--amber-dim); border-color:rgba(232,163,61,.35); color:var(--text-1);}
+.callout-trap{background:var(--red-dim); border-color:rgba(199,70,52,.35); color:var(--text-1);}
+.callout-q{background:var(--blue-dim); border-color:rgba(79,140,255,.35); color:var(--text-1);}
+.callout b{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
+
+/* ---------- tables ---------- */
+table.cmp{width:100%; border-collapse:collapse; font-size:13.5px; margin:18px 0;}
+table.cmp th{text-align:left; color:var(--text-3); font-size:11px; text-transform:uppercase; letter-spacing:.06em; padding:10px 12px; border-bottom:1px solid var(--border-strong);}
+table.cmp td{padding:12px; border-bottom:1px solid var(--border); color:var(--text-2);}
+table.cmp tr:hover td{background:var(--panel);}
+table.cmp td:first-child, table.cmp th:first-child{color:var(--text-1); font-weight:600;}
+
+/* ---------- buttons small ---------- */
+.chip-btn{
+  background:var(--panel-2); border:1px solid var(--border); color:var(--text-2); font-size:12.5px;
+  padding:7px 14px; border-radius:999px; cursor:pointer; transition:.2s; font-family:var(--font-body); font-weight:600;
+}
+.chip-btn:hover{border-color:var(--red); color:var(--red-bright);}
+.chip-btn.active{background:var(--red); color:#fff; border-color:var(--red);}
+.chip-btn:disabled{opacity:.4; cursor:not-allowed;}
+
+/* end of part1 */
+</style>
+</head>
+<body>
+<style>
+.vm-sim{display:grid; grid-template-columns:280px 1fr; gap:20px;}
+@media (max-width:800px){.vm-sim{grid-template-columns:1fr;}}
+.vm-controls{display:flex; flex-direction:column; gap:10px;}
+.vm-controls label{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); margin-top:6px;}
+.vm-controls input[type=range]{width:100%; accent-color:var(--red);}
+.host-box{border:1px dashed var(--border-strong); border-radius:var(--radius-sm); padding:16px; position:relative; background:repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0 10px, transparent 10px 20px);}
+.host-meter{display:flex; justify-content:space-between; font-size:11px; color:var(--text-3); margin-bottom:6px;}
+.meter-bar{height:8px; border-radius:6px; background:var(--panel-2); overflow:hidden; margin-bottom:14px;}
+.meter-fill{height:100%; border-radius:6px; transition:width .4s ease; background:linear-gradient(90deg,var(--blue),#7db2ff);}
+.meter-fill.cpu{background:linear-gradient(90deg,var(--red),var(--red-bright));}
+.vm-list{display:flex; flex-wrap:wrap; gap:10px; min-height:60px;}
+.vm-card{width:110px; background:var(--panel); border:1px solid var(--border-strong); border-radius:10px; padding:10px; font-size:11px; animation:popIn .3s ease; position:relative;}
+.vm-card .vm-name{font-family:var(--font-mono); color:var(--blue); font-weight:700; margin-bottom:4px;}
+.vm-card .vm-x{position:absolute; top:6px; right:8px; cursor:pointer; color:var(--text-3);}
+.vm-card .vm-x:hover{color:var(--red-bright);}
+@keyframes popIn{from{opacity:0; transform:scale(.7);} to{opacity:1; transform:scale(1);}}
+.layer-stack{display:flex; flex-direction:column; gap:6px;}
+.layer-row{display:grid; grid-template-columns:130px 1fr; gap:0; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border);}
+.layer-label{background:var(--panel-2); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:13px;}
+.layer-cells{display:grid; grid-template-columns:repeat(6,1fr);}
+.layer-cell{padding:12px 6px; text-align:center; font-size:11px; border-left:1px solid var(--border); transition:.2s; cursor:default;}
+.layer-cell.you{background:var(--red-dim); color:var(--red-bright); font-weight:700;}
+.layer-cell.oracle{background:var(--blue-dim); color:var(--blue); font-weight:700;}
+.layer-cell:hover{filter:brightness(1.3);}
+.layer-legend{display:flex; gap:18px; margin-top:12px; font-size:12px; color:var(--text-2);}
+.legend-dot{width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:6px; vertical-align:-1px;}
+.resp-track{position:relative; height:10px; border-radius:6px; background:linear-gradient(90deg,var(--blue) 0%,var(--blue) var(--split,50%), var(--red) var(--split,50%), var(--red) 100%); margin:30px 0 10px;}
+.resp-handle{position:absolute; top:50%; left:var(--split,50%); transform:translate(-50%,-50%); width:26px; height:26px; border-radius:50%; background:#fff; border:3px solid var(--void); cursor:grab; box-shadow:0 0 0 4px rgba(255,255,255,0.15);}
+.resp-labels{display:flex; justify-content:space-between; font-size:12px; color:var(--text-2); margin-bottom:4px;}
+.resp-layers{display:flex; flex-direction:column; gap:8px; margin-top:20px;}
+.resp-layer-row{display:flex; align-items:center; gap:12px; font-size:13px;}
+.resp-layer-row .name{width:150px; flex-shrink:0; color:var(--text-1); font-weight:600;}
+.resp-layer-row .who{font-family:var(--font-mono); font-size:11px; padding:4px 10px; border-radius:6px;}
+.who-oracle{background:var(--blue-dim); color:var(--blue);}
+.who-you{background:var(--red-dim); color:var(--red-bright);}
+.who-shared{background:var(--amber-dim); color:var(--amber);}
+.map-wrap{display:grid; grid-template-columns:1fr 260px; gap:20px;}
+@media (max-width:800px){.map-wrap{grid-template-columns:1fr;}}
+.region-dot{cursor:pointer; transition:.2s;}
+.region-dot circle{transition:.2s;}
+.region-info{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; font-size:13px; min-height:180px;}
+.region-info h4{font-size:14px; color:var(--red-bright); margin-bottom:8px;}
+.region-info .placeholder{color:var(--text-3); font-style:italic;}
+.ad-buildings{display:flex; gap:16px; justify-content:center; margin:20px 0; flex-wrap:wrap;}
+.building{width:120px; text-align:center; padding:16px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-strong); background:var(--panel); transition:.4s;}
+.building .roof{font-size:26px; margin-bottom:6px;}
+.building .b-name{font-family:var(--font-mono); font-size:12px; margin-bottom:4px;}
+.building .b-status{font-size:11px; padding:3px 8px; border-radius:6px; display:inline-block;}
+.b-status.ok{background:var(--green-dim); color:var(--green);}
+.b-status.down{background:var(--red-dim); color:var(--red-bright);}
+.building.failed{opacity:.4; filter:grayscale(1); transform:translateY(4px);}
+.building.shaking{animation:shake .4s;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+.fd-rack{display:flex; gap:14px; justify-content:center; margin:20px 0; flex-wrap:wrap;}
+.rack{width:150px; border:1px solid var(--border-strong); border-radius:8px; padding:8px; background:var(--panel);}
+.rack .rack-head{font-family:var(--font-mono); font-size:11px; text-align:center; color:var(--text-3); margin-bottom:6px;}
+.rack-slot{height:20px; border-radius:4px; background:var(--panel-2); margin-bottom:4px; font-size:9px; display:flex; align-items:center; justify-content:center; color:var(--text-3); border:1px solid var(--border);}
+.rack-slot.filled{background:var(--blue-dim); color:var(--blue); border-color:rgba(79,140,255,.4); font-weight:700;}
+.rack.dead{opacity:.35;}
+.rack.dead .rack-slot.filled{background:var(--red-dim); color:var(--red-bright);}
+.calc-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px;}
+@media (max-width:800px){.calc-grid{grid-template-columns:1fr;}}
+.calc-row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;}
+.calc-row label{font-size:13px; color:var(--text-2);}
+.calc-row output{font-family:var(--font-mono); color:var(--red-bright); font-weight:700; font-size:13px;}
+canvas#capexChart{width:100%; height:220px;}
+.cost-total{display:flex; justify-content:space-between; padding-top:14px; border-top:1px solid var(--border); margin-top:6px;}
+.cost-total b{font-family:var(--font-display); font-size:20px;}
+.policy-editor{background:#0c0d10; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:16px; font-family:var(--font-mono); font-size:13.5px;}
+.policy-editor textarea{width:100%; min-height:80px; background:transparent; border:none; outline:none; color:#e8e8ea; font-family:var(--font-mono); font-size:13.5px; resize:vertical; line-height:1.7;}
+.policy-verdict{margin-top:10px; padding:10px 12px; border-radius:8px; font-size:12.5px; font-family:var(--font-body); display:none;}
+.policy-verdict.ok{display:block; background:var(--green-dim); color:var(--green);}
+.policy-verdict.bad{display:block; background:var(--red-dim); color:var(--red-bright);}
+.console-sim{border:1px solid var(--border-strong); border-radius:var(--radius); overflow:hidden; background:var(--panel);}
+.console-tb{display:flex; align-items:center; gap:10px; background:var(--panel-2); padding:10px 14px; border-bottom:1px solid var(--border);}
+.console-tb .dots span{width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:5px;}
+.console-body{display:flex; min-height:320px;}
+.console-nav{width:170px; border-right:1px solid var(--border); padding:12px 8px; flex-shrink:0;}
+.console-nav div{padding:8px 10px; font-size:12.5px; border-radius:6px; cursor:pointer; color:var(--text-2); margin-bottom:2px;}
+.console-nav div.active{background:var(--red-dim); color:var(--red-bright); font-weight:700;}
+.console-main{flex:1; padding:16px;}
+.console-toolbar{display:flex; gap:8px; margin-bottom:14px;}
+.console-table{width:100%; font-size:12.5px; border-collapse:collapse;}
+.console-table th{text-align:left; font-size:10px; text-transform:uppercase; color:var(--text-3); padding:6px 8px; border-bottom:1px solid var(--border-strong);}
+.console-table td{padding:8px; border-bottom:1px solid var(--border); color:var(--text-2);}
+.console-table tr:hover td{background:var(--panel-2);}
+.status-pill{font-size:10px; padding:2px 8px; border-radius:20px;}
+.status-pill.active{background:var(--green-dim); color:var(--green);}
+.status-pill.deleted{background:var(--red-dim); color:var(--red-bright);}
+.mini-input{background:var(--panel-2); border:1px solid var(--border-strong); color:var(--text-1); border-radius:6px; padding:6px 10px; font-size:12.5px; font-family:var(--font-body);}
+.terminal{background:#0a0b0d; border:1px solid var(--border-strong); border-radius:var(--radius); overflow:hidden;}
+.terminal-tb{background:#16171c; padding:8px 14px; font-size:11px; color:var(--text-3); font-family:var(--font-mono); border-bottom:1px solid var(--border);}
+#term-out{padding:16px; font-family:var(--font-mono); font-size:12.5px; color:#c9f7d8; height:280px; overflow-y:auto; white-space:pre-wrap;}
+#term-out .cmdline{color:#7db2ff;}
+#term-out .cmdline::before{content:"$ "; color:var(--red-bright);}
+.term-input-row{display:flex; align-items:center; gap:8px; padding:10px 16px; border-top:1px solid var(--border); font-family:var(--font-mono); font-size:12.5px;}
+.term-input-row span{color:var(--red-bright);}
+#term-input{flex:1; background:transparent; border:none; outline:none; color:#e8e8ea; font-family:var(--font-mono); font-size:12.5px;}
+.tree{font-size:13.5px;}
+.tree ul{list-style:none; margin-left:22px; border-left:1px dashed var(--border-strong); padding-left:18px;}
+.tree li{margin:6px 0; position:relative;}
+.tree .node{display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:6px; cursor:pointer; transition:.15s;}
+.tree .node:hover{background:var(--panel-2);}
+.tree .node .ic{font-size:13px;}
+.tree .node.root{color:var(--red-bright); font-weight:700;}
+.flash-wrap{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+@media (max-width:800px){.flash-wrap{grid-template-columns:1fr 1fr;}}
+@media (max-width:520px){.flash-wrap{grid-template-columns:1fr;}}
+.flashcard{perspective:1000px; height:130px; cursor:pointer;}
+.flashcard .fc-inner{position:relative; width:100%; height:100%; transition:transform .5s; transform-style:preserve-3d;}
+.flashcard.flipped .fc-inner{transform:rotateY(180deg);}
+.fc-face{position:absolute; inset:0; backface-visibility:hidden; border-radius:var(--radius-sm); border:1px solid var(--border-strong); padding:14px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:13px;}
+.fc-front{background:var(--panel);}
+.fc-back{background:var(--red-dim); color:var(--red-bright); transform:rotateY(180deg); font-weight:600;}
+.quiz-q{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-sm); padding:18px 20px; margin-bottom:14px;}
+.quiz-q .qtext{font-size:14.5px; font-weight:600; margin-bottom:12px;}
+.quiz-opts{display:flex; flex-direction:column; gap:8px;}
+.quiz-opt{display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; border:1px solid var(--border); cursor:pointer; font-size:13.5px; color:var(--text-2); transition:.15s;}
+.quiz-opt:hover{border-color:var(--border-strong); background:var(--panel-2);}
+.quiz-opt input{accent-color:var(--red);}
+.quiz-opt.correct{border-color:var(--green); background:var(--green-dim); color:var(--green);}
+.quiz-opt.incorrect{border-color:var(--red); background:var(--red-dim); color:var(--red-bright);}
+.quiz-explain{font-size:12.5px; color:var(--text-3); margin-top:10px; display:none; padding-top:10px; border-top:1px dashed var(--border);}
+.quiz-q.answered .quiz-explain{display:block;}
+#badge-wrap{text-align:center; padding:60px 20px;}
+.badge-circle{width:150px; height:150px; border-radius:50%; margin:0 auto 20px; position:relative; background:conic-gradient(var(--red-bright) 0deg, var(--red) var(--pct,0deg), var(--panel-2) var(--pct,0deg)); display:flex; align-items:center; justify-content:center; transition:background 1s ease;}
+.badge-circle::before{content:""; position:absolute; inset:10px; border-radius:50%; background:var(--void);}
+.badge-circle span{position:relative; font-family:var(--font-display); font-size:28px; font-weight:700;}
+.center{text-align:center;}
+.mt-lg{margin-top:36px;}
+.small{font-size:12px; color:var(--text-3);}
+footer{text-align:center; padding:50px 20px; color:var(--text-3); font-size:12.5px; border-top:1px solid var(--border); margin-top:60px;}
+.toc-jump{display:flex; gap:8px; flex-wrap:wrap; margin-top:18px;}
+</style>
+<canvas id="particles"></canvas>
+<div id="progress-bar"></div>
+
+<!-- ============ TOP BAR ============ -->
+<div id="topbar">
+  <button id="sidebar-toggle" title="Toggle sidebar">☰</button>
+  <div class="brand"><span class="dot"></span> OCI Foundations · Day 1</div>
+  <div id="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input id="search" type="text" placeholder="Search topics, commands, policy syntax…" autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div id="score-chip">Quiz score: <b id="score-chip-val">0/0</b></div>
+  <button id="theme-toggle" title="Toggle theme">🌙</button>
+</div>
+
+<div id="shell">
+  <!-- ============ SIDEBAR ============ -->
+  <nav id="sidebar">
+    <div class="nav-group">
+      <div class="nav-head">Foundations</div>
+      <a class="nav-link" href="#sec-cloud"><span class="num">01</span>Cloud Computing</a>
+      <a class="nav-link" href="#sec-virt"><span class="num">02</span>Virtualization</a>
+      <a class="nav-link" href="#sec-models"><span class="num">03</span>Service Models</a>
+      <a class="nav-link" href="#sec-deploy"><span class="num">04</span>Deployment Models</a>
+      <a class="nav-link" href="#sec-capex"><span class="num">05</span>CapEx vs OpEx</a>
+      <a class="nav-link" href="#sec-shared"><span class="num">06</span>Shared Responsibility</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-head">OCI Architecture</div>
+      <a class="nav-link" href="#sec-oci-overview"><span class="num">07</span>Regions &amp; Realms</a>
+      <a class="nav-link" href="#sec-ad"><span class="num">08</span>Availability Domains</a>
+      <a class="nav-link" href="#sec-fd"><span class="num">09</span>Fault Domains</a>
+      <a class="nav-link" href="#sec-placement"><span class="num">10</span>Workload Placement</a>
+      <a class="nav-link" href="#sec-freetier"><span class="num">11</span>OCI Free Tier</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-head">Governance</div>
+      <a class="nav-link" href="#sec-tenancy"><span class="num">12</span>Tenancy &amp; Compartments</a>
+      <a class="nav-link" href="#sec-tagging"><span class="num">13</span>Tagging &amp; Naming</a>
+      <a class="nav-link" href="#sec-quotas"><span class="num">14</span>Quotas</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-head">Identity &amp; Access</div>
+      <a class="nav-link" href="#sec-iam"><span class="num">15</span>IAM Concepts</a>
+      <a class="nav-link" href="#sec-authn"><span class="num">16</span>Authn vs Authz</a>
+      <a class="nav-link" href="#sec-domains"><span class="num">17</span>Identity Domains</a>
+      <a class="nav-link" href="#sec-federation"><span class="num">18</span>Federation &amp; SSO</a>
+      <a class="nav-link" href="#sec-policies"><span class="num">19</span>Policies &amp; Verbs</a>
+      <a class="nav-link" href="#sec-troubleshoot"><span class="num">20</span>Authz Troubleshooting</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-head">Hands-On Lab</div>
+      <a class="nav-link" href="#sec-console"><span class="num">21</span>Console Simulator</a>
+      <a class="nav-link" href="#sec-cli"><span class="num">22</span>CLI Terminal</a>
+      <a class="nav-link" href="#sec-cli"><span class="num"></span>Full Hands-on Lab</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-head">Wrap-Up</div>
+      <a class="nav-link" href="#sec-cheatsheet"><span class="num">23</span>Cheat Sheet</a>
+      <a class="nav-link" href="#sec-flashcards"><span class="num">24</span>Flash Cards</a>
+      <a class="nav-link" href="#sec-quiz"><span class="num">25</span>Certification Quiz</a>
+      <a class="nav-link" href="#sec-badge"><span class="num">26</span>Completion Badge</a>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ============ HERO ============ -->
+    <section id="hero">
+      <span class="eyebrow">● Oracle Cloud Infrastructure — Foundations Track</span>
+      <h1>Day 1: From bare metal<br>to <span class="accent">Oracle Cloud.</span></h1>
+      <p class="lede">An interactive walkthrough of cloud fundamentals, virtualization, OCI's physical and logical architecture, and Identity &amp; Access Management — with live simulators instead of static slides.</p>
+      <div class="hero-stats">
+        <div class="hstat"><b>26</b><span>Interactive sections</span></div>
+        <div class="hstat"><b id="hero-quiz-count">20</b><span>Certification MCQs</span></div>
+        <div class="hstat"><b>8</b><span>Live simulators</span></div>
+        <div class="hstat"><b id="hero-progress">0%</b><span>Your progress</span></div>
+      </div>
+      <div class="cta-row">
+        <a href="#sec-cloud" class="btn btn-primary">Start learning →</a>
+        <a href="#sec-quiz" class="btn btn-ghost">Jump to certification quiz</a>
+      </div>
+    </section>
+    <div class="container">
+
+    <!-- ============ 01 CLOUD COMPUTING ============ -->
+    <section class="chapter reveal" id="sec-cloud">
+      <div class="chapter-kicker"><span class="idx">01</span><span class="track">Foundations</span></div>
+      <h2>Cloud Computing Foundations</h2>
+      <p class="dek">Before OCI makes sense, you need to feel the pain it solves. Start in the data center your workload used to live in.</p>
+
+      <h3>The traditional data center problem</h3>
+      <p>Before cloud, every workload meant owning physical infrastructure: racks, servers, storage arrays, switches, and cooling — all sized for <em>peak</em> demand that might occur a few days a year.</p>
+      <div class="grid grid-4">
+        <div class="card"><span class="tag">Capital</span><h4>💰 Procurement</h4><p>Hardware ordered months in advance, paid upfront regardless of usage.</p></div>
+        <div class="card"><span class="tag">Facilities</span><h4>⚡ Power &amp; Cooling</h4><p>Racks draw constant power; cooling systems run 24/7 to prevent thermal failure.</p></div>
+        <div class="card"><span class="tag">Elasticity</span><h4>📈 Scaling</h4><p>Scaling up means buying more gear; scaling down means idle, wasted capacity.</p></div>
+        <div class="card"><span class="tag">Risk</span><h4>🛠 Downtime &amp; Maintenance</h4><p>Every patch, failed disk, or firmware upgrade is your team's responsibility, on your clock.</p></div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <svg viewBox="0 0 720 160" width="100%" height="160" id="dc-rack-svg">
+          <defs>
+            <linearGradient id="rackGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c74634" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#c74634" stop-opacity="0.05"/>
+            </linearGradient>
+          </defs>
+          <!-- 4 racks -->
+          <g id="rack-group"></g>
+        </svg>
+        <p class="small center">Hover a rack unit — this is what "capacity you must own" looks like at scale.</p>
+      </div>
+
+      <h3>What cloud computing actually changes</h3>
+      <p>Cloud computing replaces ownership with <strong>on-demand access</strong> to a shared, elastic pool of compute, storage, and networking — metered like a utility.</p>
+      <div class="grid grid-3">
+        <div class="card panel-glow"><div class="panel-inner"><h4>⚙️ On-Demand Self-Service</h4><p>Provision compute or storage in minutes, no procurement cycle, no human approval chain.</p></div></div>
+        <div class="card panel-glow"><div class="panel-inner"><h4>🔄 Elasticity</h4><p>Scale out during traffic spikes, scale in when demand drops — pay only for what's running.</p></div></div>
+        <div class="card panel-glow"><div class="panel-inner"><h4>📊 Measured Service</h4><p>Usage is metered per second/hour; billing is transparent and usage-based.</p></div></div>
+        <div class="card panel-glow"><div class="panel-inner"><h4>🗂 Resource Pooling</h4><p>Multiple tenants share physical hardware via virtualization, multiplexing idle capacity.</p></div></div>
+        <div class="card panel-glow"><div class="panel-inner"><h4>🛡 High Availability</h4><p>Redundant power, network, and hardware across fault domains reduce single points of failure.</p></div></div>
+        <div class="card panel-glow"><div class="panel-inner"><h4>🌍 Global Reach</h4><p>Deploy close to users across regions worldwide without building a single new building.</p></div></div>
+      </div>
+
+      <div class="callout callout-tip"><div class="ic">🎓</div><div><b>Exam Tip</b>NIST defines 5 essential characteristics of cloud computing: on-demand self-service, broad network access, resource pooling, rapid elasticity, and measured service. Oracle certification exams quote this list almost verbatim.</div></div>
+      <div class="callout callout-trap"><div class="ic">⚠️</div><div><b>Common Trap</b>"Elasticity" and "scalability" are often used interchangeably in casual speech, but on the exam: <em>scalability</em> is the system's capacity to grow, while <em>elasticity</em> is the automatic, on-demand expansion and contraction of that capacity.</div></div>
+    </section>
+    <!-- ============ 02 VIRTUALIZATION ============ -->
+    <section class="chapter reveal" id="sec-virt">
+      <div class="chapter-kicker"><span class="idx">02</span><span class="track">Foundations</span></div>
+      <h2>Virtualization</h2>
+      <p class="dek">The technology that makes resource pooling possible: one physical machine, many isolated virtual ones.</p>
+
+      <p>A <strong>hypervisor</strong> sits between physical hardware and virtual machines, partitioning CPU, RAM, storage, and network into isolated slices. <strong>Type 1 (bare-metal)</strong> hypervisors run directly on hardware (used in OCI's compute fleet); <strong>Type 2 (hosted)</strong> hypervisors run atop a host OS (VirtualBox, VMware Workstation).</p>
+
+      <div class="grid grid-2">
+        <div class="card"><h4>🖥 Type 1 — Bare Metal</h4><p>Runs directly on hardware. Lower overhead, used in production data centers and clouds (e.g. OCI, Hyper-V, ESXi).</p></div>
+        <div class="card"><h4>💻 Type 2 — Hosted</h4><p>Runs on top of a host operating system. Simpler to set up, common for local development and testing.</p></div>
+      </div>
+
+      <ul>
+        <li><strong>CPU scheduling</strong> — the hypervisor time-slices physical cores across guest VMs.</li>
+        <li><strong>Memory isolation</strong> — each VM gets a walled-off address space; one VM cannot read another's RAM.</li>
+        <li><strong>Storage virtualization</strong> — physical disks are abstracted into virtual block volumes.</li>
+        <li><strong>Network virtualization</strong> — virtual NICs and switches replicate physical networking in software.</li>
+        <li><strong>Live migration</strong> — a running VM can move between physical hosts with near-zero downtime.</li>
+      </ul>
+
+      <h3>Try it: virtualization simulator</h3>
+      <p>This host has a fixed pool of 16 vCPUs and 64 GB RAM. Create VMs, allocate resources, and watch the shared pool drain in real time — exactly what a hypervisor manages for you.</p>
+
+      <div class="panel">
+        <div class="vm-sim">
+          <div class="vm-controls">
+            <label>vCPUs <span id="vm-cpu-val">2</span></label>
+            <input type="range" id="vm-cpu" min="1" max="8" value="2">
+            <label>RAM (GB) <span id="vm-ram-val">4</span></label>
+            <input type="range" id="vm-ram" min="1" max="32" value="4">
+            <button class="chip-btn active" id="vm-create" style="margin-top:14px;">＋ Create VM</button>
+            <button class="chip-btn" id="vm-reset" style="margin-top:6px;">↺ Reset host</button>
+            <p class="small" id="vm-msg" style="margin-top:10px;"></p>
+          </div>
+          <div class="host-box">
+            <div class="host-meter"><span>vCPU allocated</span><span id="cpu-label">0 / 16</span></div>
+            <div class="meter-bar"><div class="meter-fill cpu" id="cpu-meter" style="width:0%"></div></div>
+            <div class="host-meter"><span>RAM allocated</span><span id="ram-label">0 / 64 GB</span></div>
+            <div class="meter-bar"><div class="meter-fill" id="ram-meter" style="width:0%"></div></div>
+            <div class="vm-list" id="vm-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-q"><div class="ic">❓</div><div><b>Interview Question</b>"What happens if a VM tries to request more memory than the hypervisor has free?" — The allocation request fails or the VM is scheduled to wait/queue; the hypervisor will not let VMs overcommit past physically enforced limits (unless memory overcommit/ballooning is explicitly configured).</div></div>
+    </section>
+    <!-- ============ 03 SERVICE MODELS ============ -->
+    <section class="chapter reveal" id="sec-models">
+      <div class="chapter-kicker"><span class="idx">03</span><span class="track">Foundations</span></div>
+      <h2>Service Models: IaaS, PaaS, SaaS</h2>
+      <p class="dek">The same six layers of a computing stack, sliced at different heights depending on how much you want to manage.</p>
+
+      <p>Hover each row below — the columns are the technology stack layers; the color shows who's responsible for that layer under each model.</p>
+
+      <div class="panel">
+        <div class="layer-stack" id="model-stacks">
+          <!-- rows injected by JS: header row + 3 model rows -->
+        </div>
+        <div class="layer-legend">
+          <span><span class="legend-dot" style="background:var(--red-bright)"></span>You manage</span>
+          <span><span class="legend-dot" style="background:var(--blue)"></span>Oracle manages</span>
+        </div>
+      </div>
+
+      <table class="cmp">
+        <tr><th>Model</th><th>Real-world analogy</th><th>OCI example</th><th>You focus on</th></tr>
+        <tr><td>IaaS</td><td>Renting an empty apartment — you bring furniture</td><td>OCI Compute, Block Volume, VCN</td><td>OS, runtime, app, data</td></tr>
+        <tr><td>PaaS</td><td>A furnished apartment — you just move in</td><td>Autonomous Database, OKE (managed Kubernetes)</td><td>App code &amp; data only</td></tr>
+        <tr><td>SaaS</td><td>A hotel room — everything is serviced for you</td><td>Oracle Fusion Applications, NetSuite</td><td>Using the software</td></tr>
+      </table>
+
+      <h3>Which one should you choose?</h3>
+      <div class="grid grid-3">
+        <div class="card"><h4>Choose IaaS if…</h4><p>You need full OS-level control, custom kernels, or are lifting-and-shifting legacy workloads.</p></div>
+        <div class="card"><h4>Choose PaaS if…</h4><p>You want to ship application code fast without managing patching, backups, or scaling infrastructure.</p></div>
+        <div class="card"><h4>Choose SaaS if…</h4><p>The business function (ERP, HCM, CRM) is standard and you don't need to build software at all.</p></div>
+      </div>
+
+      <div class="callout callout-trap"><div class="ic">⚠️</div><div><b>Exam Trap</b>Container platforms like OKE are frequently mis-classified. Managed Kubernetes is PaaS — Oracle manages the control plane; you still manage what runs inside your containers.</div></div>
+    </section>
+
+    <!-- ============ 04 DEPLOYMENT MODELS ============ -->
+    <section class="chapter reveal" id="sec-deploy">
+      <div class="chapter-kicker"><span class="idx">04</span><span class="track">Foundations</span></div>
+      <h2>Deployment Models</h2>
+      <p class="dek">Same cloud technology, different questions about who owns the hardware and who else shares it.</p>
+
+      <div class="grid grid-3" id="deploy-cards">
+        <div class="card"><span class="tag">Public</span><h4>☁️ Public Cloud</h4><p><strong>Advantage:</strong> No capex, elastic, fastest to start.<br><strong>Disadvantage:</strong> Less control over underlying hardware.<br><strong>Use when:</strong> Variable workloads, new digital products.</p></div>
+        <div class="card"><span class="tag">Private</span><h4>🏢 Private Cloud</h4><p><strong>Advantage:</strong> Full control, dedicated hardware.<br><strong>Disadvantage:</strong> You bear capex again.<br><strong>Use when:</strong> Strict regulatory or data-sovereignty needs.</p></div>
+        <div class="card"><span class="tag">Hybrid</span><h4>🔗 Hybrid Cloud</h4><p><strong>Advantage:</strong> Keep sensitive workloads on-prem, burst to public cloud.<br><strong>Disadvantage:</strong> Networking &amp; identity complexity.<br><strong>Use when:</strong> Gradual cloud migration.</p></div>
+        <div class="card"><span class="tag">Community</span><h4>🤝 Community Cloud</h4><p><strong>Advantage:</strong> Shared cost among organizations with common requirements.<br><strong>Disadvantage:</strong> Governance requires consensus.<br><strong>Use when:</strong> Consortiums (e.g. government agencies, research groups).</p></div>
+        <div class="card"><span class="tag">Multi-cloud</span><h4>🧩 Multi-Cloud</h4><p><strong>Advantage:</strong> Avoid vendor lock-in, best-of-breed services.<br><strong>Disadvantage:</strong> Operational overhead, multiple skillsets.<br><strong>Use when:</strong> Risk diversification is a business priority.</p></div>
+        <div class="card"><span class="tag">OCI</span><h4>🔴 Oracle's Angle</h4><p>Oracle Database@Azure and Oracle Alloy are real OCI multi-cloud / hybrid offerings — worth naming on scenario questions.</p></div>
+      </div>
+    </section>
+    <!-- ============ 05 CAPEX VS OPEX ============ -->
+    <section class="chapter reveal" id="sec-capex">
+      <div class="chapter-kicker"><span class="idx">05</span><span class="track">Foundations</span></div>
+      <h2>CapEx vs OpEx</h2>
+      <p class="dek">The financial argument for cloud, made tangible. Adjust the sliders and watch the cost model respond live.</p>
+      <div class="panel">
+        <div class="calc-grid">
+          <div>
+            <div class="calc-row"><label>Servers needed</label><output id="c-servers-val">10</output></div>
+            <input type="range" id="c-servers" min="1" max="100" value="10" style="width:100%; accent-color:var(--red);">
+            <div class="calc-row" style="margin-top:16px;"><label>Years of use</label><output id="c-years-val">3</output></div>
+            <input type="range" id="c-years" min="1" max="6" value="3" style="width:100%; accent-color:var(--red);">
+            <div class="calc-row" style="margin-top:16px;"><label>Avg. utilization</label><output id="c-util-val">35%</output></div>
+            <input type="range" id="c-util" min="10" max="100" value="35" style="width:100%; accent-color:var(--blue);">
+            <div class="cost-total"><span>On-prem (CapEx) total</span><b id="capex-total" style="color:var(--red-bright);">$0</b></div>
+            <div class="cost-total"><span>OCI (OpEx, pay for used %) total</span><b id="opex-total" style="color:var(--blue);">$0</b></div>
+          </div>
+          <div>
+            <canvas id="capexChart" width="440" height="220"></canvas>
+            <p class="small center" id="capex-savings">Move the sliders to compare.</p>
+          </div>
+        </div>
+      </div>
+      <div class="callout callout-tip"><div class="ic">🎓</div><div><b>Exam Tip</b>CapEx = capital expenditure, paid upfront, depreciated over years, appears on the balance sheet as an asset. OpEx = operational expenditure, paid as you consume, fully deductible in the period incurred. Cloud shifts IT spend from CapEx to OpEx.</div></div>
+    </section>
+
+    <!-- ============ 06 SHARED RESPONSIBILITY ============ -->
+    <section class="chapter reveal" id="sec-shared">
+      <div class="chapter-kicker"><span class="idx">06</span><span class="track">Foundations</span></div>
+      <h2>Shared Responsibility Model</h2>
+      <p class="dek">Security "of" the cloud is Oracle's job. Security "in" the cloud is yours. Drag to see how the split shifts by layer.</p>
+
+      <div class="panel">
+        <div class="resp-labels"><span>◀ Customer manages</span><span>Oracle manages ▶</span></div>
+        <div class="resp-track" id="resp-track" style="--split:50%;">
+          <div class="resp-handle" id="resp-handle"></div>
+        </div>
+        <p class="small center">This slider is illustrative — in reality each layer below has a fixed owner, not a variable split. Drag it to see the general shift from IaaS (left) to SaaS (right).</p>
+
+        <div class="resp-layers" id="resp-layers">
+          <div class="resp-layer-row"><span class="name">Application &amp; Data</span><span class="who who-you">Customer</span></div>
+          <div class="resp-layer-row"><span class="name">Identity &amp; Access Mgmt</span><span class="who who-shared">Shared</span></div>
+          <div class="resp-layer-row"><span class="name">Guest OS &amp; Middleware</span><span class="who who-you">Customer</span></div>
+          <div class="resp-layer-row"><span class="name">Virtualization Layer</span><span class="who who-oracle">Oracle</span></div>
+          <div class="resp-layer-row"><span class="name">Physical Hardware</span><span class="who who-oracle">Oracle</span></div>
+          <div class="resp-layer-row"><span class="name">Data Center Facilities</span><span class="who who-oracle">Oracle</span></div>
+          <div class="resp-layer-row"><span class="name">Global Network Backbone</span><span class="who who-oracle">Oracle</span></div>
+        </div>
+      </div>
+      <div class="callout callout-trap"><div class="ic">⚠️</div><div><b>Common Trap</b>Oracle securing the infrastructure does NOT mean your data is automatically encrypted, your IAM policies are automatically least-privilege, or your OS is automatically patched. "Security in the cloud" failures are still the single biggest cause of real-world cloud breaches.</div></div>
+    </section>
+    <!-- ============ 07 OCI OVERVIEW / REGIONS ============ -->
+    <section class="chapter reveal" id="sec-oci-overview">
+      <div class="chapter-kicker"><span class="idx">07</span><span class="track">OCI Architecture</span></div>
+      <h2>OCI Overview: Regions &amp; Realms</h2>
+      <p class="dek">OCI's physical footprint, from largest to smallest: Realm → Region → Availability Domain → Fault Domain → Data Center.</p>
+
+      <div class="grid grid-4">
+        <div class="card"><h4>🌐 Realm</h4><p>A set of regions isolated from other realms for compliance (e.g. OC1 commercial, OC2 government).</p></div>
+        <div class="card"><h4>📍 Region</h4><p>A localized geographic area (e.g. US East, UK South) containing one or more Availability Domains.</p></div>
+        <div class="card"><h4>🏢 Availability Domain</h4><p>One or more data centers within a region, isolated from failures in other ADs.</p></div>
+        <div class="card"><h4>🗄 Fault Domain</h4><p>A grouping of hardware within an AD, isolating power/hardware failures at rack level.</p></div>
+      </div>
+
+      <h3>Explore the global backbone</h3>
+      <p>Click a region marker to see its details. OCI connects regions via Oracle's own private global backbone rather than the public internet.</p>
+      <div class="map-wrap">
+        <svg viewBox="0 0 500 260" id="world-map">
+          <rect x="0" y="0" width="500" height="260" rx="14" fill="var(--panel)" stroke="var(--border)"/>
+          <!-- simplified continent blobs -->
+          <g fill="var(--panel-2)" stroke="var(--border-strong)" stroke-width="1">
+            <path d="M60 60 Q90 40 130 55 Q150 70 140 100 Q120 130 90 120 Q60 110 55 85 Z"/> <!-- N America -->
+            <path d="M100 140 Q120 150 115 190 Q105 210 90 195 Q85 165 100 140 Z"/> <!-- S America -->
+            <path d="M230 50 Q270 45 280 70 Q260 85 235 80 Z"/> <!-- Europe -->
+            <path d="M240 90 Q280 85 300 130 Q290 170 260 175 Q230 150 240 90 Z"/> <!-- Africa -->
+            <path d="M300 55 Q380 45 420 80 Q400 110 340 100 Q300 85 300 55 Z"/> <!-- Asia -->
+            <path d="M400 170 Q440 165 445 190 Q420 200 400 190 Z"/> <!-- Australia -->
+          </g>
+          <g id="region-dots"></g>
+        </svg>
+        <div class="region-info" id="region-info"><p class="placeholder">Click a region to view realm, ADs, and typical use case.</p></div>
+      </div>
+
+      <div class="callout callout-tip"><div class="ic">🎓</div><div><b>Exam Tip</b>Not every region has 3 Availability Domains — many smaller regions have only 1 AD but always have 3 Fault Domains, so multi-AD HA design isn't possible everywhere. Always check fault-domain-only design for single-AD regions.</div></div>
+    </section>
+
+    <!-- ============ 08 AVAILABILITY DOMAIN VISUALIZER ============ -->
+    <section class="chapter reveal" id="sec-ad">
+      <div class="chapter-kicker"><span class="idx">08</span><span class="track">OCI Architecture</span></div>
+      <h2>Availability Domain Resilience</h2>
+      <p class="dek">Availability Domains don't share power or networking with each other. Simulate a disaster and watch the blast radius stay contained.</p>
+
+      <div class="panel">
+        <div class="ad-buildings" id="ad-buildings">
+          <div class="building" data-ad="AD-1"><div class="roof">🏢</div><div class="b-name">AD-1</div><div class="b-status ok">Operational</div></div>
+          <div class="building" data-ad="AD-2"><div class="roof">🏢</div><div class="b-name">AD-2</div><div class="b-status ok">Operational</div></div>
+          <div class="building" data-ad="AD-3"><div class="roof">🏢</div><div class="b-name">AD-3</div><div class="b-status ok">Operational</div></div>
+        </div>
+        <div class="center" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+          <button class="chip-btn" data-fail="power">⚡ Simulate power outage</button>
+          <button class="chip-btn" data-fail="network">📡 Simulate network outage</button>
+          <button class="chip-btn" data-fail="quake">🌍 Simulate earthquake</button>
+          <button class="chip-btn active" id="ad-reset">↺ Restore all</button>
+        </div>
+        <p class="small center mt-lg" id="ad-msg">All 3 Availability Domains operational. Deploy across all 3 for maximum resilience.</p>
+      </div>
+    </section>
+
+    <!-- ============ 09 FAULT DOMAIN VISUALIZER ============ -->
+    <section class="chapter reveal" id="sec-fd">
+      <div class="chapter-kicker"><span class="idx">09</span><span class="track">OCI Architecture</span></div>
+      <h2>Fault Domain Placement</h2>
+      <p class="dek">Within a single AD there are 3 Fault Domains — isolated racks with separate power &amp; hardware. Placement strategy matters.</p>
+
+      <div class="panel">
+        <div class="fd-rack" id="fd-racks">
+          <div class="rack" data-fd="FD-1"><div class="rack-head">FD-1</div><div class="rack-body"></div></div>
+          <div class="rack" data-fd="FD-2"><div class="rack-head">FD-2</div><div class="rack-body"></div></div>
+          <div class="rack" data-fd="FD-3"><div class="rack-head">FD-3</div><div class="rack-body"></div></div>
+        </div>
+        <div class="center" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+          <button class="chip-btn active" id="fd-deploy-correct">✅ Deploy 3 VMs spread across FDs</button>
+          <button class="chip-btn" id="fd-deploy-wrong">❌ Deploy 3 VMs in same FD</button>
+          <button class="chip-btn" id="fd-fail">💥 Fail one Fault Domain</button>
+          <button class="chip-btn" id="fd-reset-btn">↺ Reset</button>
+        </div>
+        <p class="small center mt-lg" id="fd-msg">Choose a placement strategy, then trigger a fault domain failure to see the impact.</p>
+      </div>
+      <div class="callout callout-trap"><div class="ic">⚠️</div><div><b>Common Trap</b>Placing all instances of a redundant tier in the same Fault Domain defeats the purpose of redundancy — a single rack failure can take down every instance simultaneously.</div></div>
+    </section>
+
+    <!-- ============ 10 WORKLOAD PLACEMENT EXERCISE ============ -->
+    <section class="chapter reveal" id="sec-placement">
+      <div class="chapter-kicker"><span class="idx">10</span><span class="track">OCI Architecture</span></div>
+      <h2>Workload Placement Exercise</h2>
+      <p class="dek">A scenario. Pick the placement that best satisfies the constraints — this mirrors real design questions on the exam.</p>
+      <div class="panel">
+        <p><strong>Scenario:</strong> A financial services company in Mumbai needs a 3-tier web application with strict data residency in India, sub-20ms latency to end users, and disaster recovery in case an entire data center is lost.</p>
+        <div class="quiz-opts" id="placement-opts">
+          <label class="quiz-opt"><input type="radio" name="placement" value="wrong1"> Deploy everything in a single Fault Domain in the Mumbai region to minimize cost.</label>
+          <label class="quiz-opt"><input type="radio" name="placement" value="right"> Deploy across multiple Availability Domains (or Fault Domains if the region has only one AD) within the Mumbai region, keeping all resources in-region for data residency.</label>
+          <label class="quiz-opt"><input type="radio" name="placement" value="wrong2"> Deploy primarily in a US region for lower compute cost, with a DR copy in Mumbai.</label>
+        </div>
+        <button class="chip-btn active mt-lg" id="placement-check">Check my answer</button>
+        <p class="small mt-lg" id="placement-feedback"></p>
+      </div>
+    </section>
+
+    <!-- ============ 11 FREE TIER ============ -->
+    <section class="chapter reveal" id="sec-freetier">
+      <div class="chapter-kicker"><span class="idx">11</span><span class="track">OCI Architecture</span></div>
+      <h2>OCI Free Tier</h2>
+      <p class="dek">Two different offers bundled under one name — the exam loves testing whether you can tell them apart.</p>
+      <div class="grid grid-2">
+        <div class="card panel-glow"><div class="panel-inner">
+          <h4>🕐 30-Day Free Trial</h4>
+          <p>US$300 in credits, usable across almost any OCI service, expires after 30 days or when credits run out — whichever comes first.</p>
+        </div></div>
+        <div class="card panel-glow"><div class="panel-inner">
+          <h4>♾️ Always Free Services</h4>
+          <p>A fixed set of resources (e.g. 2 AMD compute VMs, 2 Autonomous Databases, 10GB object storage, a load balancer) available indefinitely, even after the trial ends.</p>
+        </div></div>
+      </div>
+      <table class="cmp">
+        <tr><th>Resource</th><th>Always Free limit</th></tr>
+        <tr><td>Compute VMs (AMD)</td><td>2× VM.Standard.E2.1.Micro</td></tr>
+        <tr><td>Block Volume</td><td>Up to 200 GB total</td></tr>
+        <tr><td>Autonomous Database</td><td>2 databases, 20 GB each</td></tr>
+        <tr><td>Object Storage</td><td>10 GB</td></tr>
+        <tr><td>Load Balancer</td><td>1× flexible, 10 Mbps</td></tr>
+        <tr><td>Outbound Data Transfer</td><td>10 TB/month</td></tr>
+      </table>
+      <div class="callout callout-warn"><div class="ic">⚠️</div><div><b>Exam Warning</b>Always Free limits and specific SKUs shift over time — for a real deployment always verify current numbers on Oracle's pricing page rather than memorizing a fixed table.</div></div>
+    </section>
+    <!-- ============ 12 TENANCY & COMPARTMENTS ============ -->
+    <section class="chapter reveal" id="sec-tenancy">
+      <div class="chapter-kicker"><span class="idx">12</span><span class="track">Governance</span></div>
+      <h2>Tenancy &amp; Compartments</h2>
+      <p class="dek">Your entire OCI footprint lives inside one Tenancy — a logical container for every resource you own. Compartments subdivide it for isolation and governance.</p>
+
+      <p>Click nodes to expand or collapse. This mirrors the structure you'll build for a real organization: separating environments, teams, or cost centers.</p>
+      <div class="panel">
+        <div class="tree" id="compartment-tree">
+          <ul style="margin-left:0; border-left:none; padding-left:0;">
+            <li>
+              <div class="node root" data-toggle><span class="ic">🏛</span> Tenancy (root compartment)</div>
+              <ul>
+                <li><div class="node" data-toggle><span class="ic">📁</span> Dev</div>
+                  <ul><li><div class="node"><span class="ic">📦</span> Compute, VCN, Block Volumes</div></li></ul>
+                </li>
+                <li><div class="node" data-toggle><span class="ic">📁</span> QA</div>
+                  <ul><li><div class="node"><span class="ic">📦</span> Test databases, staging LB</div></li></ul>
+                </li>
+                <li><div class="node" data-toggle><span class="ic">📁</span> Production</div>
+                  <ul>
+                    <li><div class="node" data-toggle><span class="ic">📁</span> Finance</div>
+                      <ul><li><div class="node"><span class="ic">📦</span> ERP workloads</div></li></ul>
+                    </li>
+                    <li><div class="node" data-toggle><span class="ic">📁</span> HR</div>
+                      <ul><li><div class="node"><span class="ic">📦</span> HCM workloads</div></li></ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout callout-tip"><div class="ic">🎓</div><div><b>Exam Tip</b>The root compartment is the Tenancy itself. Policies attached at a parent compartment are inherited by all child compartments — a policy on Production applies to Finance and HR beneath it, unless explicitly scoped narrower.</div></div>
+
+      <h3>Compartment design principles</h3>
+      <ul>
+        <li>Design around <strong>organizational structure</strong> (teams) or <strong>lifecycle</strong> (dev/test/prod) — pick one dominant axis and stay consistent.</li>
+        <li>Keep networking (VCNs) in a dedicated compartment if multiple teams share the same network.</li>
+        <li>Avoid deep nesting beyond 3–4 levels; it complicates policy management more than it helps.</li>
+      </ul>
+    </section>
+
+    <!-- ============ 13 TAGGING & NAMING ============ -->
+    <section class="chapter reveal" id="sec-tagging">
+      <div class="chapter-kicker"><span class="idx">13</span><span class="track">Governance</span></div>
+      <h2>Tagging &amp; Naming Conventions</h2>
+      <p class="dek">Tags make cost tracking and governance queryable instead of guesswork.</p>
+      <div class="grid grid-2">
+        <div class="card"><h4>🏷 Freeform Tags</h4><p>Simple key-value pairs, no validation, applied ad hoc. Good for quick labeling, prone to typos and inconsistency at scale.</p></div>
+        <div class="card"><h4>📐 Defined Tags</h4><p>Organized into tag namespaces with controlled values, enforced permissions on who can apply them. Used for cost tracking, automation, and compliance.</p></div>
+      </div>
+      <div class="grid grid-2 mt-lg">
+        <div class="card"><h4>Cost Tracking Tag Example</h4><p class="mono" style="color:var(--blue);">CostCenter.Department = "Finance"<br>CostCenter.Project = "Q3-Migration"</p></div>
+        <div class="card"><h4>Governance Tag Example</h4><p class="mono" style="color:var(--blue);">Environment.Type = "Production"<br>Compliance.DataResidency = "IN"</p></div>
+      </div>
+
+      <h3>Naming convention validator</h3>
+      <p>Try entering a resource name below. OCI-style best practice: lowercase, hyphen-separated, environment-prefixed.</p>
+      <div class="panel" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="name-input" class="mini-input" placeholder="e.g. prod-web-vcn-01" style="flex:1; min-width:220px;">
+        <button class="chip-btn active" id="name-check">Validate</button>
+      </div>
+      <p class="small" id="name-feedback" style="margin-top:10px;"></p>
+    </section>
+
+    <!-- ============ 14 QUOTAS ============ -->
+    <section class="chapter reveal" id="sec-quotas">
+      <div class="chapter-kicker"><span class="idx">14</span><span class="track">Governance</span></div>
+      <h2>Compartment Quotas</h2>
+      <p class="dek">Quotas cap how much of a resource a compartment can consume, independent of billing limits — a governance guardrail, not a cost control.</p>
+      <div class="panel">
+        <table class="console-table">
+          <tr><th>Resource</th><th>Limit</th><th>Used</th><th></th></tr>
+          <tr><td>compute.instance-count</td><td>20</td><td id="q-compute-used">6</td><td><div class="meter-bar" style="width:120px; margin:0;"><div class="meter-fill" style="width:30%"></div></div></td></tr>
+          <tr><td>vcn-count</td><td>5</td><td>2</td><td><div class="meter-bar" style="width:120px; margin:0;"><div class="meter-fill" style="width:40%"></div></div></td></tr>
+          <tr><td>block-volume.storage-gb</td><td>2000</td><td>850</td><td><div class="meter-bar" style="width:120px; margin:0;"><div class="meter-fill cpu" style="width:42%"></div></div></td></tr>
+        </table>
+        <p class="small mt-lg">Quota policy syntax mirrors IAM policy syntax: <span class="mono" style="color:var(--blue);">set compute quotas instance-count to 20 in compartment Production</span></p>
+      </div>
+    </section>
+    <!-- ============ 15 IAM CONCEPTS ============ -->
+    <section class="chapter reveal" id="sec-iam">
+      <div class="chapter-kicker"><span class="idx">15</span><span class="track">Identity &amp; Access</span></div>
+      <h2>Identity &amp; Access Management</h2>
+      <p class="dek">IAM answers three questions for every request: who are you, what are you allowed to do, and what did you actually do.</p>
+      <div class="grid grid-3">
+        <div class="card"><h4>🔑 Authentication</h4><p>Proving identity — username/password, API key, federated login.</p></div>
+        <div class="card"><h4>🛂 Authorization</h4><p>Determining what an authenticated identity is permitted to do, via policies.</p></div>
+        <div class="card"><h4>📋 Accounting</h4><p>Recording what happened — Audit logs capture every API call for compliance and forensics.</p></div>
+      </div>
+      <div class="grid grid-3 mt-lg">
+        <div class="card"><h4>Identity Domains</h4><p>Isolated, self-contained user/group populations within a tenancy — think "an IAM realm within your realm."</p></div>
+        <div class="card"><h4>RBAC</h4><p>Role-Based Access Control — permissions attached to roles/groups, not individual users.</p></div>
+        <div class="card"><h4>Principals</h4><p>Anything that can be authenticated: a user, an instance principal, or a resource principal.</p></div>
+        <div class="card"><h4>Dynamic Groups</h4><p>Groups whose membership is defined by matching rules (e.g. all instances in a compartment) rather than static user lists — lets compute instances themselves hold permissions.</p></div>
+        <div class="card"><h4>Tokens &amp; Sessions</h4><p>Short-lived credentials issued after authentication, used to authorize subsequent API calls without re-sending a password.</p></div>
+        <div class="card"><h4>Federation</h4><p>Trusting an external identity provider (Azure AD, Google Workspace) instead of managing separate local credentials.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ 16 AUTHN VS AUTHZ ANIMATION ============ -->
+    <section class="chapter reveal" id="sec-authn">
+      <div class="chapter-kicker"><span class="idx">16</span><span class="track">Identity &amp; Access</span></div>
+      <h2>Authentication vs Authorization</h2>
+      <p class="dek">Two distinct steps, always in this order. Type credentials below and watch each stage light up.</p>
+      <div class="panel">
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <input type="text" id="login-user" class="mini-input" placeholder="username" style="flex:1; min-width:150px;">
+          <input type="password" id="login-pass" class="mini-input" placeholder="password" style="flex:1; min-width:150px;">
+          <button class="chip-btn active" id="login-btn">Sign in</button>
+        </div>
+        <div class="grid grid-3 mt-lg" id="authn-flow">
+          <div class="card" id="step-authn" style="border-color:var(--border);"><h4>① Authentication</h4><p>Identity provider verifies who you are.</p></div>
+          <div class="card" id="step-authz" style="border-color:var(--border);"><h4>② Authorization</h4><p>IAM policy engine checks what you can do.</p></div>
+          <div class="card" id="step-session" style="border-color:var(--border);"><h4>③ Session Granted</h4><p>A time-limited token is issued for API calls.</p></div>
+        </div>
+        <p class="small mt-lg" id="authn-msg">Enter any username/password and click Sign in to watch the flow.</p>
+      </div>
+    </section>
+
+    <!-- ============ 17 IDENTITY DOMAINS ============ -->
+    <section class="chapter reveal" id="sec-domains">
+      <div class="chapter-kicker"><span class="idx">17</span><span class="track">Identity &amp; Access</span></div>
+      <h2>Identity Domains</h2>
+      <p class="dek">Choose the domain type below — each unlocks a different feature set and pricing model.</p>
+      <div class="grid grid-4" id="domain-types">
+        <div class="card domain-card" data-domain="default"><h4>Default</h4><p>Created automatically with every tenancy. Full IAM features, no extra cost.</p></div>
+        <div class="card domain-card" data-domain="free"><h4>Free</h4><p>Additional domains for isolating dev/test identity populations at no extra cost, with reduced limits.</p></div>
+        <div class="card domain-card" data-domain="oracleapps"><h4>Oracle Apps Premium</h4><p>Tuned for Oracle SaaS application user populations (Fusion, NetSuite).</p></div>
+        <div class="card domain-card" data-domain="premium"><h4>Premium</h4><p>Full enterprise IAM: adaptive security, advanced federation, delegated administration — paid tier.</p></div>
+      </div>
+      <p class="small mt-lg" id="domain-detail">Click a domain type above for details.</p>
+    </section>
+
+    <!-- ============ 18 FEDERATION & SSO ============ -->
+    <section class="chapter reveal" id="sec-federation">
+      <div class="chapter-kicker"><span class="idx">18</span><span class="track">Identity &amp; Access</span></div>
+      <h2>Federation &amp; Single Sign-On</h2>
+      <p class="dek">Instead of maintaining a second set of passwords, OCI trusts an external Identity Provider.</p>
+      <div class="grid grid-2">
+        <div class="card"><h4>Common Identity Providers</h4><p>Microsoft Entra ID (Azure AD), Google Workspace, on-prem Active Directory via ADFS, or any SAML/OIDC-compliant IdP.</p></div>
+        <div class="card"><h4>Protocols</h4><p><strong>SAML 2.0</strong> — XML-based assertions, common in enterprise SSO.<br><strong>OIDC</strong> — JSON/OAuth2-based, common in modern web &amp; mobile apps.</p></div>
+      </div>
+      <div class="panel mt-lg" id="sso-flow">
+        <button class="chip-btn active" id="sso-play">▶ Play SSO flow</button>
+        <div class="grid grid-4 mt-lg">
+          <div class="card sso-step" id="sso-1"><h4>1. Request</h4><p>User hits an OCI resource, gets redirected to IdP.</p></div>
+          <div class="card sso-step" id="sso-2"><h4>2. Authenticate</h4><p>User logs in once at the IdP (Entra ID / Google).</p></div>
+          <div class="card sso-step" id="sso-3"><h4>3. Assertion</h4><p>IdP issues a signed SAML/OIDC token back to OCI.</p></div>
+          <div class="card sso-step" id="sso-4"><h4>4. Access Granted</h4><p>OCI trusts the assertion and maps the user to local groups.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 19 POLICIES & VERBS ============ -->
+    <section class="chapter reveal" id="sec-policies">
+      <div class="chapter-kicker"><span class="idx">19</span><span class="track">Identity &amp; Access</span></div>
+      <h2>Policies &amp; Verbs</h2>
+      <p class="dek">OCI policies read almost like English sentences. Master this syntax and the certification's policy questions become easy points.</p>
+
+      <div class="panel">
+        <p class="mono" style="color:var(--text-1); font-size:15px;">
+          <span class="tok-kw">Allow</span> <span class="tok-def">group</span> Developers <span class="tok-verb">to manage</span> instances <span class="tok-def">in compartment</span> Production
+        </p>
+        <p class="small mt-lg">Every policy statement follows: <strong>Allow</strong> &lt;subject&gt; <strong>to</strong> &lt;verb&gt; &lt;resource-type&gt; <strong>in</strong> &lt;location&gt; [<strong>where</strong> &lt;condition&gt;].</p>
+      </div>
+
+      <h3>Try the policy editor</h3>
+      <p>Write a policy statement and validate its syntax.</p>
+      <div class="policy-editor">
+        <textarea id="policy-input" spellcheck="false">Allow group Developers to manage instances in compartment Production</textarea>
+      </div>
+      <button class="chip-btn active" id="policy-validate" style="margin-top:10px;">Validate syntax</button>
+      <div class="policy-verdict" id="policy-verdict"></div>
+
+      <h3>Policy verbs, from weakest to strongest</h3>
+      <div class="grid grid-4" id="verb-explorer">
+        <div class="card verb-card" data-verb="inspect"><h4>inspect</h4><p>List resources &amp; metadata only. No details, no read.</p></div>
+        <div class="card verb-card" data-verb="read"><h4>read</h4><p>Inspect + get user-specified metadata and the resource itself.</p></div>
+        <div class="card verb-card" data-verb="use"><h4>use</h4><p>Read + act on existing resources, but cannot create or delete.</p></div>
+        <div class="card verb-card" data-verb="manage"><h4>manage</h4><p>Full control: create, update, delete, and everything below it.</p></div>
+      </div>
+      <p class="small mt-lg" id="verb-detail">Click a verb above to see exactly what it unlocks.</p>
+
+      <div class="callout callout-trap"><div class="ic">⚠️</div><div><b>Common Trap</b>Each verb is a strict superset of the ones before it: manage ⊃ use ⊃ read ⊃ inspect. Granting "manage" when a team only needs "use" is a classic over-privilege mistake the exam will probe.</div></div>
+    </section>
+
+    <!-- ============ 20 AUTHZ TROUBLESHOOTING ============ -->
+    <section class="chapter reveal" id="sec-troubleshoot">
+      <div class="chapter-kicker"><span class="idx">20</span><span class="track">Identity &amp; Access</span></div>
+      <h2>Authorization Troubleshooting Lab</h2>
+      <p class="dek">A user reports "Authorization failed" when trying to start an instance. Diagnose it.</p>
+      <div class="panel">
+        <p class="mono" style="color:var(--red-bright);">Error: NotAuthorizedOrNotFound — you do not have permission to perform this action.</p>
+        <p class="mt-lg"><strong>Given policy:</strong></p>
+        <p class="mono" style="color:var(--blue);">Allow group Developers to <u>read</u> instances in compartment Production</p>
+        <p class="mt-lg"><strong>User's action:</strong> attempting to <em>start</em> a stopped instance.</p>
+        <div class="quiz-opts mt-lg" id="ts-opts">
+          <label class="quiz-opt"><input type="radio" name="ts" value="wrong1">The user isn't in the Developers group.</label>
+          <label class="quiz-opt"><input type="radio" name="ts" value="right">The verb "read" doesn't include the power actions (start/stop); the policy needs "use" or "manage".</label>
+          <label class="quiz-opt"><input type="radio" name="ts" value="wrong2">Policies don't apply to compute instances.</label>
+        </div>
+        <button class="chip-btn active mt-lg" id="ts-check">Diagnose</button>
+        <p class="small mt-lg" id="ts-feedback"></p>
+      </div>
+    </section>
+    <!-- ============ 21 CONSOLE SIMULATOR ============ -->
+    <section class="chapter reveal" id="sec-console">
+      <div class="chapter-kicker"><span class="idx">21</span><span class="track">Hands-On Lab</span></div>
+      <h2>OCI Console Simulator</h2>
+      <p class="dek">A simplified, fully client-side recreation of the Identity section of the OCI Console. Create real interactive users and groups — nothing is sent anywhere.</p>
+
+      <div class="console-sim">
+        <div class="console-tb">
+          <div class="dots"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
+          <span class="small mono">console.oracle-simulator.local/identity</span>
+        </div>
+        <div class="console-body">
+          <div class="console-nav">
+            <div class="active" data-panel="users">👤 Users</div>
+            <div data-panel="groups">👥 Groups</div>
+            <div data-panel="compartments">📁 Compartments</div>
+            <div data-panel="policies">📜 Policies</div>
+          </div>
+          <div class="console-main">
+            <!-- USERS PANEL -->
+            <div class="console-panel" id="panel-users">
+              <div class="console-toolbar">
+                <input class="mini-input" id="new-user-name" placeholder="new username" style="flex:1;">
+                <button class="chip-btn active" id="add-user-btn">＋ Create User</button>
+              </div>
+              <table class="console-table"><thead><tr><th>Name</th><th>Email</th><th>Group</th><th>Status</th><th></th></tr></thead><tbody id="users-tbody"></tbody></table>
+            </div>
+            <!-- GROUPS PANEL -->
+            <div class="console-panel" id="panel-groups" style="display:none;">
+              <div class="console-toolbar">
+                <input class="mini-input" id="new-group-name" placeholder="new group name" style="flex:1;">
+                <button class="chip-btn active" id="add-group-btn">＋ Create Group</button>
+              </div>
+              <table class="console-table"><thead><tr><th>Group</th><th>Members</th><th>Status</th><th></th></tr></thead><tbody id="groups-tbody"></tbody></table>
+            </div>
+            <!-- COMPARTMENTS PANEL -->
+            <div class="console-panel" id="panel-compartments" style="display:none;">
+              <table class="console-table"><thead><tr><th>Compartment</th><th>Parent</th><th>Resources</th></tr></thead>
+              <tbody>
+                <tr><td>Dev</td><td>root</td><td>4</td></tr>
+                <tr><td>QA</td><td>root</td><td>2</td></tr>
+                <tr><td>Production</td><td>root</td><td>11</td></tr>
+                <tr><td>Finance</td><td>Production</td><td>5</td></tr>
+                <tr><td>HR</td><td>Production</td><td>3</td></tr>
+              </tbody></table>
+            </div>
+            <!-- POLICIES PANEL -->
+            <div class="console-panel" id="panel-policies" style="display:none;">
+              <table class="console-table"><thead><tr><th>Statement</th><th>Compartment</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">Allow group Developers to manage instances</td><td>Production</td></tr>
+                <tr><td class="mono">Allow group Auditors to inspect all-resources</td><td>root</td></tr>
+                <tr><td class="mono">Allow group Finance to use database-family</td><td>Finance</td></tr>
+              </tbody></table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="small mt-lg">Try: create a user, then create a group, then assign the user to it from the dropdown that appears in the Users table.</p>
+    </section>
+
+    <!-- ============ 22 CLI TERMINAL ============ -->
+    <section class="chapter reveal" id="sec-cli">
+      <div class="chapter-kicker"><span class="idx">22</span><span class="track">Hands-On Lab</span></div>
+      <h2>CLI Terminal Simulator</h2>
+      <p class="dek">A simulated OCI CLI. Try the commands below — output is scripted but syntax-accurate.</p>
+      <div class="terminal">
+        <div class="terminal-tb">oci-cli — simulator — bash</div>
+        <div id="term-out"></div>
+        <div class="term-input-row"><span>$</span><input id="term-input" type="text" placeholder="type: help" autocomplete="off"></div>
+      </div>
+      <p class="small mt-lg">Try: <span class="mono">help</span>, <span class="mono">oci iam user list</span>, <span class="mono">oci iam group list</span>, <span class="mono">oci iam compartment create --name Sandbox</span>, <span class="mono">oci iam policy list</span>, <span class="mono">oci iam region list</span>, <span class="mono">clear</span></p>
+    </section>
+    <!-- ============ 23 CHEAT SHEET ============ -->
+    <section class="chapter reveal" id="sec-cheatsheet">
+      <div class="chapter-kicker"><span class="idx">23</span><span class="track">Wrap-Up</span></div>
+      <h2>Exam Cheat Sheet</h2>
+      <p class="dek">The condensed version of everything above — skim this the night before the exam.</p>
+      <div class="grid grid-2">
+        <div class="card">
+          <h4>Key Definitions</h4>
+          <ul style="margin-left:16px;">
+            <li><strong>Elasticity</strong>: automatic scale up/down</li>
+            <li><strong>Fault Domain</strong>: rack-level isolation within an AD</li>
+            <li><strong>Availability Domain</strong>: DC-level isolation within a region</li>
+            <li><strong>Dynamic Group</strong>: rule-based, not static membership</li>
+            <li><strong>Compartment</strong>: logical resource isolation boundary</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Important Policy Verbs</h4>
+          <ul style="margin-left:16px;">
+            <li><strong>inspect</strong> → list only</li>
+            <li><strong>read</strong> → inspect + get</li>
+            <li><strong>use</strong> → read + act (no create/delete)</li>
+            <li><strong>manage</strong> → full lifecycle control</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Important CLI Commands</h4>
+          <p class="mono" style="color:var(--blue); line-height:2;">
+            oci iam user list<br>
+            oci iam group list<br>
+            oci iam compartment create<br>
+            oci iam policy list<br>
+            oci iam region list
+          </p>
+        </div>
+        <div class="card">
+          <h4>Important Policy Template</h4>
+          <p class="mono" style="color:var(--blue);">Allow group &lt;G&gt; to &lt;verb&gt; &lt;resource&gt; in compartment &lt;C&gt;</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 24 FLASH CARDS ============ -->
+    <section class="chapter reveal" id="sec-flashcards">
+      <div class="chapter-kicker"><span class="idx">24</span><span class="track">Wrap-Up</span></div>
+      <h2>Flash Cards</h2>
+      <p class="dek">Click a card to flip it.</p>
+      <div class="flash-wrap" id="flash-wrap"></div>
+    </section>
+
+    <!-- ============ 25 QUIZ ============ -->
+    <section class="chapter reveal" id="sec-quiz">
+      <div class="chapter-kicker"><span class="idx">25</span><span class="track">Wrap-Up</span></div>
+      <h2>Certification Readiness Quiz</h2>
+      <p class="dek">20 scenario-style questions. Select an answer to see instant feedback.</p>
+      <div id="quiz-wrap"></div>
+      <div class="panel center mt-lg">
+        <p>Your score: <b id="quiz-final-score" style="color:var(--red-bright); font-family:var(--font-display); font-size:20px;">0 / 20</b></p>
+      </div>
+    </section>
+
+    <!-- ============ 26 BADGE ============ -->
+    <section class="chapter reveal" id="sec-badge">
+      <div class="chapter-kicker"><span class="idx">26</span><span class="track">Wrap-Up</span></div>
+      <h2>Completion &amp; Progress</h2>
+      <div id="badge-wrap">
+        <div class="badge-circle" id="badge-circle"><span id="badge-pct">0%</span></div>
+        <h3 id="badge-title">Keep going</h3>
+        <p class="small" id="badge-sub">Scroll through every section and complete the quiz to earn your Day 1 badge.</p>
+      </div>
+    </section>
+
+    </div>
+  </main>
+</div>
+
+<footer>
+  OCI Foundations — Day 1 · Interactive Learning Platform · Built as a single self-contained HTML file · No external dependencies
+</footer>
+<script>
+/* ============================================================
+   GLOBAL STATE
+   ============================================================ */
+const state = { quizScore:0, quizAnswered:0, quizTotal:0, sectionsSeen:new Set(), totalSections:26 };
+
+document.addEventListener('DOMContentLoaded', () => {
+  initParticles();
+  initProgressBar();
+  initSidebar();
+  initSearch();
+  initTheme();
+  initReveal();
+  initRacks();
+  initVmSim();
+  initServiceModels();
+  initRespSlider();
+  initWorldMap();
+  initAD();
+  initFD();
+  initPlacement();
+  initNameValidator();
+  initAuthnFlow();
+  initDomainCards();
+  initSSO();
+  initPolicyEditor();
+  initVerbExplorer();
+  initTroubleshoot();
+  initConsoleSim();
+  initTerminal();
+  initFlashcards();
+  initQuiz();
+  initCapex();
+  updateBadge();
+});
+
+/* ---------- particles background ---------- */
+function initParticles(){
+  const c = document.getElementById('particles');
+  const ctx = c.getContext('2d');
+  let w,h,particles=[];
+  function resize(){ w=c.width=window.innerWidth; h=c.height=window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const N = Math.min(60, Math.floor(window.innerWidth/24));
+  for(let i=0;i<N;i++){
+    particles.push({x:Math.random()*w, y:Math.random()*h, r:Math.random()*1.6+0.4, vx:(Math.random()-0.5)*0.15, vy:(Math.random()-0.5)*0.15});
+  }
+  function tick(){
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = 'rgba(199,70,52,0.5)';
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0) p.x=w; if(p.x>w) p.x=0;
+      if(p.y<0) p.y=h; if(p.y>h) p.y=0;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    });
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+/* ---------- progress bar + active nav ---------- */
+function initProgressBar(){
+  const bar = document.getElementById('progress-bar');
+  const heroProgress = document.getElementById('hero-progress');
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docH = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docH>0 ? (scrollTop/docH)*100 : 0;
+    bar.style.width = pct+'%';
+    if(heroProgress) heroProgress.textContent = Math.round(pct)+'%';
+    updateBadgeFromScroll(pct);
+    highlightActiveNav();
+  }, {passive:true});
+}
+function highlightActiveNav(){
+  const sections = document.querySelectorAll('section.chapter');
+  let current = null;
+  sections.forEach(sec=>{
+    const rect = sec.getBoundingClientRect();
+    if(rect.top < 160) current = sec.id;
+  });
+  document.querySelectorAll('#sidebar a.nav-link').forEach(a=>{
+    a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+  });
+  if(current) state.sectionsSeen.add(current);
+}
+
+/* ---------- sidebar toggle ---------- */
+function initSidebar(){
+  const sb = document.getElementById('sidebar');
+  document.getElementById('sidebar-toggle').addEventListener('click', ()=> sb.classList.toggle('collapsed'));
+}
+
+/* ---------- search ---------- */
+function initSearch(){
+  const input = document.getElementById('search');
+  const results = document.getElementById('search-results');
+  const index = [];
+  document.querySelectorAll('section.chapter').forEach(sec=>{
+    const title = sec.querySelector('h2')?.textContent || sec.id;
+    sec.querySelectorAll('h3').forEach(h3=> index.push({label:h3.textContent, cat:title, href:'#'+sec.id}));
+    index.push({label:title, cat:'Section', href:'#'+sec.id});
+  });
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim().toLowerCase();
+    if(!q){ results.style.display='none'; return; }
+    const matches = index.filter(i=> i.label.toLowerCase().includes(q)).slice(0,8);
+    results.innerHTML = matches.map(m=>`<a href="${m.href}"><span class="sr-cat">${m.cat}</span>${m.label}</a>`).join('') || '<a style="cursor:default;">No results</a>';
+    results.style.display='block';
+  });
+  document.addEventListener('click', e=>{ if(!document.getElementById('search-wrap').contains(e.target)) results.style.display='none'; });
+  results.addEventListener('click', ()=> setTimeout(()=>{ results.style.display='none'; input.value=''; },10));
+}
+
+/* ---------- theme ---------- */
+function initTheme(){
+  const btn = document.getElementById('theme-toggle');
+  btn.addEventListener('click', ()=>{
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') !== 'light';
+    html.setAttribute('data-theme', isDark ? 'light':'dark');
+    btn.textContent = isDark ? '☀️' : '🌙';
+  });
+}
+
+/* ---------- scroll reveal ---------- */
+function initReveal(){
+  const els = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); } });
+  }, {threshold:0.08});
+  els.forEach(el=> io.observe(el));
+}
+</script>
+<script>
+/* ---------- traditional DC racks ---------- */
+function initRacks(){
+  const g = document.getElementById('rack-group');
+  if(!g) return;
+  let svg='';
+  for(let r=0;r<4;r++){
+    const x = 30 + r*175;
+    svg += `<g class="rack-unit" style="cursor:pointer;">`;
+    svg += `<rect x="${x}" y="20" width="140" height="120" rx="6" fill="url(#rackGrad)" stroke="#c74634" stroke-opacity="0.4"/>`;
+    for(let u=0;u<6;u++){
+      svg += `<rect x="${x+8}" y="${28+u*17}" width="124" height="12" rx="2" fill="#1a1c22" stroke="#333" />`;
+      svg += `<circle cx="${x+16}" cy="${34+u*17}" r="1.6" fill="#3ec28f"/>`;
+    }
+    svg += `<text x="${x+70}" y="152" text-anchor="middle" fill="#6b7180" font-size="10" font-family="monospace">RACK-0${r+1}</text>`;
+    svg += `</g>`;
+  }
+  g.innerHTML = svg;
+}
+
+/* ---------- virtualization VM simulator ---------- */
+function initVmSim(){
+  const cpuRange = document.getElementById('vm-cpu');
+  const ramRange = document.getElementById('vm-ram');
+  if(!cpuRange) return;
+  const cpuVal = document.getElementById('vm-cpu-val');
+  const ramVal = document.getElementById('vm-ram-val');
+  const cpuMeter = document.getElementById('cpu-meter');
+  const ramMeter = document.getElementById('ram-meter');
+  const cpuLabel = document.getElementById('cpu-label');
+  const ramLabel = document.getElementById('ram-label');
+  const vmList = document.getElementById('vm-list');
+  const msg = document.getElementById('vm-msg');
+  const HOST_CPU=16, HOST_RAM=64;
+  let vms = [];
+  cpuRange.addEventListener('input', ()=> cpuVal.textContent = cpuRange.value);
+  ramRange.addEventListener('input', ()=> ramVal.textContent = ramRange.value);
+
+  function render(){
+    const usedCpu = vms.reduce((a,v)=>a+v.cpu,0);
+    const usedRam = vms.reduce((a,v)=>a+v.ram,0);
+    cpuMeter.style.width = Math.min(100,(usedCpu/HOST_CPU)*100)+'%';
+    ramMeter.style.width = Math.min(100,(usedRam/HOST_RAM)*100)+'%';
+    cpuLabel.textContent = `${usedCpu} / ${HOST_CPU}`;
+    ramLabel.textContent = `${usedRam} / ${HOST_RAM} GB`;
+    vmList.innerHTML = vms.map(v=>`<div class="vm-card"><span class="vm-x" data-id="${v.id}">✕</span><div class="vm-name">${v.id}</div>${v.cpu} vCPU · ${v.ram} GB</div>`).join('');
+  }
+  document.getElementById('vm-create').addEventListener('click', ()=>{
+    const cpu = parseInt(cpuRange.value), ram = parseInt(ramRange.value);
+    const usedCpu = vms.reduce((a,v)=>a+v.cpu,0), usedRam = vms.reduce((a,v)=>a+v.ram,0);
+    if(usedCpu+cpu > HOST_CPU || usedRam+ram > HOST_RAM){
+      msg.textContent = '⚠ Not enough host capacity for that VM. Delete one or shrink the request.';
+      msg.style.color = 'var(--red-bright)';
+      return;
+    }
+    vms.push({id:'vm-'+(vms.length+1)+'-'+Math.random().toString(36).slice(2,5), cpu, ram});
+    msg.textContent = `VM created. The hypervisor carved out ${cpu} vCPU / ${ram} GB from the shared pool.`;
+    msg.style.color = 'var(--text-3)';
+    render();
+  });
+  vmList.addEventListener('click', e=>{
+    const id = e.target.dataset.id;
+    if(id){ vms = vms.filter(v=>v.id!==id); render(); }
+  });
+  document.getElementById('vm-reset').addEventListener('click', ()=>{ vms=[]; msg.textContent='Host reset.'; render(); });
+  render();
+}
+
+/* ---------- IaaS/PaaS/SaaS layer stack ---------- */
+function initServiceModels(){
+  const wrap = document.getElementById('model-stacks');
+  if(!wrap) return;
+  const layers = ['App & Data','Runtime','Middleware','O/S','Virtualization','Servers/Storage/Net'];
+  const models = {
+    'On-Prem':  ['you','you','you','you','you','you'],
+    'IaaS':     ['you','you','you','you','oracle','oracle'],
+    'PaaS':     ['you','you','oracle','oracle','oracle','oracle'],
+    'SaaS':     ['oracle','oracle','oracle','oracle','oracle','oracle'],
+  };
+  let html = `<div class="layer-row"><div class="layer-label" style="background:transparent;"></div><div class="layer-cells">`+
+    layers.map(l=>`<div class="layer-cell" style="color:var(--text-3); font-weight:700;">${l}</div>`).join('')+`</div></div>`;
+  Object.entries(models).forEach(([name, arr])=>{
+    html += `<div class="layer-row"><div class="layer-label">${name}</div><div class="layer-cells">`+
+      arr.map(who=>`<div class="layer-cell ${who}" title="${who==='you'?'You manage this':'Oracle manages this'}">${who==='you'?'You':'Oracle'}</div>`).join('')+
+      `</div></div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+/* ---------- shared responsibility slider ---------- */
+function initRespSlider(){
+  const track = document.getElementById('resp-track');
+  const handle = document.getElementById('resp-handle');
+  if(!track) return;
+  let dragging = false;
+  function setSplit(clientX){
+    const rect = track.getBoundingClientRect();
+    let pct = ((clientX - rect.left)/rect.width)*100;
+    pct = Math.max(4, Math.min(96, pct));
+    track.style.setProperty('--split', pct+'%');
+  }
+  handle.addEventListener('mousedown', ()=> dragging=true);
+  window.addEventListener('mouseup', ()=> dragging=false);
+  window.addEventListener('mousemove', e=>{ if(dragging) setSplit(e.clientX); });
+  handle.addEventListener('touchstart', ()=> dragging=true, {passive:true});
+  window.addEventListener('touchend', ()=> dragging=false);
+  window.addEventListener('touchmove', e=>{ if(dragging && e.touches[0]) setSplit(e.touches[0].clientX); }, {passive:true});
+  track.addEventListener('click', e=> setSplit(e.clientX));
+}
+</script>
+<script>
+/* ---------- world map regions ---------- */
+function initWorldMap(){
+  const g = document.getElementById('region-dots');
+  if(!g) return;
+  const regions = [
+    {x:80,y:75,name:'US East (Ashburn)', realm:'OC1 Commercial', ads:'3 Availability Domains', use:'Primary US commercial region, DR pairing hub.'},
+    {x:70,y:95,name:'Brazil East (Sao Paulo)', realm:'OC1 Commercial', ads:'1 Availability Domain', use:'LATAM data residency & low-latency access.'},
+    {x:255,y:60,name:'UK South (London)', realm:'OC1 Commercial', ads:'3 Availability Domains', use:'EU/UK data residency, GDPR workloads.'},
+    {x:330,y:75,name:'India West (Mumbai)', realm:'OC1 Commercial', ads:'1 Availability Domain', use:'India data residency, financial services.'},
+    {x:390,y:70,name:'Japan East (Tokyo)', realm:'OC1 Commercial', ads:'1 Availability Domain', use:'APAC low-latency, manufacturing & finance.'},
+    {x:420,y:185,name:'Australia East (Sydney)', realm:'OC1 Commercial', ads:'1 Availability Domain', use:'ANZ data residency.'},
+  ];
+  g.innerHTML = regions.map((r,i)=>`
+    <g class="region-dot" data-i="${i}">
+      <circle cx="${r.x}" cy="${r.y}" r="9" fill="rgba(199,70,52,0.15)"/>
+      <circle cx="${r.x}" cy="${r.y}" r="4" fill="#ff5a3c"/>
+    </g>`).join('');
+  const info = document.getElementById('region-info');
+  g.querySelectorAll('.region-dot').forEach(dot=>{
+    dot.addEventListener('click', ()=>{
+      const r = regions[dot.dataset.i];
+      info.innerHTML = `<h4>${r.name}</h4><p><strong>Realm:</strong> ${r.realm}</p><p><strong>Availability:</strong> ${r.ads}</p><p style="margin-top:8px;">${r.use}</p>`;
+    });
+  });
+}
+
+/* ---------- Availability Domain visualizer ---------- */
+function initAD(){
+  const buildings = document.querySelectorAll('#ad-buildings .building');
+  const msg = document.getElementById('ad-msg');
+  if(!buildings.length) return;
+  const failText = {
+    power: 'AD-1 lost power. AD-2 and AD-3 are completely unaffected — they have independent power infrastructure.',
+    network: 'AD-1 lost network connectivity. Traffic automatically routes through AD-2/AD-3 if your app was deployed across all three.',
+    quake: 'A regional event hit AD-1\'s data center. Because ADs don\'t share physical infrastructure, AD-2 and AD-3 stay online.'
+  };
+  document.querySelectorAll('[data-fail]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const b1 = buildings[0];
+      b1.classList.add('failed');
+      b1.querySelector('.b-status').textContent = 'Down';
+      b1.querySelector('.b-status').className = 'b-status down';
+      buildings[1].classList.add('shaking'); buildings[2].classList.add('shaking');
+      setTimeout(()=>{ buildings[1].classList.remove('shaking'); buildings[2].classList.remove('shaking'); }, 400);
+      msg.textContent = failText[btn.dataset.fail];
+      msg.style.color = 'var(--red-bright)';
+    });
+  });
+  document.getElementById('ad-reset').addEventListener('click', ()=>{
+    buildings.forEach(b=>{ b.classList.remove('failed'); b.querySelector('.b-status').textContent='Operational'; b.querySelector('.b-status').className='b-status ok'; });
+    msg.textContent = 'All 3 Availability Domains operational. Deploy across all 3 for maximum resilience.';
+    msg.style.color = 'var(--text-3)';
+  });
+}
+
+/* ---------- Fault Domain visualizer ---------- */
+function initFD(){
+  const racks = document.querySelectorAll('#fd-racks .rack');
+  const msg = document.getElementById('fd-msg');
+  if(!racks.length) return;
+  function clearRacks(){
+    racks.forEach(r=>{ r.classList.remove('dead'); r.querySelector('.rack-body').innerHTML=''; });
+  }
+  document.getElementById('fd-deploy-correct').addEventListener('click', ()=>{
+    clearRacks();
+    racks.forEach((r,i)=> r.querySelector('.rack-body').innerHTML = `<div class="rack-slot filled">web-vm-${i+1}</div>`);
+    msg.textContent = 'Each web-tier VM lives in a different Fault Domain — a single rack failure only takes out 1 of 3 instances.';
+    msg.style.color='var(--text-3)';
+  });
+  document.getElementById('fd-deploy-wrong').addEventListener('click', ()=>{
+    clearRacks();
+    racks[0].querySelector('.rack-body').innerHTML = `<div class="rack-slot filled">web-vm-1</div><div class="rack-slot filled">web-vm-2</div><div class="rack-slot filled">web-vm-3</div>`;
+    msg.textContent = 'All 3 VMs are crammed into FD-1. A single rack/power failure now takes down the entire tier.';
+    msg.style.color='var(--amber)';
+  });
+  document.getElementById('fd-fail').addEventListener('click', ()=>{
+    racks[0].classList.add('dead');
+    const lost = racks[0].querySelectorAll('.rack-slot.filled').length;
+    msg.textContent = lost>1 ? `FD-1 failed — ${lost} VMs went down simultaneously because they shared a Fault Domain.` : (lost===1 ? 'FD-1 failed — only 1 VM was affected, the other two kept serving traffic.' : 'FD-1 failed, but nothing was deployed there yet.');
+    msg.style.color='var(--red-bright)';
+  });
+  document.getElementById('fd-reset-btn').addEventListener('click', ()=>{ clearRacks(); msg.textContent='Choose a placement strategy, then trigger a fault domain failure to see the impact.'; msg.style.color='var(--text-3)'; });
+}
+
+/* ---------- workload placement exercise ---------- */
+function initPlacement(){
+  const btn = document.getElementById('placement-check');
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const sel = document.querySelector('input[name="placement"]:checked');
+    const fb = document.getElementById('placement-feedback');
+    document.querySelectorAll('#placement-opts .quiz-opt').forEach(o=>o.classList.remove('correct','incorrect'));
+    if(!sel){ fb.textContent='Select an option first.'; fb.style.color='var(--amber)'; return; }
+    const parent = sel.closest('.quiz-opt');
+    if(sel.value==='right'){
+      parent.classList.add('correct');
+      fb.textContent = '✓ Correct — staying in-region satisfies data residency and low latency, while spreading across ADs/FDs satisfies the DR requirement.';
+      fb.style.color='var(--green)';
+    } else {
+      parent.classList.add('incorrect');
+      fb.textContent = '✗ Not quite — re-read the constraints: data residency in India rules out foreign regions, and single-FD placement removes your DR protection.';
+      fb.style.color='var(--red-bright)';
+    }
+  });
+}
+
+/* ---------- naming convention validator ---------- */
+function initNameValidator(){
+  const btn = document.getElementById('name-check');
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const val = document.getElementById('name-input').value.trim();
+    const fb = document.getElementById('name-feedback');
+    if(!val){ fb.textContent='Enter a name first.'; fb.style.color='var(--amber)'; return; }
+    const issues = [];
+    if(/[A-Z]/.test(val)) issues.push('avoid uppercase letters');
+    if(/\s/.test(val)) issues.push('use hyphens instead of spaces');
+    if(/_/.test(val)) issues.push('prefer hyphens over underscores for consistency');
+    if(!/^(dev|qa|test|stage|prod|sandbox)-/.test(val.toLowerCase())) issues.push('consider prefixing with an environment (dev-, qa-, prod-)');
+    if(issues.length===0){ fb.textContent='✓ Looks good — lowercase, hyphenated, environment-prefixed.'; fb.style.color='var(--green)'; }
+    else { fb.textContent = '⚠ Suggestions: '+issues.join('; ')+'.'; fb.style.color='var(--amber)'; }
+  });
+}
+</script>
+<script>
+/* ---------- tenancy/compartment tree toggle ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('#compartment-tree .node[data-toggle]').forEach(node=>{
+    node.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const ul = node.nextElementSibling;
+      if(ul && ul.tagName==='UL'){ ul.style.display = ul.style.display==='none' ? '' : 'none'; }
+    });
+  });
+});
+
+/* ---------- Authn vs Authz flow ---------- */
+function initAuthnFlow(){
+  const btn = document.getElementById('login-btn');
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const user = document.getElementById('login-user').value || 'anonymous';
+    const msg = document.getElementById('authn-msg');
+    const s1 = document.getElementById('step-authn'), s2 = document.getElementById('step-authz'), s3 = document.getElementById('step-session');
+    [s1,s2,s3].forEach(s=> s.style.borderColor='var(--border)');
+    msg.textContent = `Verifying credentials for "${user}"…`;
+    setTimeout(()=>{ s1.style.borderColor='var(--blue)'; msg.textContent = `✓ Authenticated as "${user}". Now checking IAM policies…`; }, 400);
+    setTimeout(()=>{ s2.style.borderColor='var(--amber)'; msg.textContent = `✓ Authorization evaluated against group policies…`; }, 1100);
+    setTimeout(()=>{ s3.style.borderColor='var(--green)'; msg.textContent = `✓ Session token issued. "${user}" can now call OCI APIs until the token expires.`; }, 1800);
+  });
+}
+
+/* ---------- identity domain cards ---------- */
+function initDomainCards(){
+  const cards = document.querySelectorAll('.domain-card');
+  if(!cards.length) return;
+  const detail = {
+    default: 'Every tenancy gets exactly one Default identity domain automatically — this is where your root/administrator user lives.',
+    free: 'Additional Free domains let you isolate identity populations (e.g. a dev sandbox) without extra licensing cost, at reduced scale limits.',
+    oracleapps: 'Oracle Apps Premium domains are optimized for large Oracle SaaS user bases (Fusion Applications, NetSuite) with app-specific provisioning.',
+    premium: 'Premium domains unlock enterprise-grade identity features: adaptive/risk-based authentication, advanced federation, and delegated administration — billed separately.'
+  };
+  const out = document.getElementById('domain-detail');
+  cards.forEach(c=>{
+    c.addEventListener('click', ()=>{
+      cards.forEach(x=>x.style.borderColor='var(--border)');
+      c.style.borderColor='var(--red)';
+      out.textContent = detail[c.dataset.domain];
+      out.style.color='var(--text-2)';
+    });
+  });
+}
+
+/* ---------- SSO flow animation ---------- */
+function initSSO(){
+  const btn = document.getElementById('sso-play');
+  if(!btn) return;
+  const steps = ['sso-1','sso-2','sso-3','sso-4'];
+  btn.addEventListener('click', ()=>{
+    steps.forEach(id=> document.getElementById(id).style.borderColor='var(--border)');
+    steps.forEach((id,i)=> setTimeout(()=>{ document.getElementById(id).style.borderColor='var(--red-bright)'; }, i*500));
+  });
+}
+
+/* ---------- policy editor validator ---------- */
+function initPolicyEditor(){
+  const btn = document.getElementById('policy-validate');
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const val = document.getElementById('policy-input').value.trim();
+    const verdict = document.getElementById('policy-verdict');
+    const pattern = /^Allow\s+(group|dynamic-group|any-user)\s+[\w'-]+(-[\w']+)*\s+to\s+(inspect|read|use|manage)\s+[\w-]+(-family)?\s+in\s+(compartment|tenancy)(\s+[\w-]+)?(\s+where\s+.+)?$/i;
+    if(pattern.test(val)){
+      verdict.className = 'policy-verdict ok';
+      verdict.textContent = '✓ Valid policy syntax: Allow <subject> to <verb> <resource> in <location>.';
+    } else {
+      verdict.className = 'policy-verdict bad';
+      verdict.textContent = '✗ Syntax issue — expected form: Allow group <Name> to <inspect|read|use|manage> <resource-type> in compartment <Name>';
+    }
+  });
+}
+
+/* ---------- policy verb explorer ---------- */
+function initVerbExplorer(){
+  const cards = document.querySelectorAll('.verb-card');
+  if(!cards.length) return;
+  const detail = {
+    inspect: 'Unlocks: ListInstances, ListBuckets — see that resources exist and basic metadata, nothing more.',
+    read: 'Unlocks: everything in inspect, plus GetInstance, GetObject — view full resource details and content.',
+    use: 'Unlocks: everything in read, plus actions like Start/Stop instance, AttachVolume — act on existing resources, but not create or delete them.',
+    manage: 'Unlocks: everything in use, plus CreateInstance, DeleteInstance, UpdateInstance — full lifecycle control.'
+  };
+  const out = document.getElementById('verb-detail');
+  cards.forEach(c=>{
+    c.addEventListener('click', ()=>{
+      cards.forEach(x=>x.style.borderColor='var(--border)');
+      c.style.borderColor='var(--red)';
+      out.textContent = detail[c.dataset.verb];
+      out.style.color='var(--text-2)';
+    });
+  });
+}
+
+/* ---------- authz troubleshooting ---------- */
+function initTroubleshoot(){
+  const btn = document.getElementById('ts-check');
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const sel = document.querySelector('input[name="ts"]:checked');
+    const fb = document.getElementById('ts-feedback');
+    document.querySelectorAll('#ts-opts .quiz-opt').forEach(o=>o.classList.remove('correct','incorrect'));
+    if(!sel){ fb.textContent='Select a diagnosis first.'; fb.style.color='var(--amber)'; return; }
+    const parent = sel.closest('.quiz-opt');
+    if(sel.value==='right'){
+      parent.classList.add('correct');
+      fb.textContent = '✓ Correct — "read" never includes lifecycle/power actions. The fix is to grant "use" (or "manage") on instances.';
+      fb.style.color='var(--green)';
+    } else {
+      parent.classList.add('incorrect');
+      fb.textContent = '✗ Look again at the verb hierarchy — inspect < read < use < manage.';
+      fb.style.color='var(--red-bright)';
+    }
+  });
+}
+</script>
+<script>
+/* ---------- console simulator ---------- */
+function initConsoleSim(){
+  const nav = document.querySelectorAll('.console-nav div');
+  if(!nav.length) return;
+  nav.forEach(item=>{
+    item.addEventListener('click', ()=>{
+      nav.forEach(n=>n.classList.remove('active'));
+      item.classList.add('active');
+      document.querySelectorAll('.console-panel').forEach(p=>p.style.display='none');
+      document.getElementById('panel-'+item.dataset.panel).style.display='';
+    });
+  });
+
+  let users = [{name:'admin', email:'admin@tenancy.local', group:'Administrators', status:'active'}];
+  let groups = [{name:'Administrators', members:1, status:'active'}];
+
+  function renderUsers(){
+    document.getElementById('users-tbody').innerHTML = users.map((u,i)=>`
+      <tr><td>${u.name}</td><td>${u.email}</td>
+      <td><select class="mini-input" data-i="${i}" data-role="assign">
+        <option value="">— none —</option>
+        ${groups.map(g=>`<option value="${g.name}" ${u.group===g.name?'selected':''}>${g.name}</option>`).join('')}
+      </select></td>
+      <td><span class="status-pill ${u.status}">${u.status}</span></td>
+      <td><span style="cursor:pointer; color:var(--text-3);" data-role="delu" data-i="${i}">🗑</span></td></tr>
+    `).join('');
+  }
+  function renderGroups(){
+    document.getElementById('groups-tbody').innerHTML = groups.map((g,i)=>`
+      <tr><td>${g.name}</td><td>${users.filter(u=>u.group===g.name).length}</td>
+      <td><span class="status-pill active">active</span></td>
+      <td><span style="cursor:pointer; color:var(--text-3);" data-role="delg" data-i="${i}">🗑</span></td></tr>
+    `).join('');
+  }
+  document.getElementById('add-user-btn').addEventListener('click', ()=>{
+    const inp = document.getElementById('new-user-name');
+    const name = inp.value.trim();
+    if(!name) return;
+    users.push({name, email:name.toLowerCase().replace(/\s+/g,'.')+'@tenancy.local', group:'', status:'active'});
+    inp.value=''; renderUsers(); renderGroups();
+  });
+  document.getElementById('add-group-btn').addEventListener('click', ()=>{
+    const inp = document.getElementById('new-group-name');
+    const name = inp.value.trim();
+    if(!name) return;
+    groups.push({name, members:0, status:'active'});
+    inp.value=''; renderUsers(); renderGroups();
+  });
+  document.getElementById('users-tbody').addEventListener('change', e=>{
+    if(e.target.dataset.role==='assign'){ users[e.target.dataset.i].group = e.target.value; renderGroups(); }
+  });
+  document.getElementById('users-tbody').addEventListener('click', e=>{
+    if(e.target.dataset.role==='delu'){ users.splice(e.target.dataset.i,1); renderUsers(); renderGroups(); }
+  });
+  document.getElementById('groups-tbody').addEventListener('click', e=>{
+    if(e.target.dataset.role==='delg'){ groups.splice(e.target.dataset.i,1); renderUsers(); renderGroups(); }
+  });
+  renderUsers(); renderGroups();
+}
+</script>
+<script>
+/* ---------- CLI terminal simulator ---------- */
+function initTerminal(){
+  const out = document.getElementById('term-out');
+  const input = document.getElementById('term-input');
+  if(!input) return;
+  const compartments = ['Sandbox'];
+  const responses = {
+    'help': `Available commands:
+  oci iam user list
+  oci iam group list
+  oci iam compartment create --name <name>
+  oci iam policy list
+  oci iam region list
+  clear`,
+    'oci iam user list': `{
+  "data": [
+    {"name": "admin", "lifecycle-state": "ACTIVE", "email": "admin@tenancy.local"},
+    {"name": "j.doe", "lifecycle-state": "ACTIVE", "email": "j.doe@tenancy.local"}
+  ]
+}`,
+    'oci iam group list': `{
+  "data": [
+    {"name": "Administrators", "lifecycle-state": "ACTIVE"},
+    {"name": "Developers", "lifecycle-state": "ACTIVE"}
+  ]
+}`,
+    'oci iam policy list': `{
+  "data": [
+    {"name": "dev-policy", "statements": ["Allow group Developers to manage instances in compartment Production"]}
+  ]
+}`,
+    'oci iam region list': `{
+  "data": [
+    {"name": "us-ashburn-1"}, {"name": "uk-london-1"}, {"name": "ap-mumbai-1"}, {"name": "ap-tokyo-1"}
+  ]
+}`
+  };
+  function print(cmd, text, isError){
+    const line = document.createElement('div');
+    line.innerHTML = `<div class="cmdline">${escapeHtml(cmd)}</div><div style="color:${isError?'#ff8a7a':'#c9f7d8'}; margin:4px 0 12px; white-space:pre-wrap;">${escapeHtml(text)}</div>`;
+    out.appendChild(line);
+    out.scrollTop = out.scrollHeight;
+  }
+  function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  print('help', 'Welcome to the OCI CLI simulator. Type "help" to see available commands.');
+  input.addEventListener('keydown', e=>{
+    if(e.key!=='Enter') return;
+    const cmdRaw = input.value.trim();
+    input.value='';
+    if(!cmdRaw) return;
+    if(cmdRaw==='clear'){ out.innerHTML=''; return; }
+    if(cmdRaw.startsWith('oci iam compartment create')){
+      const m = cmdRaw.match(/--name\s+(\S+)/);
+      const name = m ? m[1] : 'NewCompartment';
+      compartments.push(name);
+      print(cmdRaw, `{
+  "data": {"name": "${name}", "lifecycle-state": "ACTIVE", "id": "ocid1.compartment.oc1..aaaa${Math.random().toString(36).slice(2,10)}"}
+}`);
+      return;
+    }
+    if(responses[cmdRaw]){ print(cmdRaw, responses[cmdRaw]); return; }
+    print(cmdRaw, `Command not recognized in this simulator. Type "help" for the supported command list.`, true);
+  });
+}
+</script>
+<script>
+/* ---------- flashcards ---------- */
+function initFlashcards(){
+  const wrap = document.getElementById('flash-wrap');
+  if(!wrap) return;
+  const cards = [
+    ['Elasticity', 'Automatic expansion/contraction of resources based on demand'],
+    ['Fault Domain', 'Rack-level failure isolation within an Availability Domain'],
+    ['Availability Domain', 'Data-center-level failure isolation within a Region'],
+    ['Realm', 'A set of regions isolated from other realms for compliance'],
+    ['CapEx', 'Upfront capital spend on owned hardware, depreciated over years'],
+    ['OpEx', 'Pay-as-you-go operational spend, expensed as incurred'],
+    ['Compartment', 'A logical boundary for organizing and isolating resources'],
+    ['Dynamic Group', 'Group membership defined by matching rules, not a static list'],
+    ['IAM Policy Verb: manage', 'Full lifecycle control — create, update, delete'],
+    ['Federation', 'Trusting an external identity provider instead of local credentials'],
+    ['Shared Responsibility', 'Oracle secures "of" the cloud; you secure "in" the cloud'],
+    ['Always Free', 'A fixed resource set available indefinitely, even after trial credits expire'],
+  ];
+  wrap.innerHTML = cards.map(([f,b])=>`
+    <div class="flashcard"><div class="fc-inner">
+      <div class="fc-face fc-front">${f}</div>
+      <div class="fc-face fc-back">${b}</div>
+    </div></div>`).join('');
+  wrap.querySelectorAll('.flashcard').forEach(fc=> fc.addEventListener('click', ()=> fc.classList.toggle('flipped')));
+}
+</script>
+<script>
+/* ---------- certification quiz ---------- */
+function initQuiz(){
+  const wrap = document.getElementById('quiz-wrap');
+  if(!wrap) return;
+  const Q = [
+    {q:'Which NIST characteristic describes a customer provisioning a VM without human intervention from the provider?', o:['Resource pooling','On-demand self-service','Measured service','Broad network access'], c:1, e:'On-demand self-service means the customer provisions resources automatically, without needing provider staff involved.'},
+    {q:'A company scales its web tier from 2 to 20 instances during a flash sale, then back to 2 afterward, automatically. This demonstrates:', o:['Scalability','Elasticity','Resource pooling','Federation'], c:1, e:'Elasticity is the automatic, on-demand expansion and contraction of capacity to match real-time demand.'},
+    {q:'Which hypervisor type runs directly on physical hardware without a host OS?', o:['Type 2','Type 1','Container runtime','Guest hypervisor'], c:1, e:'Type 1 (bare-metal) hypervisors run directly on hardware; Type 2 hypervisors run atop a host OS.'},
+    {q:'A managed Kubernetes service where Oracle operates the control plane but you manage your containers is best classified as:', o:['IaaS','SaaS','PaaS','On-premises'], c:2, e:'Managed Kubernetes is PaaS — the platform (control plane) is managed for you, application-level concerns remain yours.'},
+    {q:'Which deployment model best fits several government agencies sharing infrastructure with common compliance requirements?', o:['Public cloud','Community cloud','Private cloud','Multi-cloud'], c:1, e:'Community cloud is shared among organizations with common requirements, splitting cost while meeting shared governance needs.'},
+    {q:'Moving IT spend from CapEx to OpEx primarily means:', o:['Paying upfront for depreciating hardware','Paying as you consume resources','Eliminating all IT costs','Only applies to SaaS'], c:1, e:'OpEx is pay-as-you-go, expensed in the period incurred, which is what cloud consumption enables.'},
+    {q:'Under the shared responsibility model, who is responsible for patching your guest operating system on an IaaS compute instance?', o:['Oracle', 'The customer', 'Neither party', 'Whoever created the compartment'], c:1, e:'On IaaS, the customer manages the guest OS, middleware, and above — including OS patching.'},
+    {q:'What is the largest OCI physical/logical grouping, above Region?', o:['Availability Domain','Fault Domain','Realm','Compartment'], c:2, e:'A Realm is a set of regions isolated from other realms (e.g. OC1 commercial vs OC2 government).'},
+    {q:'A single-AD region can still provide hardware-level fault isolation because every region always has:', o:['3 Availability Domains', '3 Fault Domains', 'A private realm', 'Unlimited compartments'], c:1, e:'Every OCI region, even single-AD ones, always provides 3 Fault Domains for rack-level isolation.'},
+    {q:'Deploying 3 redundant VM instances all in the same Fault Domain is risky because:', o:['FDs share billing limits only','A single rack/power failure can take down all 3 simultaneously','FDs cannot host more than 1 VM','It violates naming conventions'], c:1, e:'Instances in the same Fault Domain share power and hardware, so one failure can take out all of them at once.'},
+    {q:'Which OCI free offering persists indefinitely, even after your 30-day trial credits are gone?', o:['30-Day Free Trial','Always Free resources','Enterprise support','Premium identity domain'], c:1, e:'Always Free resources (like 2 micro compute VMs) remain available indefinitely, separate from the time-boxed trial credits.'},
+    {q:'The root compartment in an OCI tenancy is:', o:['A special compartment you must create manually','The tenancy itself','Only used for billing','Deleted after setup'], c:1, e:'The root compartment IS the tenancy — every other compartment is nested beneath it.'},
+    {q:'A policy attached to the Production compartment will, by default, apply to:', o:['Only resources directly in Production','Production and all its child compartments','Only the root compartment','Nothing until explicitly inherited'], c:1, e:'Policies are inherited downward — a policy on a parent compartment applies to all its children unless scoped otherwise.'},
+    {q:'Which tag type enforces controlled values and permissions on who can apply it?', o:['Freeform tags','Defined tags','Freeform namespaces','Compartment tags'], c:1, e:'Defined tags live in namespaces with enforced values and permission controls, unlike freeform tags.'},
+    {q:'A Dynamic Group differs from a regular Group because its membership is:', o:['Manually assigned by an admin','Defined by matching rules (e.g. compartment membership)','Limited to 1 user','Only for federated users'], c:1, e:'Dynamic Groups use matching rules — commonly used to grant permissions to compute instances themselves (instance principals).'},
+    {q:'In "Allow group Developers to manage instances in compartment Production", the word "manage" is the:', o:['Subject','Verb','Resource type','Location'], c:1, e:'"Manage" is the policy verb, defining the scope of allowed actions on the resource type.'},
+    {q:'Which policy verb allows starting/stopping an existing instance but NOT creating or deleting one?', o:['inspect','read','use','manage'], c:2, e:'"use" allows acting on existing resources (start/stop, attach) but excludes create/delete, which require "manage".'},
+    {q:'A user gets "NotAuthorizedOrNotFound" trying to delete a bucket, despite having "use object-family" permission. What\'s the likely fix?', o:['Grant "manage" instead of "use"','Add them to a dynamic group','Move the bucket to root compartment','Nothing — this is expected behavior even with sufficient rights'], c:0, e:'Delete is a lifecycle action requiring "manage"; "use" does not include create/delete operations.'},
+    {q:'Federating OCI with Microsoft Entra ID primarily provides:', o:['Free compute credits','Single sign-on using existing corporate credentials','Automatic policy creation','Unlimited compartments'], c:1, e:'Federation lets users authenticate with an existing external IdP (like Entra ID) instead of separate OCI-local credentials — enabling SSO.'},
+    {q:'Authentication and Authorization occur in which order during API access?', o:['Authorization then Authentication','Authentication then Authorization','They happen simultaneously, order does not matter','Accounting, then Authentication, then Authorization'], c:1, e:'You must first prove who you are (Authentication) before the system can check what you\'re allowed to do (Authorization).'},
+  ];
+  state.quizTotal = Q.length;
+  document.getElementById('hero-quiz-count').textContent = Q.length;
+  wrap.innerHTML = Q.map((item,qi)=>`
+    <div class="quiz-q" id="quiz-${qi}">
+      <div class="qtext">${qi+1}. ${item.q}</div>
+      <div class="quiz-opts">
+        ${item.o.map((opt,oi)=>`<label class="quiz-opt"><input type="radio" name="q${qi}" value="${oi}"> ${opt}</label>`).join('')}
+      </div>
+      <div class="quiz-explain">${item.e}</div>
+    </div>`).join('');
+  wrap.querySelectorAll('.quiz-q').forEach((qEl, qi)=>{
+    qEl.addEventListener('change', e=>{
+      if(qEl.classList.contains('answered')) return; // one attempt counted
+      qEl.classList.add('answered');
+      const chosen = parseInt(e.target.value);
+      const opts = qEl.querySelectorAll('.quiz-opt');
+      opts.forEach((o,oi)=>{
+        if(oi===Q[qi].c) o.classList.add('correct');
+        else if(oi===chosen) o.classList.add('incorrect');
+      });
+      state.quizAnswered++;
+      if(chosen===Q[qi].c) state.quizScore++;
+      const scoreStr = `${state.quizScore} / ${state.quizAnswered}`;
+      document.getElementById('score-chip-val').textContent = scoreStr;
+      document.getElementById('quiz-final-score').textContent = `${state.quizScore} / ${Q.length}`;
+      updateBadge();
+    });
+  });
+}
+</script>
+<script>
+/* ---------- CapEx vs OpEx calculator + chart ---------- */
+function initCapex(){
+  const sServers = document.getElementById('c-servers');
+  if(!sServers) return;
+  const sYears = document.getElementById('c-years');
+  const sUtil = document.getElementById('c-util');
+  const canvas = document.getElementById('capexChart');
+  const ctx = canvas.getContext('2d');
+
+  function calc(){
+    const servers = parseInt(sServers.value);
+    const years = parseInt(sYears.value);
+    const util = parseInt(sUtil.value)/100;
+    document.getElementById('c-servers-val').textContent = servers;
+    document.getElementById('c-years-val').textContent = years;
+    document.getElementById('c-util-val').textContent = sUtil.value+'%';
+
+    // simplified illustrative cost model
+    const perServerCapex = 6000; // hardware
+    const perServerYearOpsCost = 1400; // power+cooling+maint regardless of utilization
+    const capexTotal = servers*perServerCapex + servers*perServerYearOpsCost*years;
+
+    const perServerCloudYearFull = 3600; // full-utilization equivalent annual cost
+    const opexTotal = servers*perServerCloudYearFull*years*util + servers*perServerCloudYearFull*years*(1-util)*0.15; // idle still costs a little (min instances) 
+
+    document.getElementById('capex-total').textContent = '$'+Math.round(capexTotal).toLocaleString();
+    document.getElementById('opex-total').textContent = '$'+Math.round(opexTotal).toLocaleString();
+    const savingsPct = capexTotal>0 ? Math.round((1-(opexTotal/capexTotal))*100) : 0;
+    const savingsEl = document.getElementById('capex-savings');
+    if(savingsPct>0) { savingsEl.textContent = `At ${sUtil.value}% utilization, OCI OpEx is ~${savingsPct}% lower over ${years} year(s) — the gap you see below.`; savingsEl.style.color='var(--green)';}
+    else { savingsEl.textContent = `At ${sUtil.value}% utilization, owning hardware outright is cheaper here — cloud's advantage grows as utilization drops.`; savingsEl.style.color='var(--amber)'; }
+
+    drawChart(capexTotal, opexTotal);
+  }
+
+  function drawChart(capex, opex){
+    const w = canvas.width = canvas.clientWidth || 440;
+    const h = canvas.height = 220;
+    ctx.clearRect(0,0,w,h);
+    const max = Math.max(capex, opex, 1);
+    const barW = 90;
+    const gap = 60;
+    const baseY = h-30;
+    const scale = (h-60)/max;
+
+    // capex bar
+    const x1 = w/2 - gap/2 - barW;
+    const h1 = capex*scale;
+    const grad1 = ctx.createLinearGradient(0,baseY-h1,0,baseY);
+    grad1.addColorStop(0,'#ff5a3c'); grad1.addColorStop(1,'#c74634');
+    ctx.fillStyle = grad1;
+    ctx.fillRect(x1, baseY-h1, barW, h1);
+
+    // opex bar
+    const x2 = w/2 + gap/2;
+    const h2 = opex*scale;
+    const grad2 = ctx.createLinearGradient(0,baseY-h2,0,baseY);
+    grad2.addColorStop(0,'#7db2ff'); grad2.addColorStop(1,'#4f8cff');
+    ctx.fillStyle = grad2;
+    ctx.fillRect(x2, baseY-h2, barW, h2);
+
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-2') || '#a7acb8';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('CapEx (on-prem)', x1+barW/2, baseY+16);
+    ctx.fillText('OpEx (OCI)', x2+barW/2, baseY+16);
+    ctx.fillStyle = '#eef0f3';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('$'+Math.round(capex/1000)+'k', x1+barW/2, baseY-h1-8);
+    ctx.fillText('$'+Math.round(opex/1000)+'k', x2+barW/2, baseY-h2-8);
+  }
+
+  [sServers,sYears,sUtil].forEach(el=> el.addEventListener('input', calc));
+  window.addEventListener('resize', calc);
+  calc();
+}
+
+/* ---------- badge / progress ---------- */
+function updateBadge(){
+  const scrollPct = window.__lastScrollPct || 0;
+  const quizPct = state.quizTotal ? (state.quizAnswered/state.quizTotal)*100 : 0;
+  const combined = Math.round(scrollPct*0.5 + quizPct*0.5);
+  const circle = document.getElementById('badge-circle');
+  if(!circle) return;
+  circle.style.setProperty('--pct', (combined*3.6)+'deg');
+  document.getElementById('badge-pct').textContent = combined+'%';
+  const title = document.getElementById('badge-title');
+  const sub = document.getElementById('badge-sub');
+  if(combined>=95){ title.textContent='🏆 Day 1 Complete'; sub.textContent='You\'ve covered every section and the certification quiz. Nice work.'; }
+  else if(combined>=50){ title.textContent='🟠 Halfway there'; sub.textContent='Keep scrolling through the remaining sections and finish the quiz.'; }
+  else { title.textContent='Keep going'; sub.textContent='Scroll through every section and complete the quiz to earn your Day 1 badge.'; }
+}
+function updateBadgeFromScroll(pct){ window.__lastScrollPct = pct; updateBadge(); }
+</script>
+</body>
+</html>

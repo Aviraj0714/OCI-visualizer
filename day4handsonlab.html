@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 4 Lab — Terraform &amp; OCI Resource Manager | 1Z0-1067-26</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#11161d; --panel:#151b23; --panel2:#1a212b;
+  --border:#232b36; --border-soft:#1d2530;
+  --text:#e6ebf1; --text-dim:#9aa7b6; --text-faint:#5f6b7a;
+  --red:#ff3b30; --red-dim:#c62b22; --red-glow:rgba(255,59,48,.25);
+  --blue:#4da3ff; --blue-dim:#2f6fd1;
+  --orange:#ffab40; --green:#3ddc84; --green-dim:#279a5c;
+  --yellow:#ffd54a; --purple:#b48bff;
+  --radius:14px; --radius-sm:9px;
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --mono: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f5f7; --bg2:#eceef1; --panel:#ffffff; --panel2:#f7f8fa;
+  --border:#e1e4e9; --border-soft:#ebedf0;
+  --text:#1b2129; --text-dim:#5b6572; --text-faint:#8b95a3;
+  --red:#e0342a; --red-dim:#c62b22; --red-glow:rgba(224,52,42,.18);
+  --shadow: 0 8px 30px rgba(20,20,30,.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; transition:background .3s,color .3s;}
+body::before{content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(circle at 15% 10%, var(--red-glow), transparent 40%), radial-gradient(circle at 85% 90%, rgba(77,163,255,.10), transparent 45%);}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:10px;}
+a{color:inherit;} button{font-family:inherit; cursor:pointer;}
+
+.topbar{position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:14px; padding:10px 18px;
+  background:color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter:blur(14px); border-bottom:1px solid var(--border-soft);}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700;}
+.brand .logo{width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg, var(--red), var(--red-dim));
+  display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; font-weight:800; box-shadow:0 4px 14px var(--red-glow);}
+.brand small{display:block; font-weight:500; color:var(--text-faint); font-size:10.5px; letter-spacing:.5px;}
+.crumb{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-dim); flex:1; min-width:0; overflow:hidden; white-space:nowrap;}
+.crumb b{color:var(--text); font-weight:600;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.xp-chip{display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--border); padding:6px 12px; border-radius:20px; font-size:12.5px; font-weight:600;}
+.xp-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange);}
+.rank-chip{background:linear-gradient(135deg, var(--red), var(--red-dim)); color:#fff; font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:20px;}
+.icon-btn{width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:15px; transition:.15s;}
+.icon-btn:hover{color:var(--text); border-color:var(--text-faint);}
+
+.app{display:flex; min-height:calc(100vh - 54px); position:relative; z-index:1;}
+.sidebar{width:255px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:16px 10px; position:sticky; top:54px; height:calc(100vh - 54px); overflow-y:auto; background:color-mix(in srgb, var(--bg2) 60%, transparent);}
+.sidebar h4{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); padding:14px 10px 6px;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:12.5px; color:var(--text-dim); cursor:pointer; transition:.15s; margin-bottom:2px; border:1px solid transparent;}
+.nav-item .n-ico{width:22px; text-align:center; font-size:12.5px; flex-shrink:0;}
+.nav-item:hover{background:var(--panel2); color:var(--text);}
+.nav-item.active{background:var(--red-glow); color:var(--text); border-color:var(--red-dim); font-weight:600;}
+.nav-item.locked{opacity:.4; cursor:not-allowed;}
+.nav-item.done .n-ico{color:var(--green);}
+.nav-badge{margin-left:auto; font-size:10px; background:var(--panel); border:1px solid var(--border); padding:1px 6px; border-radius:8px; color:var(--text-faint);}
+.nav-item.done .nav-badge{color:var(--green); border-color:var(--green-dim);}
+.progress-mini{margin:10px 8px 4px; padding:10px; background:var(--panel); border:1px solid var(--border); border-radius:10px;}
+.progress-mini .lbl{display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-bottom:6px;}
+.bar-track{height:6px; border-radius:5px; background:var(--border-soft); overflow:hidden;}
+.bar-fill{height:100%; background:linear-gradient(90deg, var(--red), var(--orange)); border-radius:5px; transition:width .5s ease;}
+
+.main{flex:1; min-width:0; padding:26px 30px 80px;}
+.view{display:none; animation:fadeIn .35s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+.section-head{margin-bottom:22px;}
+.eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--red); font-weight:700; margin-bottom:6px;}
+h1.page-title{font-size:25px; font-weight:800; letter-spacing:-.3px;}
+.page-sub{color:var(--text-dim); font-size:13.5px; margin-top:5px; max-width:700px;}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);}
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:1000px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr 1fr;}}
+@media(max-width:650px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr;}}
+.btn{display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:10px; border:none; font-weight:700; font-size:13.5px; transition:.15s;}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--red-dim)); color:#fff; box-shadow:0 6px 20px var(--red-glow);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 10px 26px var(--red-glow);}
+.btn-ghost{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text-faint);}
+.btn-sm{padding:7px 13px; font-size:12px; border-radius:8px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.pill-green{background:rgba(61,220,132,.14); color:var(--green);}
+.pill-red{background:rgba(255,59,48,.14); color:var(--red);}
+.pill-orange{background:rgba(255,171,64,.14); color:var(--orange);}
+.pill-blue{background:rgba(77,163,255,.14); color:var(--blue);}
+.pill-purple{background:rgba(180,139,255,.14); color:var(--purple);}
+.pill-gray{background:var(--panel2); color:var(--text-faint); border:1px solid var(--border);}
+#toast-wrap{position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; flex-direction:column; gap:10px;}
+.toast{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:13px 16px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; min-width:260px; animation:toastIn .3s ease; font-size:13px;}
+@keyframes toastIn{from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);}}
+.toast .t-ico{font-size:18px;} .toast b{display:block; font-size:12.5px;} .toast span{color:var(--text-dim); font-size:11.5px;}
+.toast.xp b{color:var(--orange);} .toast.ok .t-ico{color:var(--green);} .toast.err .t-ico{color:var(--red);}
+
+.mission-map{position:relative; padding:20px 10px;}
+.mission-track{display:flex; flex-wrap:wrap; gap:18px;}
+.m-node{width:205px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:16px; position:relative; transition:.2s; cursor:pointer;}
+.m-node:hover{transform:translateY(-3px); border-color:var(--text-faint);}
+.m-node.locked{opacity:.45; cursor:not-allowed; filter:grayscale(.6);}
+.m-node.locked:hover{transform:none;}
+.m-node.done{border-color:var(--green-dim); background:linear-gradient(180deg, rgba(61,220,132,.06), var(--panel));}
+.m-node.current{border-color:var(--red-dim); box-shadow:0 0 0 3px var(--red-glow);}
+.m-num{width:32px; height:32px; border-radius:10px; background:var(--panel2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; margin-bottom:8px;}
+.m-node.done .m-num{background:var(--green); color:#052e17; border-color:var(--green);}
+.m-node.current .m-num{background:var(--red); color:#fff; border-color:var(--red);}
+.m-node h4{font-size:13.5px; margin-bottom:4px;}
+.m-node p{font-size:11px; color:var(--text-dim); line-height:1.5; margin-bottom:8px;}
+.m-node .m-xp{font-size:10.5px; color:var(--orange); font-weight:700;}
+
+.terminal{background:#0a0d12; border-radius:12px; border:1px solid #232b36; font-family:var(--mono); font-size:12.5px; padding:16px; min-height:220px; color:#3ddc84; overflow-y:auto; max-height:420px;}
+.terminal .line{margin-bottom:6px; line-height:1.6; white-space:pre-wrap;}
+.terminal .prompt{color:#4da3ff;} .terminal .out{color:#c9d2dc;} .terminal .comment{color:#5f6b7a;} .terminal .errline{color:#ff6b60;}
+
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600;}
+.field input, .field select, .field textarea{width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text); font-size:13px; font-family:inherit;}
+.field textarea{font-family:var(--mono); font-size:12px; min-height:90px; resize:vertical;}
+.field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--red-dim);}
+
+.hr{height:1px; background:var(--border-soft); margin:20px 0;}
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;} .sidebar{display:none;}}
+.tag-list{display:flex; flex-wrap:wrap; gap:8px;}
+.info-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--blue-dim); background:rgba(77,163,255,.06); font-size:12.5px; margin:12px 0;}
+.tip-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--orange); background:rgba(255,171,64,.07); font-size:12.5px; margin:12px 0;}
+.mistake-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--red); background:rgba(255,59,48,.06); font-size:12.5px; margin:12px 0;}
+.hidden{display:none !important;}
+.chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+.chip{padding:8px 13px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s;}
+.chip:hover{border-color:var(--text-faint);}
+.chip.active{background:var(--red-glow); border-color:var(--red-dim);}
+.code-block{background:#0a0d12; border:1px solid #232b36; border-radius:10px; padding:14px; font-family:var(--mono); font-size:12px; color:#c9d2dc; overflow-x:auto; white-space:pre;}
+.tok-key{color:#ff6b60;} .tok-str{color:#3ddc84;} .tok-com{color:#5f6b7a;} .tok-attr{color:#4da3ff;} .tok-block{color:#ffab40; font-weight:700;}
+
+.quiz-q{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border:none;}
+.quiz-q .q-txt{font-weight:700; font-size:14px; margin-bottom:12px;}
+.q-opt{display:flex; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; cursor:pointer; transition:.15s; font-size:13px;}
+.q-opt:hover{border-color:var(--text-faint);}
+.q-opt.correct{border-color:var(--green-dim); background:rgba(61,220,132,.1);}
+.q-opt.incorrect{border-color:var(--red-dim); background:rgba(255,59,48,.1);}
+.q-explain{margin-top:8px; padding:10px 12px; background:var(--panel2); border-radius:9px; font-size:12px; color:var(--text-dim); display:none; border-left:3px solid var(--blue-dim);}
+.q-explain.show{display:block;}
+
+.ach-card{text-align:center; padding:20px 12px; border-radius:14px; border:1px solid var(--border); background:var(--panel); transition:.2s;}
+.ach-card.locked{opacity:.35; filter:grayscale(1);}
+.ach-card .ico{font-size:32px; margin-bottom:8px;}
+.ach-card h5{font-size:12.5px; margin-bottom:4px;}
+.ach-card p{font-size:10.5px; color:var(--text-dim);}
+
+/* File explorer */
+.file-tree{display:flex; flex-direction:column; gap:6px;}
+.file-item{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; background:var(--panel2); cursor:pointer; transition:.15s;}
+.file-item:hover{border-color:var(--text-faint);}
+.file-item.created{border-color:var(--green-dim); background:rgba(61,220,132,.06);}
+.file-item .fi-ico{width:20px; text-align:center;}
+.file-item .fi-name{font-family:var(--mono); font-weight:700; font-size:12.5px;}
+.file-item .fi-desc{color:var(--text-dim); font-size:11px; margin-left:auto; text-align:right; max-width:55%;}
+
+/* Architecture diagram */
+.arch-diagram{display:flex; flex-direction:column; align-items:center; gap:0; padding:20px 0;}
+.arch-node{padding:12px 22px; border-radius:12px; border:2px solid var(--border); background:var(--panel2); font-weight:700; font-size:13px; cursor:pointer; transition:.2s; text-align:center; min-width:160px;}
+.arch-node.active{border-color:var(--green-dim); background:rgba(61,220,132,.08); box-shadow:0 0 0 3px rgba(61,220,132,.15);}
+.arch-node.pending{opacity:.35;}
+.arch-arrow{font-size:20px; color:var(--text-faint); padding:4px 0;}
+.arch-row{display:flex; gap:14px; flex-wrap:wrap; justify-content:center;}
+
+/* Plan visualizer */
+.plan-row{display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:6px; background:var(--panel2); font-size:12.5px;}
+.plan-badge{font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; text-transform:uppercase;}
+.plan-badge.create{background:rgba(61,220,132,.18); color:var(--green);}
+.plan-badge.update{background:rgba(255,171,64,.18); color:var(--orange);}
+.plan-badge.delete{background:rgba(255,59,48,.18); color:var(--red);}
+.plan-badge.modify{background:rgba(77,163,255,.18); color:var(--blue);}
+
+/* Pipeline */
+.pipeline{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.pipe-stage{padding:11px 14px; border-radius:10px; border:1px solid var(--border); background:var(--panel2); font-size:12px; font-weight:700; text-align:center; min-width:110px;}
+.pipe-stage.done{border-color:var(--green-dim); background:rgba(61,220,132,.08); color:var(--green);}
+.pipe-stage.failed{border-color:var(--red-dim); background:rgba(255,59,48,.08); color:var(--red);}
+.pipe-stage.active{border-color:var(--blue-dim); box-shadow:0 0 0 3px rgba(77,163,255,.15);}
+.pipe-arrow{color:var(--text-faint); font-size:16px;}
+
+/* Drift */
+.drift-row{display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:6px; background:var(--panel2); font-size:12.5px;}
+.drift-row.mismatch{border-color:var(--red-dim); background:rgba(255,59,48,.06);}
+.drift-row.match{border-color:var(--green-dim);}
+
+.state-json{background:#0a0d12; border:1px solid #232b36; border-radius:10px; padding:14px; font-family:var(--mono); font-size:11.5px; color:#c9d2dc; max-height:320px; overflow:auto; white-space:pre;}
+</style>
+</head>
+<body data-theme="dark">
+<div id="toast-wrap"></div>
+<div class="topbar">
+  <div class="brand"><div class="logo">C</div><div>Day 4 Lab <small>1Z0-1067-26 · Terraform + Resource Manager</small></div></div>
+  <div class="crumb">Home <span>›</span> <b id="crumbCurrent">Mission Control</b></div>
+  <div class="topbar-right">
+    <div class="xp-chip"><span class="dot"></span><span id="xpDisplay">0</span> XP</div>
+    <div class="rank-chip" id="rankChip">Cloud Trainee</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">◐</button>
+  </div>
+</div>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main"></div>
+</div>
+<script>
+/* ================= DATA ================= */
+const NAV = [
+  {id:'home', label:'Mission Control', ico:'⌂', group:'main'},
+  {id:'missionmap', label:'Mission Map', ico:'🗺', group:'main'},
+  {id:'m1', label:'M1 · Install Terraform', ico:'①', group:'missions'},
+  {id:'m2', label:'M2 · Project Structure', ico:'②', group:'missions'},
+  {id:'m3', label:'M3 · Provider Config', ico:'③', group:'missions'},
+  {id:'m4', label:'M4 · Variables', ico:'④', group:'missions'},
+  {id:'m5', label:'M5 · Deploy Infrastructure', ico:'⑤', group:'missions'},
+  {id:'m6', label:'M6 · Terraform Workflow', ico:'⑥', group:'missions'},
+  {id:'m7', label:'M7 · State Management', ico:'⑦', group:'missions'},
+  {id:'m8', label:'M8 · Terraform Destroy', ico:'⑧', group:'missions'},
+  {id:'m9', label:'M9 · Resource Manager', ico:'⑨', group:'missions'},
+  {id:'m10', label:'M10 · Drift Detection', ico:'⑩', group:'missions'},
+  {id:'m11', label:'M11 · Troubleshooting', ico:'⑪', group:'missions'},
+  {id:'m12', label:'M12 · Automation Challenge', ico:'⑫', group:'missions'},
+  {id:'achievements', label:'Achievements', ico:'🏆', group:'extra'},
+  {id:'capstone', label:'Final Capstone', ico:'🎓', group:'extra'},
+];
+
+const MISSIONS = [
+  {id:'m1', num:1, title:'Install Terraform', desc:'Download, install, and verify the Terraform binary.', xp:90},
+  {id:'m2', num:2, title:'Project Structure', desc:'Create every standard Terraform project file.', xp:90},
+  {id:'m3', num:3, title:'Provider Configuration', desc:'Authenticate Terraform against OCI.', xp:100},
+  {id:'m4', num:4, title:'Variables', desc:'Define inputs and flow them into resources.', xp:100},
+  {id:'m5', num:5, title:'Deploy Infrastructure', desc:'Build a live network architecture with code.', xp:130},
+  {id:'m6', num:6, title:'Terraform Workflow', desc:'init → plan → apply, for real.', xp:130},
+  {id:'m7', num:7, title:'State Management', desc:'Understand and inspect terraform.tfstate.', xp:100},
+  {id:'m8', num:8, title:'Terraform Destroy', desc:'Tear infrastructure down safely, in order.', xp:90},
+  {id:'m9', num:9, title:'OCI Resource Manager', desc:'Run Terraform as a managed OCI stack.', xp:110},
+  {id:'m10', num:10, title:'Drift Detection', desc:'Catch and repair infrastructure drift.', xp:120},
+  {id:'m11', num:11, title:'Infrastructure Troubleshooting', desc:'Diagnose enterprise Terraform failures.', xp:120},
+  {id:'m12', num:12, title:'Enterprise Automation Challenge', desc:'Run the full pipeline end to end.', xp:150},
+];
+const MISSION_ORDER = MISSIONS.map(m=>m.id);
+
+const INSTALL_STEPS = [
+  {cmd:'curl -O https://releases.hashicorp.com/terraform/terraform_1.8.0_linux_amd64.zip', out:'######################################## 100.0%', note:'Downloads the Terraform binary archive.'},
+  {cmd:'unzip terraform_1.8.0_linux_amd64.zip -d /usr/local/bin', out:'Archive: terraform_1.8.0_linux_amd64.zip\n  inflating: /usr/local/bin/terraform', note:'Installs the single Terraform binary.'},
+  {cmd:'export PATH=$PATH:/usr/local/bin', out:'', note:'Adds Terraform to your shell PATH so it can be run from anywhere.'},
+  {cmd:'terraform version', out:'Terraform v1.8.0\non linux_amd64', note:'Verifies the install and prints the active version.'},
+];
+const IAC_CONCEPTS = [
+  {term:'Terraform', def:'An open-source Infrastructure as Code tool that lets you define cloud resources in declarative config files.'},
+  {term:'Provider', def:'A plugin that lets Terraform talk to a specific cloud (e.g. the OCI provider) via its API.'},
+  {term:'Plugin', def:'The compiled binary behind a provider, downloaded automatically during "terraform init".'},
+  {term:'State', def:'A JSON file (terraform.tfstate) that maps your config to real-world resource IDs.'},
+  {term:'Module', def:'A reusable, self-contained package of Terraform configuration.'},
+];
+
+const PROJECT_FILES = [
+  {name:'provider.tf', desc:'Declares and configures the OCI provider (auth, region).'},
+  {name:'variables.tf', desc:'Declares input variables with types and descriptions.'},
+  {name:'main.tf', desc:'Defines the actual resources to create.'},
+  {name:'outputs.tf', desc:'Declares values to display after apply (e.g. a public IP).'},
+  {name:'terraform.tfvars', desc:'Supplies real values for the declared variables.'},
+  {name:'versions.tf', desc:'Pins Terraform and provider version constraints.'},
+  {name:'README.md', desc:'Documents how to use and run this configuration.'},
+];
+
+const PROVIDER_FIELDS = [
+  {key:'tenancy_ocid', label:'Tenancy OCID', ph:'ocid1.tenancy.oc1..aaaaaaaa...', required:true},
+  {key:'user_ocid', label:'User OCID', ph:'ocid1.user.oc1..aaaaaaaa...', required:true},
+  {key:'fingerprint', label:'Fingerprint', ph:'a1:b2:c3:d4:...', required:true},
+  {key:'private_key_path', label:'Private Key Path', ph:'~/.oci/oci_api_key.pem', required:true},
+  {key:'region', label:'Region', ph:'us-ashburn-1', required:true},
+];
+
+const VARIABLES_M4 = [
+  {key:'compartment_ocid', label:'Compartment OCID', ph:'ocid1.compartment.oc1..aaaaaaaa...'},
+  {key:'vcn_name', label:'VCN Name', ph:'prod-vcn'},
+  {key:'cidr_block', label:'CIDR Block', ph:'10.0.0.0/16'},
+  {key:'subnet_name', label:'Subnet Name', ph:'public-subnet-1'},
+  {key:'region', label:'Region', ph:'us-ashburn-1'},
+  {key:'availability_domain', label:'Availability Domain', ph:'AD-1'},
+];
+
+const M5_RESOURCES = [
+  {id:'compartment', label:'Compartment', required:true, code:'resource "oci_identity_compartment" "app" {\n  name          = var.compartment_name\n  description   = "Application compartment"\n  compartment_id = var.tenancy_ocid\n}'},
+  {id:'vcn', label:'VCN', required:true, code:'resource "oci_core_vcn" "main" {\n  cidr_block     = var.cidr_block\n  display_name   = var.vcn_name\n  compartment_id = oci_identity_compartment.app.id\n}'},
+  {id:'igw', label:'Internet Gateway', required:true, code:'resource "oci_core_internet_gateway" "igw" {\n  compartment_id = oci_identity_compartment.app.id\n  vcn_id         = oci_core_vcn.main.id\n}'},
+  {id:'rt', label:'Route Table', required:true, code:'resource "oci_core_route_table" "rt" {\n  compartment_id = oci_identity_compartment.app.id\n  vcn_id         = oci_core_vcn.main.id\n  route_rules {\n    network_entity_id = oci_core_internet_gateway.igw.id\n    destination        = "0.0.0.0/0"\n  }\n}'},
+  {id:'seclist', label:'Security List', required:true, code:'resource "oci_core_security_list" "seclist" {\n  compartment_id = oci_identity_compartment.app.id\n  vcn_id         = oci_core_vcn.main.id\n  ingress_security_rules { protocol = "6" source = "0.0.0.0/0" }\n}'},
+  {id:'subnet', label:'Subnet', required:true, code:'resource "oci_core_subnet" "subnet" {\n  compartment_id = oci_identity_compartment.app.id\n  vcn_id         = oci_core_vcn.main.id\n  cidr_block     = "10.0.1.0/24"\n  route_table_id = oci_core_route_table.rt.id\n}'},
+  {id:'compute', label:'Compute Instance', required:false, code:'resource "oci_core_instance" "app" {\n  shape          = "VM.Standard.E2.1.Micro"\n  compartment_id = oci_identity_compartment.app.id\n  create_vnic_details { subnet_id = oci_core_subnet.subnet.id }\n}'},
+  {id:'nsg', label:'Network Security Group', required:false, code:'resource "oci_core_network_security_group" "nsg" {\n  compartment_id = oci_identity_compartment.app.id\n  vcn_id         = oci_core_vcn.main.id\n}'},
+  {id:'pip', label:'Public IP', required:false, code:'resource "oci_core_public_ip" "pip" {\n  compartment_id = oci_identity_compartment.app.id\n  lifetime       = "RESERVED"\n}'},
+];
+// topology order for the architecture visualizer
+const ARCH_TOPOLOGY = ['Internet','igw','vcn','subnet','compute'];
+const ARCH_LABELS = {Internet:'🌐 Internet', igw:'Internet Gateway', vcn:'VCN', subnet:'Subnet', compute:'Compute'};
+
+const TF_WORKFLOW_STEPS = [
+  {cmd:'terraform init', out:'Initializing the backend...\nInitializing provider plugins...\n- Installing oracle/oci v5.35.0...\nTerraform has been successfully initialized!', note:'Downloads providers and prepares the working directory.'},
+  {cmd:'terraform fmt', out:'main.tf\nvariables.tf', note:'Rewrites files to canonical formatting style.'},
+  {cmd:'terraform validate', out:'Success! The configuration is valid.', note:'Checks syntax and internal consistency without touching real infrastructure.'},
+  {cmd:'terraform plan', out:'Plan: 6 to add, 0 to change, 0 to destroy.', note:'Shows exactly what will change before anything happens.'},
+  {cmd:'terraform apply -auto-approve', out:'Apply complete! Resources: 6 added, 0 changed, 0 destroyed.', note:'Executes the plan and provisions real OCI resources.'},
+  {cmd:'terraform output', out:'instance_public_ip = "129.80.12.44"', note:'Prints declared output values.'},
+  {cmd:'terraform show', out:'# oci_core_vcn.main:\nresource "oci_core_vcn" "main" { ... }', note:'Displays the current state in human-readable form.'},
+  {cmd:'terraform graph', out:'digraph G {\n  "oci_core_vcn.main" -> "oci_core_subnet.subnet"\n}', note:'Outputs a dependency graph in DOT format.'},
+];
+const PLAN_ITEMS = [
+  {res:'oci_identity_compartment.app', action:'create'},
+  {res:'oci_core_vcn.main', action:'create'},
+  {res:'oci_core_internet_gateway.igw', action:'create'},
+  {res:'oci_core_route_table.rt', action:'create'},
+  {res:'oci_core_security_list.seclist', action:'create'},
+  {res:'oci_core_subnet.subnet', action:'create'},
+];
+const APPLY_STAGES = ['Provider Initialized','VCN Created','Internet Gateway Created','Route Table Created','Subnet Created','Outputs Generated'];
+
+const STATE_FILE_SAMPLE = `{
+  "version": 4,
+  "terraform_version": "1.8.0",
+  "resources": [
+    {
+      "type": "oci_core_vcn",
+      "name": "main",
+      "instances": [{
+        "attributes": {
+          "id": "ocid1.vcn.oc1..████████████████",
+          "cidr_block": "10.0.0.0/16",
+          "display_name": "prod-vcn"
+        }
+      }]
+    },
+    {
+      "type": "oci_core_subnet",
+      "name": "subnet",
+      "instances": [{
+        "attributes": {
+          "id": "ocid1.subnet.oc1..████████████████",
+          "cidr_block": "10.0.1.0/24"
+        }
+      }]
+    }
+  ]
+}`;
+
+const DESTROY_ORDER = ['Compute Instance','Subnet','Security List','Route Table','Internet Gateway','VCN','Compartment'];
+
+const RM_STEPS = ['Upload Terraform ZIP','Validate','Create Stack','Execute Job'];
+const RM_JOB_LOG = [
+  'Job accepted, queued for execution',
+  'Fetching Terraform configuration...',
+  'Running terraform init...',
+  'Running terraform plan...',
+  'Running terraform apply...',
+  'Job succeeded — 6 resources managed',
+];
+
+const DRIFT_GAME = [
+  {id:'d1', label:'Deleted VCN', explain:'The VCN was removed manually in the Console — Terraform state still references an ID that no longer exists.'},
+  {id:'d2', label:'Changed CIDR', explain:'Someone edited the VCN CIDR block directly in the Console, so it no longer matches the CIDR in state/config.'},
+  {id:'d3', label:'Removed Internet Gateway', explain:'The Internet Gateway was deleted outside Terraform, breaking the route table dependency.'},
+  {id:'d4', label:'Modified Security List', explain:'An ingress rule was added manually, so the actual security list differs from what Terraform expects.'},
+  {id:'d5', label:'Wrong Route', explain:'The default route was repointed manually, so outbound traffic no longer matches the Terraform-managed route table.'},
+];
+
+const TF_TROUBLESHOOT = [
+  {id:'t1', title:'Provider Authentication Failed', scenario:'terraform plan fails with "Error: 401-NotAuthenticated".', opts:['Fingerprint or private key path in the provider block is wrong','The VCN CIDR overlaps another VCN','A required variable is undeclared','Terraform version is too new'], a:0, ex:'Provider auth errors almost always trace back to a fingerprint/key mismatch — identical root cause to CLI/SDK auth issues.'},
+  {id:'t2', title:'Invalid OCID', scenario:'"Error: Invalid Compartment OCID format".', opts:['A variable was set to a malformed or placeholder OCID string','The region is wrong','Terraform state is corrupted','Network timeout'], a:0, ex:'OCIDs follow a strict format (ocid1.<type>.oc1..<unique>) — a typo or leftover placeholder breaks validation.'},
+  {id:'t3', title:'Wrong Region', scenario:'Apply succeeds but resources don\'t appear where expected in the Console.', opts:['The provider "region" argument points to a different region than you\'re checking','The compartment is deleted','Terraform silently failed','State file is missing'], a:0, ex:'Resources are always created in the region configured in the provider block — check that first.'},
+  {id:'t4', title:'Missing Variable', scenario:'"Error: No value for required variable \\"compartment_ocid\\"".', opts:['terraform.tfvars doesn\'t supply a value and none was passed via -var','The provider is misconfigured','The VCN already exists','State lock is held'], a:0, ex:'Every declared variable without a default must get a value from tfvars, -var, or an environment variable.'},
+  {id:'t5', title:'Syntax Error', scenario:'"Error: Unclosed configuration block" on terraform validate.', opts:['A missing closing brace } somewhere in a .tf file','Wrong provider version','Backend not initialized','Insufficient IAM permissions'], a:0, ex:'HCL is brace-sensitive — one missing } cascades into a parse error.'},
+  {id:'t6', title:'Dependency Cycle', scenario:'"Error: Cycle: oci_core_subnet.subnet, oci_core_route_table.rt".', opts:['Two resources reference each other, directly or indirectly','The subnet CIDR is invalid','The route table quota was exceeded','Terraform init wasn\'t run'], a:0, ex:'Terraform builds a dependency graph — if A depends on B and B depends on A, it can\'t determine an order.'},
+  {id:'t7', title:'Resource Already Exists', scenario:'"Error: Service error NotAuthorizedOrNotFound / Compartment already exists".', opts:['A resource with the same name was created outside Terraform (or in a prior partial apply)','The provider is outdated','Wrong tenancy OCID','Insufficient quota'], a:0, ex:'Terraform can\'t create a duplicate — either import the existing resource or rename/remove the conflicting one.'},
+  {id:'t8', title:'Quota Exceeded', scenario:'"Error: 400-LimitExceeded: The requested resource exceeds compute quota".', opts:['The tenancy has hit a service limit for that resource type','Wrong SSH key','Bad CIDR block','Provider misconfigured'], a:0, ex:'Always check Governance → Limits, Quotas and Usage before assuming it\'s a config bug.'},
+  {id:'t9', title:'Permission Denied', scenario:'Plan succeeds, but apply fails with "NotAuthorizedOrNotFound" on create.', opts:['The IAM user/group lacks a policy to manage that resource type in the compartment','The internet is down','Region mismatch','State file corrupted'], a:0, ex:'Terraform authenticates fine but still needs IAM policy authorization for each action it performs.'},
+  {id:'t10', title:'Network Timeout', scenario:'terraform apply hangs then fails with a context deadline exceeded error.', opts:['Network/proxy connectivity to the OCI API endpoint is blocked','The .tf file has a typo','The variable type is wrong','Terraform needs reinstalling'], a:0, ex:'Terraform calls the OCI API over HTTPS — firewalls or proxies blocking that traffic cause timeouts.'},
+  {id:'t11', title:'State Lock', scenario:'"Error: Error acquiring the state lock" — another apply may be running.', opts:['A previous run didn\'t release the lock, or is genuinely still in progress','The VCN CIDR is wrong','Provider plugin missing','Variable type mismatch'], a:0, ex:'Terraform locks state during writes to avoid corruption — force-unlock only after confirming no other process is running.'},
+  {id:'t12', title:'Backend Failure', scenario:'"Error: Failed to get existing workspaces: access denied" during init.', opts:['Terraform can\'t reach or authenticate to the configured state backend','The compute shape is invalid','A resource block is duplicated','Wrong Terraform version'], a:0, ex:'Remote backends (e.g. Object Storage) need their own valid credentials, separate from the OCI provider block.'},
+];
+
+const PIPELINE_STAGES = ['Developer Commit','Git Repository','Terraform Validate','Terraform Plan','Manager Approval','Terraform Apply','Infrastructure Updated'];
+
+const ACHIEVEMENTS = [
+  {id:'a1', name:'Terraform Beginner', ico:'🌱', cond:'Complete Mission 1', check:s=>s.done.has('m1')},
+  {id:'a2', name:'IaC Engineer', ico:'📐', cond:'Complete Missions 2–4', check:s=>['m2','m3','m4'].every(m=>s.done.has(m))},
+  {id:'a3', name:'Automation Specialist', ico:'⚙', cond:'Complete Missions 5–6', check:s=>s.done.has('m5') && s.done.has('m6')},
+  {id:'a4', name:'DevOps Engineer', ico:'🔁', cond:'Complete the DevOps pipeline in Mission 11', check:s=>s.pipelineDone},
+  {id:'a5', name:'Resource Manager Expert', ico:'📦', cond:'Complete Mission 9', check:s=>s.done.has('m9')},
+  {id:'a6', name:'Drift Hunter', ico:'🕵', cond:'Solve all 5 drift scenarios', check:s=>s.m10.gameFixed.size>=5},
+  {id:'a7', name:'Cloud Automation Architect', ico:'🏗', cond:'Complete all 12 missions', check:s=>MISSION_ORDER.every(m=>s.done.has(m))},
+  {id:'a8', name:'OCI Professional Ready', ico:'🎓', cond:'Complete everything with a strong quiz score', check:s=>MISSION_ORDER.every(m=>s.done.has(m)) && Object.values(s.quizScores).reduce((a,b)=>a+b,0)>=10},
+];
+
+const QUIZZES = {
+  m1:[
+    {q:'What does Terraform use to talk to a specific cloud like OCI?', opts:['A provider plugin','The OCI console UI','A Python SDK only','An SSH tunnel'], a:0, ex:'Providers are plugins that translate Terraform config into calls against a cloud\'s API.'},
+    {q:'What command prints the installed Terraform version?', opts:['terraform version','terraform --info','terraform check','tf -v'], a:0, ex:'"terraform version" confirms the CLI is installed correctly and shows the active version.'},
+  ],
+  m2:[
+    {q:'Which file supplies real values for declared variables?', opts:['terraform.tfvars','outputs.tf','versions.tf','README.md'], a:0, ex:'terraform.tfvars provides concrete values; variables.tf only declares names/types.'},
+    {q:'Which file pins Terraform/provider version constraints?', opts:['versions.tf','main.tf','provider.tf','outputs.tf'], a:0, ex:'versions.tf (or a required_providers block) locks compatible versions for reproducible builds.'},
+  ],
+  m3:[
+    {q:'Which value proves you control the matching private key during OCI auth?', opts:['Fingerprint','Region','Compartment OCID','VCN CIDR'], a:0, ex:'The fingerprint identifies which uploaded public key the provider is claiming to pair with.'},
+    {q:'What happens if the private key path in the provider block is wrong?', opts:['Authentication fails on any Terraform command that talks to OCI','Only "apply" fails, not "plan"','Terraform silently uses a default key','Nothing — keys are optional'], a:0, ex:'Any command hitting the API (plan, apply, even some validate steps) needs successful authentication first.'},
+  ],
+  m4:[
+    {q:'What is the correct data flow for a Terraform variable?', opts:['Variable → Input → Resource → Deployment','Deployment → Resource → Variable → Input','Resource → Variable → Deployment','Input → Deployment → Variable'], a:0, ex:'You declare a variable, supply an input value, reference it in a resource, and it becomes part of the deployment.'},
+    {q:'Where should sensitive default values NOT be hardcoded?', opts:['Directly in variables.tf defaults committed to version control','In terraform.tfvars (gitignored)','In environment variables','In a secrets manager'], a:0, ex:'Hardcoding secrets into version-controlled files risks exposure — use tfvars (excluded from git) or a secrets manager instead.'},
+  ],
+  m5:[
+    {q:'What must exist before a Subnet resource can be created?', opts:['A VCN','A Compute Instance','An Internet Gateway only','A Security List only'], a:0, ex:'Subnets are always children of a VCN — Terraform enforces this dependency automatically.'},
+    {q:'In the topology Internet → IGW → VCN → Subnet → Compute, what connects the VCN to the public internet?', opts:['Internet Gateway','Route Table alone','Security List','Availability Domain'], a:0, ex:'The Internet Gateway is the actual attachment point for outbound/inbound internet traffic.'},
+  ],
+  m6:[
+    {q:'What is the correct core Terraform workflow order?', opts:['init → plan → apply','apply → plan → init','plan → init → apply','init → apply → plan'], a:0, ex:'Initialize the working directory first, preview changes with plan, then apply them.'},
+    {q:'What does "terraform plan" NOT do?', opts:['Modify real infrastructure','Show what will be created/changed/destroyed','Estimate the execution order','Read the current state'], a:0, ex:'Plan is read-only by design — it previews without ever touching real resources.'},
+  ],
+  m7:[
+    {q:'What is terraform.tfstate primarily used for?', opts:['Mapping your configuration to real-world resource IDs','Storing your OCI password','Compiling Terraform into a binary','Formatting .tf files'], a:0, ex:'State lets Terraform know what it already manages and its current real-world attributes.'},
+    {q:'What does "state locking" prevent?', opts:['Two applies running concurrently and corrupting state','Variables from having default values','Providers from being downloaded twice','Resources from being tagged'], a:0, ex:'Locking ensures only one process can write to state at a time, avoiding race conditions.'},
+  ],
+  m8:[
+    {q:'In what order does "terraform destroy" remove resources?', opts:['Reverse dependency order (dependents before their dependencies)','Alphabetical order','Creation order','Random order'], a:0, ex:'Terraform destroys dependents first (e.g. Subnet) before the resources they depend on (e.g. VCN), mirroring reversed creation order.'},
+    {q:'Why does terraform destroy show a plan before deleting anything?', opts:['So you can confirm exactly what will be permanently removed','Because destroy is read-only','Because it\'s required by OCI billing','It doesn\'t — destroy is silent'], a:0, ex:'Destroy is irreversible, so Terraform always previews the deletion plan and asks for confirmation first.'},
+  ],
+  m9:[
+    {q:'Where do you find Resource Manager in the OCI Console?', opts:['Developer Services → Resource Manager','Identity → Resource Manager','Networking → Resource Manager','Governance → Resource Manager'], a:0, ex:'Resource Manager lives under Developer Services alongside DevOps and Container tools.'},
+    {q:'What does a Resource Manager "Stack" represent?', opts:['A managed Terraform configuration with its state hosted by OCI','A single Compute instance','A billing report','A VCN template only'], a:0, ex:'A Stack packages your Terraform config and lets OCI run/manage plan and apply jobs and store state for you.'},
+  ],
+  m10:[
+    {q:'What is "infrastructure drift"?', opts:['A mismatch between Terraform state and the real, current state of infrastructure','A billing anomaly','A network latency spike','A Terraform syntax error'], a:0, ex:'Drift happens when resources are changed or deleted outside Terraform, so state no longer reflects reality.'},
+    {q:'Which command updates Terraform\'s understanding of real infrastructure without changing it?', opts:['terraform refresh','terraform destroy','terraform taint','terraform fmt'], a:0, ex:'terraform refresh reconciles state with real-world resource attributes, read-only.'},
+  ],
+  m11:[
+    {q:'"Error acquiring the state lock" most often means:', opts:['Another apply is running, or a stale lock wasn\'t released','The provider is the wrong version','A variable is undeclared','The VCN CIDR overlaps'], a:0, ex:'State locking prevents concurrent writes — this error is the lock doing its job (or a stale lock needing force-unlock).'},
+    {q:'A dependency cycle error means:', opts:['Two or more resources reference each other in a loop','A region typo','A missing provider block','An expired API key'], a:0, ex:'Terraform can\'t compute a valid apply order when resources depend on each other circularly.'},
+  ],
+  m12:[
+    {q:'In the enterprise pipeline, what typically happens right before "Terraform Apply"?', opts:['Manager Approval','Git commit','Terraform destroy','Provider download'], a:0, ex:'A human approval gate between plan and apply is standard practice for production changes.'},
+  ],
+};
+
+
+/* ================= STATE ================= */
+const STATE = {
+  view:'home', xp:0, done:new Set(),
+  quizScores:{}, quizAnswered:{}, achUnlocked:new Set(),
+  automationScore:0, infraHealth:100, devopsMaturity:0, reliability:70, compliance:60, cloudReadiness:10,
+  resourcesManaged:0, tfFilesCreated:0, cliCount:0, infraCost:0, driftStatus:'None detected', pipelineStatus:'Idle',
+  pipelineDone:false, selectedChip:null,
+  m1:{step:0, history:[]},
+  m2:{created:{}},
+  m3:{fields:{}, validated:false},
+  m4:{vars:{}},
+  m5:{built:{}, selected:null},
+  m6:{step:0, history:[], applyStage:-1},
+  m7:{stateViewed:false},
+  m8:{destroyStep:0, destroying:false, destroyed:false},
+  m9:{stepsDone:{}, jobStatus:'idle', logIndex:0},
+  m10:{driftFound:false, driftFixed:false, gameFixed:new Set()},
+  m11:{solved:{}},
+  pipeline:{stage:0, failedOnce:false, failedAt:null},
+  m12:{ranFull:false},
+};
+
+function isUnlocked(id){
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx<=0) return true;
+  return STATE.done.has(MISSION_ORDER[idx-1]);
+}
+function rankFor(xp){
+  if(xp>=1400) return 'Cloud Automation Architect';
+  if(xp>=900) return 'Senior Infrastructure Engineer';
+  if(xp>=500) return 'Infrastructure Engineer';
+  if(xp>=150) return 'Associate Engineer';
+  return 'Cloud Trainee';
+}
+function addXP(n, label){
+  STATE.xp = Math.max(0, STATE.xp + n);
+  document.getElementById('xpDisplay').textContent = STATE.xp;
+  document.getElementById('rankChip').textContent = rankFor(STATE.xp);
+  toast(n>=0?'xp':'err', (n>=0?'+':'')+n+' XP', label||'');
+  checkAchievements();
+}
+function toast(type, title, msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const ico = type==='xp' ? '⭐' : type==='ok' ? '✅' : type==='err' ? '⛔' : 'ℹ';
+  el.innerHTML = `<div class="t-ico">${ico}</div><div><b>${title}</b><span>${msg||''}</span></div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+function completeMission(id, xp){
+  if(STATE.done.has(id)) return;
+  STATE.done.add(id);
+  STATE.automationScore = Math.min(100, STATE.automationScore+8);
+  STATE.reliability = Math.min(100, STATE.reliability+3);
+  STATE.cloudReadiness = Math.min(100, STATE.cloudReadiness+8);
+  addXP(xp, MISSIONS.find(m=>m.id===id).title + ' complete');
+  toast('ok','Mission Complete', MISSIONS.find(m=>m.id===id).title);
+  renderSidebar();
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx>=0 && idx<MISSION_ORDER.length-1){
+    setTimeout(()=>toast('info','Next mission unlocked', MISSIONS[idx+1].title), 900);
+  }
+}
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!STATE.achUnlocked.has(a.id) && a.check(STATE)){
+      STATE.achUnlocked.add(a.id);
+      setTimeout(()=>toast('ok','Achievement Unlocked 🏆', a.name), 600);
+    }
+  });
+}
+
+/* ================= NAV ================= */
+function renderSidebar(){
+  const groups = {main:'Overview', missions:'Mission Track', extra:'Beyond the Labs'};
+  let html = '';
+  Object.keys(groups).forEach(g=>{
+    html += `<h4>${groups[g]}</h4>`;
+    NAV.filter(n=>n.group===g).forEach(n=>{
+      let locked=false, done=false;
+      if(MISSION_ORDER.includes(n.id)){ locked=!isUnlocked(n.id); done=STATE.done.has(n.id); }
+      html += `<div class="nav-item ${STATE.view===n.id?'active':''} ${locked?'locked':''} ${done?'done':''}"
+        onclick="${locked?'':`setView('${n.id}')`}">
+        <span class="n-ico">${done?'✓':n.ico}</span>${n.label}
+        ${locked?'<span class="nav-badge">🔒</span>':''}
+      </div>`;
+    });
+  });
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  html += `<div class="progress-mini"><div class="lbl"><span>Mission Progress</span><span>${pct}%</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
+  document.getElementById('sidebar').innerHTML = html;
+}
+function setView(id){
+  STATE.view = id;
+  const nav = NAV.find(n=>n.id===id);
+  document.getElementById('crumbCurrent').textContent = nav ? nav.label : id;
+  renderSidebar();
+  renderMain();
+  const mainEl = document.getElementById('main');
+  if(mainEl.scrollIntoView) mainEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderMain(){
+  const map = {
+    home:renderHome, missionmap:renderMissionMap,
+    m1:renderM1, m2:renderM2, m3:renderM3, m4:renderM4, m5:renderM5, m6:renderM6,
+    m7:renderM7, m8:renderM8, m9:renderM9, m10:renderM10, m11:renderM11, m12:renderM12,
+    achievements:renderAchievements, capstone:renderCapstone,
+  };
+  const fn = map[STATE.view] || renderHome;
+  document.getElementById('main').innerHTML = `<div class="view active">${fn()}</div>`;
+  afterRenderHooks[STATE.view] && afterRenderHooks[STATE.view]();
+}
+const afterRenderHooks = {};
+
+/* ================= HOME ================= */
+function renderHome(){
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  const nextMission = MISSIONS[STATE.done.size];
+  return `
+  <div class="section-head">
+    <div class="eyebrow">OCI Operations Professional · 1Z0-1067-26 · Day 4 Lab</div>
+    <h1 class="page-title">Terraform &amp; OCI Resource Manager</h1>
+    <p class="page-sub">You've joined ABC Corporation as a Cloud Infrastructure Engineer. Your mission: eliminate manual deployments by automating OCI with Terraform.</p>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-orange">XP</div><h2 style="margin-top:10px;font-size:24px;">${STATE.xp}</h2></div>
+    <div class="card"><div class="pill pill-blue">Rank</div><h2 style="margin-top:10px;font-size:16px;">${rankFor(STATE.xp)}</h2></div>
+    <div class="card"><div class="pill pill-green">Missions</div><h2 style="margin-top:10px;font-size:24px;">${STATE.done.size}/12</h2></div>
+    <div class="card"><div class="pill pill-red">Automation Score</div><h2 style="margin-top:10px;font-size:24px;">${STATE.automationScore}</h2></div>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-gray">Resources Managed</div><h3 style="margin-top:8px;">${STATE.resourcesManaged}</h3></div>
+    <div class="card"><div class="pill pill-gray">TF Files Created</div><h3 style="margin-top:8px;">${STATE.tfFilesCreated}/7</h3></div>
+    <div class="card"><div class="pill pill-gray">CLI Commands Run</div><h3 style="margin-top:8px;">${STATE.cliCount}</h3></div>
+    <div class="card"><div class="pill pill-gray">Drift Status</div><h3 style="margin-top:8px; font-size:13px;">${STATE.driftStatus}</h3></div>
+  </div>
+  <div class="card" style="text-align:center; padding:40px 24px; background:linear-gradient(180deg, var(--red-glow), var(--panel));">
+    <div style="font-size:13px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Current Mission</div>
+    <h2 style="font-size:21px; margin-bottom:10px;">${nextMission ? 'Mission '+nextMission.num+' — '+nextMission.title : 'All Missions Complete!'}</h2>
+    <p class="page-sub" style="margin:0 auto 20px;">Pipeline status: ${STATE.pipelineStatus}</p>
+    <button class="btn btn-primary" onclick="setView('missionmap')">🚀 Start Mission</button>
+  </div>`;
+}
+
+/* ================= MISSION MAP ================= */
+function renderMissionMap(){
+  let nodes = MISSIONS.map(m=>{
+    const locked = !isUnlocked(m.id); const done = STATE.done.has(m.id); const current = !locked && !done;
+    return `<div class="m-node ${locked?'locked':''} ${done?'done':''} ${current?'current':''}" onclick="${locked?'':`setView('${m.id}')`}">
+      <div class="m-num">${done?'✓':m.num}</div><h4>${m.title}</h4><p>${m.desc}</p>
+      <div class="m-xp">⭐ ${m.xp} XP</div>${locked?'<div class="pill pill-gray" style="margin-top:6px;">🔒 Locked</div>':''}
+    </div>`;
+  }).join('');
+  return `<div class="section-head"><div class="eyebrow">Mission Map</div><h1 class="page-title">Automate OCI, One Mission at a Time</h1>
+  <p class="page-sub">Complete missions in order — each unlocks the next.</p></div>
+  <div class="mission-map"><div class="mission-track">${nodes}</div></div>`;
+}
+
+/* ================= M1: INSTALL TERRAFORM ================= */
+function renderM1(){
+  const done = STATE.done.has('m1');
+  const step = STATE.m1.step;
+  afterRenderHooks.m1 = ()=>{ const t=document.getElementById('m1term'); if(t) t.scrollTop = t.scrollHeight; };
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 1 · 90 XP</div><h1 class="page-title">Install Terraform</h1>
+  <p class="page-sub">Download, install, add to PATH, and verify — exactly like a real workstation setup.</p></div>
+  <div class="terminal" id="m1term">
+    ${STATE.m1.history.map(h=>`<div class="line"><span class="prompt">$</span> ${h.cmd}</div>${h.out?`<div class="line out">${h.out.replace(/\n/g,'<br>')}</div>`:''}<div class="line comment"># ${h.note}</div>`).join('')}
+    ${step<INSTALL_STEPS.length ? `<div class="line"><span class="prompt">$</span> <span style="color:var(--text-faint);">${INSTALL_STEPS[step].cmd}</span></div>` : ''}
+  </div>
+  <div style="margin-top:14px;">${step<INSTALL_STEPS.length ? `<button class="btn btn-primary" onclick="runM1Step()">▶ Run next step</button>` : `<span class="pill pill-green">Terraform installed</span>`}</div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Core Concepts</h4>
+  <div class="grid grid-2">
+    ${IAC_CONCEPTS.map(c=>`<div class="card" style="padding:14px;"><b>${c.term}</b><p class="page-sub" style="margin-top:6px;">${c.def}</p></div>`).join('')}
+  </div>
+  ${step>=INSTALL_STEPS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m1',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m1') : ''}`;
+}
+function runM1Step(){
+  const s = INSTALL_STEPS[STATE.m1.step];
+  STATE.m1.history.push(s);
+  STATE.m1.step++;
+  STATE.cliCount++;
+  addXP(8, s.cmd.split(' ').slice(0,2).join(' '));
+  renderMain();
+}
+
+/* ================= M2: PROJECT STRUCTURE ================= */
+function renderM2(){
+  const done = STATE.done.has('m2');
+  const count = Object.keys(STATE.m2.created).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 2 · 90 XP</div><h1 class="page-title">Terraform Project Structure</h1>
+  <p class="page-sub">Click each file to create it and learn what it's for. (${count}/${PROJECT_FILES.length})</p></div>
+  <div class="file-tree">
+    ${PROJECT_FILES.map(f=>`<div class="file-item ${STATE.m2.created[f.name]?'created':''}" onclick="createM2File('${f.name}')">
+      <span class="fi-ico">${STATE.m2.created[f.name]?'✓':'📄'}</span><span class="fi-name">${f.name}</span><span class="fi-desc">${f.desc}</span>
+    </div>`).join('')}
+  </div>
+  <div class="info-box">💡 Splitting config across these files is a convention, not a requirement — Terraform reads every .tf file in a directory together.</div>
+  ${count>=PROJECT_FILES.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m2',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m2') : ''}`;
+}
+function createM2File(name){
+  if(STATE.m2.created[name]) return;
+  STATE.m2.created[name] = true;
+  STATE.tfFilesCreated = Object.keys(STATE.m2.created).length;
+  toast('ok','File created', name);
+  addXP(5, name);
+  renderMain();
+}
+
+/* ================= M3: PROVIDER CONFIGURATION ================= */
+function renderM3(){
+  const done = STATE.done.has('m3');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 3 · 100 XP</div><h1 class="page-title">Provider Configuration</h1>
+  <p class="page-sub">Configure and validate the OCI provider block.</p></div>
+  <div class="two-col">
+    <div class="card">
+      ${PROVIDER_FIELDS.map(f=>`<div class="field"><label>${f.label}</label><input id="pf-${f.key}" placeholder="${f.ph}"></div>`).join('')}
+      <button class="btn btn-primary" onclick="validateM3()">terraform validate</button>
+      <div id="m3result" style="margin-top:12px;"></div>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:10px;">provider.tf</h4>
+      <div class="code-block" id="providerPreview">${providerCodePreview()}</div>
+    </div>
+  </div>
+  ${STATE.m3.validated && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m3',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m3') : ''}`;
+}
+function providerCodePreview(){
+  const v = STATE.m3.fields;
+  return `<span class="tok-block">provider</span> <span class="tok-str">"oci"</span> {
+  tenancy_ocid     = <span class="tok-str">"${v.tenancy_ocid||'...'}"</span>
+  user_ocid        = <span class="tok-str">"${v.user_ocid||'...'}"</span>
+  fingerprint      = <span class="tok-str">"${v.fingerprint||'...'}"</span>
+  private_key_path = <span class="tok-str">"${v.private_key_path||'...'}"</span>
+  region           = <span class="tok-str">"${v.region||'...'}"</span>
+}`;
+}
+function validateM3(){
+  PROVIDER_FIELDS.forEach(f=>{ STATE.m3.fields[f.key] = document.getElementById('pf-'+f.key).value.trim(); });
+  const missing = PROVIDER_FIELDS.filter(f=>!STATE.m3.fields[f.key]);
+  const badFingerprint = STATE.m3.fields.fingerprint && !STATE.m3.fields.fingerprint.includes(':');
+  const box = document.getElementById('m3result');
+  if(missing.length){
+    box.innerHTML = `<div class="mistake-box">⛔ Error: Missing required argument${missing.length>1?'s':''}: ${missing.map(m=>m.key).join(', ')}</div>`;
+  } else if(badFingerprint){
+    box.innerHTML = `<div class="mistake-box">⛔ Error: 400-InvalidParameter — fingerprint format looks wrong (expected colon-separated hex, e.g. a1:b2:c3:...)</div>`;
+  } else {
+    box.innerHTML = `<div class="info-box">✓ Provider configuration is valid. Authentication verified against OCI.</div>`;
+    STATE.m3.validated = true;
+    addXP(15,'Provider validated');
+  }
+  renderMain();
+}
+
+/* ================= M4: VARIABLES ================= */
+function renderM4(){
+  const done = STATE.done.has('m4');
+  const filled = VARIABLES_M4.filter(v=>STATE.m4.vars[v.key]).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 4 · 100 XP</div><h1 class="page-title">Variables</h1>
+  <p class="page-sub">Fill in terraform.tfvars — watch the values flow into your deployment.</p></div>
+  <div class="two-col">
+    <div class="card">
+      ${VARIABLES_M4.map(v=>`<div class="field"><label>${v.label}</label><input id="v4-${v.key}" placeholder="${v.ph}" oninput="updateM4Var('${v.key}')"></div>`).join('')}
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:10px;">terraform.tfvars</h4>
+      <div class="code-block" id="tfvarsPreview">${tfvarsPreview()}</div>
+      <div class="hr"></div>
+      <h4 style="margin-bottom:10px;">Variable Flow</h4>
+      <div class="arch-diagram">
+        <div class="arch-node ${filled>0?'active':'pending'}">Variable</div><div class="arch-arrow">↓</div>
+        <div class="arch-node ${filled>0?'active':'pending'}">Input</div><div class="arch-arrow">↓</div>
+        <div class="arch-node ${filled>=3?'active':'pending'}">Resource</div><div class="arch-arrow">↓</div>
+        <div class="arch-node ${filled>=VARIABLES_M4.length?'active':'pending'}">Deployment</div>
+      </div>
+    </div>
+  </div>
+  ${filled>=VARIABLES_M4.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m4',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m4') : ''}`;
+}
+function tfvarsPreview(){
+  return VARIABLES_M4.map(v=>`${v.key} = "${STATE.m4.vars[v.key]||''}"`).join('\n') || '# fill in the fields to preview';
+}
+function updateM4Var(key){
+  STATE.m4.vars[key] = document.getElementById('v4-'+key).value.trim();
+  document.getElementById('tfvarsPreview').textContent = tfvarsPreview();
+  const filled = VARIABLES_M4.filter(v=>STATE.m4.vars[v.key]).length;
+  if(filled===VARIABLES_M4.length) renderMain();
+}
+
+/* ================= M5: DEPLOY INFRASTRUCTURE ================= */
+function renderM5(){
+  const done = STATE.done.has('m5');
+  const requiredBuilt = M5_RESOURCES.filter(r=>r.required && STATE.m5.built[r.id]).length;
+  const requiredTotal = M5_RESOURCES.filter(r=>r.required).length;
+  const sel = STATE.m5.selected;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 5 · 130 XP</div><h1 class="page-title">Deploy Infrastructure</h1>
+  <p class="page-sub">Add each resource — the architecture diagram updates live. (${requiredBuilt}/${requiredTotal} required)</p></div>
+  <div class="chip-row">
+    ${M5_RESOURCES.map(r=>`<button class="chip ${STATE.m5.built[r.id]?'active':''}" onclick="buildM5('${r.id}')">${STATE.m5.built[r.id]?'✓ ':''}${r.label}${!r.required?' (bonus)':''}</button>`).join('')}
+  </div>
+  <div class="card">
+    <h4 style="margin-bottom:10px;">Live Architecture</h4>
+    <div class="arch-diagram">
+      ${ARCH_TOPOLOGY.map((k,i)=>{
+        const present = k==='Internet' || STATE.m5.built[k];
+        return `${i>0?'<div class="arch-arrow">↓</div>':''}<div class="arch-node ${present?'active':'pending'}" onclick="selectArchNode('${k}')">${ARCH_LABELS[k]}</div>`;
+      }).join('')}
+    </div>
+  </div>
+  <div class="card" id="archDetail" style="margin-top:14px;">${sel ? archDetailHtml(sel) : 'Click a node above (once built) to inspect its Terraform code.'}</div>
+  ${requiredBuilt>=requiredTotal && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m5',130); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m5') : ''}`;
+}
+function buildM5(id){
+  if(STATE.m5.built[id]) return;
+  STATE.m5.built[id] = true;
+  STATE.resourcesManaged++;
+  toast('ok','Resource created', M5_RESOURCES.find(r=>r.id===id).label);
+  addXP(10, id);
+  renderMain();
+}
+function selectArchNode(k){
+  if(k==='Internet') return;
+  if(!STATE.m5.built[k]){ toast('err','Not built yet','Add this resource first.'); return; }
+  STATE.m5.selected = k;
+  document.getElementById('archDetail').innerHTML = archDetailHtml(k);
+}
+function archDetailHtml(k){
+  const r = M5_RESOURCES.find(r=>r.id===k);
+  if(!r) return '';
+  return `<h5 style="margin-bottom:8px;">${r.label}</h5><div class="code-block">${r.code}</div>`;
+}
+
+/* ================= M6: TERRAFORM WORKFLOW ================= */
+function renderM6(){
+  const done = STATE.done.has('m6');
+  const step = STATE.m6.step;
+  afterRenderHooks.m6 = ()=>{ const t=document.getElementById('m6term'); if(t) t.scrollTop = t.scrollHeight; };
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 6 · 130 XP</div><h1 class="page-title">Terraform Workflow</h1>
+  <p class="page-sub">Run the real command sequence: init → fmt → validate → plan → apply → output → show → graph.</p></div>
+  <div class="terminal" id="m6term">
+    ${STATE.m6.history.map(h=>`<div class="line"><span class="prompt">$</span> ${h.cmd}</div><div class="line out">${h.out.replace(/\n/g,'<br>')}</div><div class="line comment"># ${h.note}</div>`).join('')}
+    ${step<TF_WORKFLOW_STEPS.length ? `<div class="line"><span class="prompt">$</span> <span style="color:var(--text-faint);">${TF_WORKFLOW_STEPS[step].cmd}</span></div>` : ''}
+  </div>
+  <div style="margin-top:14px;">${step<TF_WORKFLOW_STEPS.length ? `<button class="btn btn-primary" onclick="runM6Step()">▶ Run: ${TF_WORKFLOW_STEPS[step].cmd}</button>` : `<span class="pill pill-green">Workflow complete</span>`}</div>
+  ${step>3 ? `<div class="hr"></div><h4 style="margin-bottom:10px;">Plan Visualizer</h4>
+    ${PLAN_ITEMS.map(p=>`<div class="plan-row"><span class="plan-badge ${p.action}">${p.action}</span>${p.res}</div>`).join('')}
+    <div class="tag-list" style="margin-top:8px;"><span class="pill pill-blue">Estimated resources: ${PLAN_ITEMS.length}</span><span class="pill pill-orange">Estimated cost: $0.00/mo (Always Free eligible)</span></div>` : ''}
+  ${step>4 ? `<div class="hr"></div><h4 style="margin-bottom:10px;">Apply Progress</h4>
+    <div class="bar-track" style="margin-bottom:10px;"><div class="bar-fill" style="width:${Math.min(100,(STATE.m6.applyStage+1)/APPLY_STAGES.length*100)}%"></div></div>
+    <div class="tag-list">${APPLY_STAGES.map((s,i)=>`<span class="pill ${i<=STATE.m6.applyStage?'pill-green':'pill-gray'}">${i<=STATE.m6.applyStage?'✓':'○'} ${s}</span>`).join('')}</div>
+    ${STATE.m6.applyStage<APPLY_STAGES.length-1 ? `<button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="advanceApply()">▶ Next stage</button>` : ''}` : ''}
+  ${step>=TF_WORKFLOW_STEPS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m6',130); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m6') : ''}`;
+}
+function runM6Step(){
+  const s = TF_WORKFLOW_STEPS[STATE.m6.step];
+  STATE.m6.history.push(s);
+  STATE.m6.step++;
+  STATE.cliCount++;
+  if(s.cmd.startsWith('terraform apply')) STATE.m6.applyStage = 0;
+  addXP(8, s.cmd);
+  renderMain();
+}
+function advanceApply(){
+  STATE.m6.applyStage = Math.min(APPLY_STAGES.length-1, STATE.m6.applyStage+1);
+  renderMain();
+}
+
+/* ================= M7: STATE MANAGEMENT ================= */
+const STATE_CONCEPTS = [
+  {term:'terraform.tfstate', def:'The JSON file mapping your config to real resource IDs and attributes.'},
+  {term:'State Locking', def:'Prevents two applies from writing state simultaneously and corrupting it.'},
+  {term:'Refresh', def:'Reconciles state with real infrastructure attributes, without changing anything.'},
+  {term:'Import', def:'Brings an existing, manually-created resource under Terraform management.'},
+  {term:'State Drift', def:'When real infrastructure no longer matches what state believes exists.'},
+];
+function renderM7(){
+  const done = STATE.done.has('m7');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 7 · 100 XP</div><h1 class="page-title">State Management</h1>
+  <p class="page-sub">Understand terraform.tfstate — the single source of truth linking config to reality.</p></div>
+  <div class="grid grid-2" style="margin-bottom:16px;">
+    ${STATE_CONCEPTS.map(c=>`<div class="card" style="padding:14px;"><b>${c.term}</b><p class="page-sub" style="margin-top:6px;">${c.def}</p></div>`).join('')}
+  </div>
+  <div class="arch-diagram">
+    <div class="arch-node active">Resource</div><div class="arch-arrow">↓</div>
+    <div class="arch-node active">State File</div><div class="arch-arrow">↓</div>
+    <div class="arch-node active">Cloud</div>
+  </div>
+  <div class="card">
+    <h4 style="margin-bottom:10px;">State File Explorer</h4>
+    ${!STATE.m7.stateViewed ? `<button class="btn btn-ghost" onclick="viewM7State()">Expand terraform.tfstate</button>` : `<div class="state-json">${STATE_FILE_SAMPLE}</div><div class="info-box">🔒 Sensitive values (resource OCIDs) are masked with ████ in this view — real state files should never be committed to version control.</div>`}
+  </div>
+  ${STATE.m7.stateViewed && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m7',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m7') : ''}`;
+}
+function viewM7State(){
+  STATE.m7.stateViewed = true;
+  addXP(10,'Inspected state file');
+  renderMain();
+}
+
+/* ================= M8: TERRAFORM DESTROY ================= */
+function renderM8(){
+  const done = STATE.done.has('m8');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 8 · 90 XP</div><h1 class="page-title">Terraform Destroy</h1>
+  <p class="page-sub">Tear down safely — Terraform destroys in reverse dependency order.</p></div>
+  <div class="card">
+    <h4 style="margin-bottom:10px;">Deletion Order</h4>
+    <div class="tag-list">${DESTROY_ORDER.map((d,i)=>`<span class="pill ${i<STATE.m8.destroyStep?'pill-red':'pill-gray'}">${i<STATE.m8.destroyStep?'✓ deleted':'pending'} · ${d}</span>`).join('')}</div>
+  </div>
+  <div style="margin-top:14px;">
+    ${!STATE.m8.destroying && !STATE.m8.destroyed ? `<button class="btn btn-ghost" onclick="confirmDestroy()">terraform destroy</button>` : ''}
+    ${STATE.m8.destroying && STATE.m8.destroyStep<DESTROY_ORDER.length ? `<button class="btn btn-primary" onclick="destroyStep()">▶ Destroy: ${DESTROY_ORDER[STATE.m8.destroyStep]}</button>` : ''}
+    ${STATE.m8.destroyed ? `<span class="pill pill-green">Destroy complete — 0 resources remain</span>` : ''}
+  </div>
+  <div class="info-box">💡 Reverse order matters: a Subnet must be gone before its VCN can be deleted, since the VCN is still "in use" otherwise.</div>
+  ${STATE.m8.destroyed && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m8',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m8') : ''}`;
+}
+function confirmDestroy(){
+  STATE.m8.destroying = true;
+  toast('info','Destroy plan generated', `${DESTROY_ORDER.length} resources will be permanently deleted.`);
+  renderMain();
+}
+function destroyStep(){
+  STATE.m8.destroyStep++;
+  if(STATE.m8.destroyStep>=DESTROY_ORDER.length){ STATE.m8.destroyed = true; STATE.resourcesManaged = 0; addXP(10,'Environment destroyed'); }
+  else addXP(4, 'Deleted '+DESTROY_ORDER[STATE.m8.destroyStep-1]);
+  renderMain();
+}
+
+/* ================= M9: OCI RESOURCE MANAGER ================= */
+function renderM9(){
+  const done = STATE.done.has('m9');
+  const stepsDone = Object.keys(STATE.m9.stepsDone).length;
+  afterRenderHooks.m9 = ()=>{ const t=document.getElementById('m9log'); if(t) t.scrollTop = t.scrollHeight; };
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 9 · 110 XP</div><h1 class="page-title">OCI Resource Manager</h1>
+  <p class="page-sub">Developer Services → Resource Manager → Stacks — run Terraform as a managed OCI service.</p></div>
+  <div class="tag-list" style="margin-bottom:14px;"><span class="pill pill-gray">Developer Services</span><span class="pill pill-gray">→</span><span class="pill pill-gray">Resource Manager</span><span class="pill pill-gray">→</span><span class="pill pill-blue">Stacks</span></div>
+  <div class="chip-row">${RM_STEPS.map(s=>`<button class="chip ${STATE.m9.stepsDone[s]?'active':''}" ${RM_STEPS.indexOf(s)>stepsDone?'disabled':''} onclick="runRMStep('${s}')">${STATE.m9.stepsDone[s]?'✓ ':''}${s}</button>`).join('')}</div>
+  <div class="card">
+    <h4 style="margin-bottom:10px;">Job Status: <span class="pill ${STATE.m9.jobStatus==='Succeeded'?'pill-green':STATE.m9.jobStatus==='Running'?'pill-blue':STATE.m9.jobStatus==='Failed'?'pill-red':'pill-gray'}">${STATE.m9.jobStatus}</span></h4>
+    <div class="terminal" id="m9log">${RM_JOB_LOG.slice(0,STATE.m9.logIndex).map(l=>`<div class="line out">${l}</div>`).join('') || '<div class="line comment"># Execute the job to see logs</div>'}</div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="arch-diagram"><div class="arch-row">
+      <div class="arch-node active">Terraform Code</div><div class="arch-arrow">→</div>
+      <div class="arch-node ${stepsDone>=3?'active':'pending'}">Stack</div><div class="arch-arrow">→</div>
+      <div class="arch-node ${stepsDone>=4?'active':'pending'}">Job</div><div class="arch-arrow">→</div>
+      <div class="arch-node ${STATE.m9.jobStatus==='Succeeded'?'active':'pending'}">Infrastructure</div>
+    </div></div>
+  </div>
+  ${STATE.m9.jobStatus==='Succeeded' && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m9',110); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m9') : ''}`;
+}
+function runRMStep(s){
+  if(STATE.m9.stepsDone[s]) return;
+  STATE.m9.stepsDone[s] = true;
+  toast('ok', s, 'Step complete');
+  addXP(8, s);
+  if(s==='Execute Job'){
+    STATE.m9.jobStatus = 'Accepted';
+    STATE.m9.logIndex = 1;
+    renderMain();
+    let i = 1;
+    const iv = setInterval(()=>{
+      i++;
+      STATE.m9.logIndex = i;
+      STATE.m9.jobStatus = i>=RM_JOB_LOG.length ? 'Succeeded' : 'Running';
+      renderMain();
+      if(i>=RM_JOB_LOG.length){ clearInterval(iv); addXP(20,'Resource Manager job succeeded'); }
+    }, 500);
+    return;
+  }
+  renderMain();
+}
+
+/* ================= M10: DRIFT DETECTION ================= */
+function renderM10(){
+  const done = STATE.done.has('m10');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 10 · 120 XP</div><h1 class="page-title">Drift Detection</h1>
+  <p class="page-sub">An administrator manually deleted the Subnet in the OCI Console. Terraform state doesn't know yet.</p></div>
+  <div class="card">
+    ${!STATE.m10.driftFound ? `<button class="btn btn-ghost" onclick="detectDrift()">🔍 Detect Drift</button>` : `
+    <div class="drift-row mismatch"><span>Subnet (public-subnet-1)</span><span>State: exists · OCI: <b style="color:var(--red);">NOT FOUND</b></span></div>
+    <div class="drift-row match"><span>VCN (prod-vcn)</span><span>State: exists · OCI: exists ✓</span></div>
+    ${!STATE.m10.driftFixed ? `<div style="margin-top:12px;"><button class="btn btn-primary btn-sm" onclick="fixDrift()">terraform apply (recreate)</button> <button class="btn btn-ghost btn-sm" onclick="fixDrift()">terraform refresh (sync state)</button></div>`
+      : `<div class="info-box" style="margin-top:10px;">✓ Drift resolved — state and real infrastructure are back in sync.</div>`}`}
+  </div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Drift Detection Game — repair each scenario (${STATE.m10.gameFixed.size}/${DRIFT_GAME.length})</h4>
+  ${DRIFT_GAME.map(d=>{
+    const fixed = STATE.m10.gameFixed.has(d.id);
+    return `<div class="card" style="margin-bottom:10px; padding:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <b>${d.label}</b>${fixed?'<span class="pill pill-green">Repaired</span>':'<span class="pill pill-red">Drift detected</span>'}
+      </div>
+      ${!fixed ? `<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="repairDriftGame('${d.id}')">Investigate &amp; Repair</button>` : `<p class="page-sub" style="margin-top:8px;">${d.explain}</p>`}
+    </div>`;
+  }).join('')}
+  ${STATE.m10.driftFixed && STATE.m10.gameFixed.size>=DRIFT_GAME.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m10',120); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m10') : ''}`;
+}
+function detectDrift(){
+  STATE.m10.driftFound = true;
+  STATE.driftStatus = 'Drift detected';
+  toast('err','Drift found','Subnet exists in state but not in OCI.');
+  renderMain();
+}
+function fixDrift(){
+  STATE.m10.driftFixed = true;
+  STATE.driftStatus = 'In sync';
+  addXP(20,'Drift resolved');
+  renderMain();
+}
+function repairDriftGame(id){
+  STATE.m10.gameFixed.add(id);
+  addXP(10, DRIFT_GAME.find(d=>d.id===id).label+' repaired');
+  renderMain();
+}
+
+/* ================= M11: TROUBLESHOOTING + PIPELINE ================= */
+function renderM11(){
+  const done = STATE.done.has('m11');
+  const solvedCount = Object.keys(STATE.m11.solved).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 11 · 120 XP</div><h1 class="page-title">Infrastructure Troubleshooting</h1>
+  <p class="page-sub">Diagnose 12 enterprise Terraform failures, then run the DevOps pipeline end to end. (${solvedCount}/${TF_TROUBLESHOOT.length})</p></div>
+  ${TF_TROUBLESHOOT.map(t=>`
+    <div class="card" style="margin-bottom:12px;">
+      <h5 style="margin-bottom:6px;">${t.title} ${STATE.m11.solved[t.id]?'<span class="pill pill-green">Solved</span>':''}</h5>
+      <p class="page-sub" style="margin-bottom:10px;">${t.scenario}</p>
+      <div id="tswrap-${t.id}">
+        ${t.opts.map((o,i)=>`<div class="q-opt" onclick="answerTS('${t.id}',${i})">${o}</div>`).join('')}
+        <div class="q-explain" id="tsex-${t.id}">${t.ex}</div>
+      </div>
+    </div>`).join('')}
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">DevOps Pipeline Simulation</h4>
+  <div class="pipeline">
+    ${PIPELINE_STAGES.map((s,i)=>{
+      const cls = i<STATE.pipeline.stage ? 'done' : i===STATE.pipeline.stage ? (STATE.pipeline.failedAt===i?'failed':'active') : '';
+      return `${i>0?'<span class="pipe-arrow">→</span>':''}<div class="pipe-stage ${cls}">${s}</div>`;
+    }).join('')}
+  </div>
+  <div style="margin-top:12px;">
+    ${STATE.pipeline.failedAt!==null ? `<button class="btn btn-primary btn-sm" onclick="repairPipeline()">🔧 Repair pipeline</button>`
+      : STATE.pipeline.stage<PIPELINE_STAGES.length ? `<button class="btn btn-ghost btn-sm" onclick="advancePipeline()">▶ Advance pipeline</button>`
+      : `<span class="pill pill-green">Pipeline complete</span>`}
+  </div>
+  ${solvedCount>=TF_TROUBLESHOOT.length && STATE.pipelineDone && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m11',120); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m11') : ''}`;
+}
+function answerTS(id, idx){
+  const t = TF_TROUBLESHOOT.find(x=>x.id===id);
+  const container = document.getElementById('tswrap-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{ o.onclick=null; if(i===t.a) o.classList.add('correct'); else if(i===idx) o.classList.add('incorrect'); });
+  document.getElementById('tsex-'+id).classList.add('show');
+  if(idx===t.a){ if(!STATE.m11.solved[id]){ STATE.m11.solved[id]=true; addXP(10, t.title+' resolved'); } }
+  else toast('err','Not quite','Check the explanation below.');
+  renderSidebar();
+}
+function advancePipeline(){
+  if(STATE.pipeline.stage===2 && !STATE.pipeline.failedOnce){
+    STATE.pipeline.failedAt = 2;
+    STATE.pipeline.failedOnce = true;
+    STATE.pipelineStatus = 'Failed — validation error';
+    toast('err','Pipeline failed','Terraform Validate found a syntax error. Repair to continue.');
+    renderMain();
+    return;
+  }
+  STATE.pipeline.stage++;
+  STATE.pipelineStatus = STATE.pipeline.stage>=PIPELINE_STAGES.length ? 'Succeeded' : PIPELINE_STAGES[STATE.pipeline.stage];
+  if(STATE.pipeline.stage>=PIPELINE_STAGES.length){ STATE.pipelineDone = true; addXP(25,'Pipeline completed'); }
+  renderMain();
+}
+function repairPipeline(){
+  STATE.pipeline.failedAt = null;
+  toast('ok','Pipeline repaired','Resuming from Terraform Validate.');
+  renderMain();
+}
+
+/* ================= M12: ENTERPRISE AUTOMATION CHALLENGE ================= */
+const M12_STEPS = ['Validate','Plan','Apply','Verify','Detect Drift','Repair Drift','Destroy Environment'];
+function renderM12(){
+  const done = STATE.done.has('m12');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 12 · 150 XP</div><h1 class="page-title">Enterprise Automation Challenge</h1>
+  <p class="page-sub">Run the complete pipeline end to end: deploy, verify, detect &amp; repair drift, then tear down.</p></div>
+  <div class="tag-list" style="margin-bottom:16px;">${M12_STEPS.map(s=>`<span class="pill ${STATE.m12.ranFull?'pill-green':'pill-gray'}">${STATE.m12.ranFull?'✓':'○'} ${s}</span>`).join('')}</div>
+  ${!STATE.m12.ranFull ? `<button class="btn btn-primary" onclick="runM12()">🚀 Run Full Pipeline</button>` : `
+  <div class="grid grid-4">
+    <div class="card"><div class="pill pill-blue">Deployment Time</div><h3 style="margin-top:8px;">11m 42s</h3></div>
+    <div class="card"><div class="pill pill-green">Correctness</div><h3 style="margin-top:8px;">100%</h3></div>
+    <div class="card"><div class="pill pill-orange">Automation Score</div><h3 style="margin-top:8px;">${STATE.automationScore}</h3></div>
+    <div class="card"><div class="pill pill-red">Infrastructure Health</div><h3 style="margin-top:8px;">${STATE.infraHealth}%</h3></div>
+  </div>`}
+  ${STATE.m12.ranFull && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m12',150); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m12') : ''}`;
+}
+function runM12(){
+  toast('info','Running full pipeline…','Validate → Plan → Apply → Verify → Drift → Repair → Destroy');
+  STATE.m12.ranFull = true;
+  STATE.devopsMaturity = 100;
+  STATE.compliance = 100;
+  addXP(30,'Enterprise pipeline executed successfully');
+  renderMain();
+}
+
+/* ================= ACHIEVEMENTS ================= */
+function renderAchievements(){
+  return `<div class="section-head"><div class="eyebrow">Achievements</div><h1 class="page-title">Trophy Case</h1>
+  <p class="page-sub">${STATE.achUnlocked.size}/${ACHIEVEMENTS.length} unlocked</p></div>
+  <div class="grid grid-4">
+    ${ACHIEVEMENTS.map(a=>{ const u = STATE.achUnlocked.has(a.id);
+      return `<div class="ach-card ${u?'':'locked'}"><div class="ico">${a.ico}</div><h5>${a.name}</h5><p>${u?'Unlocked':a.cond}</p></div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ================= CAPSTONE ================= */
+function renderCapstone(){
+  const allDone = MISSION_ORDER.every(m=>STATE.done.has(m));
+  const checklist = [
+    {label:'Variables fixed (no missing values)', ok:STATE.done.has('m4')},
+    {label:'Provider configuration valid', ok:STATE.done.has('m3')},
+    {label:'Region &amp; OCIDs correct', ok:STATE.done.has('m3')},
+    {label:'Resource dependencies repaired', ok:STATE.done.has('m5')},
+    {label:'All required resources present', ok:STATE.done.has('m5')},
+    {label:'State file healthy', ok:STATE.done.has('m7')},
+    {label:'Infrastructure drift resolved', ok:STATE.done.has('m10')},
+    {label:'Resource Manager stack succeeded', ok:STATE.done.has('m9')},
+  ];
+  return `
+  <div class="section-head"><div class="eyebrow">Final Capstone</div><h1 class="page-title">Repair the Broken Terraform Project</h1>
+  <p class="page-sub">You've inherited a broken project — missing variables, an invalid provider, wrong OCIDs, broken dependencies, corrupted state, drift, and a failed stack.</p></div>
+  <div class="card">${checklist.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
+    <span class="pill ${c.ok?'pill-green':'pill-gray'}">${c.ok?'✓':'○'}</span><span>${c.label}</span></div>`).join('')}</div>
+  ${allDone ? `
+  <div class="card" style="text-align:center; margin-top:18px; padding:44px; background:linear-gradient(180deg, rgba(61,220,132,.12), var(--panel));">
+    <div style="font-size:44px;margin-bottom:10px;">🎓</div>
+    <h2 style="margin-bottom:8px;">Infrastructure Deploys Successfully</h2>
+    <p class="page-sub" style="margin-bottom:14px;">Cloud Automation Architect · XP ${STATE.xp}</p>
+    <div class="pill pill-green" style="font-size:13px; padding:8px 16px;">Certification Ready</div>
+  </div>` : `<div class="tip-box" style="margin-top:16px;">Complete all 12 missions to repair the project and unlock your capstone certificate.</div>`}`;
+}
+
+/* ================= QUIZ BLOCK (reused) ================= */
+function renderQuizBlock(missionId){
+  const qs = QUIZZES[missionId];
+  if(!qs) return '';
+  const answered = STATE.quizAnswered[missionId] || {};
+  return `<div class="card" style="margin-top:20px;"><h4 style="margin-bottom:14px;">🎯 Knowledge Check</h4>
+    ${qs.map((q,qi)=>`<div class="quiz-q"><div class="q-txt">${qi+1}. ${q.q}</div>
+      ${q.opts.map((o,oi)=>`<div class="q-opt ${answered[qi]===oi?(oi===q.a?'correct':'incorrect'):''}" onclick="answerQuiz('${missionId}',${qi},${oi})">${o}</div>`).join('')}
+      <div class="q-explain ${answered[qi]!==undefined?'show':''}">${q.ex}</div></div>`).join('')}
+  </div>`;
+}
+function answerQuiz(missionId, qi, oi){
+  if(!STATE.quizAnswered[missionId]) STATE.quizAnswered[missionId] = {};
+  if(STATE.quizAnswered[missionId][qi] !== undefined) return;
+  STATE.quizAnswered[missionId][qi] = oi;
+  const q = QUIZZES[missionId][qi];
+  if(oi===q.a){ STATE.quizScores[missionId] = (STATE.quizScores[missionId]||0)+1; addXP(10,'Correct answer'); }
+  else toast('err','Not quite','Review the explanation.');
+  renderMain();
+}
+
+/* ================= INIT ================= */
+function toggleTheme(){
+  const theme = document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', theme);
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+renderSidebar();
+renderMain();
+window.STATE = STATE;
+Object.assign(window, {QUIZZES, MISSIONS, MISSION_ORDER, INSTALL_STEPS, PROJECT_FILES, PROVIDER_FIELDS,
+  VARIABLES_M4, M5_RESOURCES, TF_WORKFLOW_STEPS, DESTROY_ORDER, RM_STEPS, RM_JOB_LOG, DRIFT_GAME,
+  TF_TROUBLESHOOT, PIPELINE_STAGES, ACHIEVEMENTS});
+
+</script>
+</body>
+</html>

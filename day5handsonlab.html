@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 5 Lab — Production Networking | 1Z0-1067-26</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#11161d; --panel:#151b23; --panel2:#1a212b;
+  --border:#232b36; --border-soft:#1d2530;
+  --text:#e6ebf1; --text-dim:#9aa7b6; --text-faint:#5f6b7a;
+  --red:#ff3b30; --red-dim:#c62b22; --red-glow:rgba(255,59,48,.25);
+  --blue:#4da3ff; --blue-dim:#2f6fd1;
+  --orange:#ffab40; --green:#3ddc84; --green-dim:#279a5c;
+  --yellow:#ffd54a; --purple:#b48bff;
+  --radius:14px; --radius-sm:9px;
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --mono: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f5f7; --bg2:#eceef1; --panel:#ffffff; --panel2:#f7f8fa;
+  --border:#e1e4e9; --border-soft:#ebedf0;
+  --text:#1b2129; --text-dim:#5b6572; --text-faint:#8b95a3;
+  --red:#e0342a; --red-dim:#c62b22; --red-glow:rgba(224,52,42,.18);
+  --shadow: 0 8px 30px rgba(20,20,30,.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; transition:background .3s,color .3s;}
+body::before{content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(circle at 15% 10%, var(--red-glow), transparent 40%), radial-gradient(circle at 85% 90%, rgba(77,163,255,.10), transparent 45%);}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:10px;}
+a{color:inherit;} button{font-family:inherit; cursor:pointer;}
+
+.topbar{position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:14px; padding:10px 18px;
+  background:color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter:blur(14px); border-bottom:1px solid var(--border-soft);}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700;}
+.brand .logo{width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg, var(--red), var(--red-dim));
+  display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; font-weight:800; box-shadow:0 4px 14px var(--red-glow);}
+.brand small{display:block; font-weight:500; color:var(--text-faint); font-size:10.5px; letter-spacing:.5px;}
+.crumb{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-dim); flex:1; min-width:0; overflow:hidden; white-space:nowrap;}
+.crumb b{color:var(--text); font-weight:600;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.xp-chip{display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--border); padding:6px 12px; border-radius:20px; font-size:12.5px; font-weight:600;}
+.xp-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange);}
+.rank-chip{background:linear-gradient(135deg, var(--red), var(--red-dim)); color:#fff; font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:20px;}
+.icon-btn{width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:15px; transition:.15s;}
+.icon-btn:hover{color:var(--text); border-color:var(--text-faint);}
+
+.app{display:flex; min-height:calc(100vh - 54px); position:relative; z-index:1;}
+.sidebar{width:255px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:16px 10px; position:sticky; top:54px; height:calc(100vh - 54px); overflow-y:auto; background:color-mix(in srgb, var(--bg2) 60%, transparent);}
+.sidebar h4{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); padding:14px 10px 6px;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:12.5px; color:var(--text-dim); cursor:pointer; transition:.15s; margin-bottom:2px; border:1px solid transparent;}
+.nav-item .n-ico{width:22px; text-align:center; font-size:12.5px; flex-shrink:0;}
+.nav-item:hover{background:var(--panel2); color:var(--text);}
+.nav-item.active{background:var(--red-glow); color:var(--text); border-color:var(--red-dim); font-weight:600;}
+.nav-item.locked{opacity:.4; cursor:not-allowed;}
+.nav-item.done .n-ico{color:var(--green);}
+.nav-badge{margin-left:auto; font-size:10px; background:var(--panel); border:1px solid var(--border); padding:1px 6px; border-radius:8px; color:var(--text-faint);}
+.nav-item.done .nav-badge{color:var(--green); border-color:var(--green-dim);}
+.progress-mini{margin:10px 8px 4px; padding:10px; background:var(--panel); border:1px solid var(--border); border-radius:10px;}
+.progress-mini .lbl{display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-bottom:6px;}
+.bar-track{height:6px; border-radius:5px; background:var(--border-soft); overflow:hidden;}
+.bar-fill{height:100%; background:linear-gradient(90deg, var(--red), var(--orange)); border-radius:5px; transition:width .5s ease;}
+
+.main{flex:1; min-width:0; padding:26px 30px 80px;}
+.view{display:none; animation:fadeIn .35s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+.section-head{margin-bottom:22px;}
+.eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--red); font-weight:700; margin-bottom:6px;}
+h1.page-title{font-size:24px; font-weight:800; letter-spacing:-.3px;}
+.page-sub{color:var(--text-dim); font-size:13.5px; margin-top:5px; max-width:700px;}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);}
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:1000px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr 1fr;}}
+@media(max-width:650px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr;}}
+.btn{display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:10px; border:none; font-weight:700; font-size:13.5px; transition:.15s;}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--red-dim)); color:#fff; box-shadow:0 6px 20px var(--red-glow);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 10px 26px var(--red-glow);}
+.btn-ghost{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text-faint);}
+.btn-sm{padding:7px 13px; font-size:12px; border-radius:8px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.pill-green{background:rgba(61,220,132,.14); color:var(--green);}
+.pill-red{background:rgba(255,59,48,.14); color:var(--red);}
+.pill-orange{background:rgba(255,171,64,.14); color:var(--orange);}
+.pill-blue{background:rgba(77,163,255,.14); color:var(--blue);}
+.pill-purple{background:rgba(180,139,255,.14); color:var(--purple);}
+.pill-gray{background:var(--panel2); color:var(--text-faint); border:1px solid var(--border);}
+#toast-wrap{position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; flex-direction:column; gap:10px;}
+.toast{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:13px 16px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; min-width:260px; animation:toastIn .3s ease; font-size:13px;}
+@keyframes toastIn{from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);}}
+.toast .t-ico{font-size:18px;} .toast b{display:block; font-size:12.5px;} .toast span{color:var(--text-dim); font-size:11.5px;}
+.toast.xp b{color:var(--orange);} .toast.ok .t-ico{color:var(--green);} .toast.err .t-ico{color:var(--red);}
+
+.mission-map{position:relative; padding:20px 10px;}
+.mission-track{display:flex; flex-wrap:wrap; gap:16px;}
+.m-node{width:190px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px; position:relative; transition:.2s; cursor:pointer;}
+.m-node:hover{transform:translateY(-3px); border-color:var(--text-faint);}
+.m-node.locked{opacity:.45; cursor:not-allowed; filter:grayscale(.6);}
+.m-node.locked:hover{transform:none;}
+.m-node.done{border-color:var(--green-dim); background:linear-gradient(180deg, rgba(61,220,132,.06), var(--panel));}
+.m-node.current{border-color:var(--red-dim); box-shadow:0 0 0 3px var(--red-glow);}
+.m-num{width:30px; height:30px; border-radius:10px; background:var(--panel2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11.5px; margin-bottom:8px;}
+.m-node.done .m-num{background:var(--green); color:#052e17; border-color:var(--green);}
+.m-node.current .m-num{background:var(--red); color:#fff; border-color:var(--red);}
+.m-node h4{font-size:12.5px; margin-bottom:4px;}
+.m-node p{font-size:10.5px; color:var(--text-dim); line-height:1.5; margin-bottom:8px;}
+.m-node .m-xp{font-size:10px; color:var(--orange); font-weight:700;}
+
+.terminal{background:#0a0d12; border-radius:12px; border:1px solid #232b36; font-family:var(--mono); font-size:12.5px; padding:16px; min-height:200px; color:#3ddc84; overflow-y:auto; max-height:420px;}
+.terminal .line{margin-bottom:6px; line-height:1.6; white-space:pre-wrap;}
+.terminal .prompt{color:#4da3ff;} .terminal .out{color:#c9d2dc;} .terminal .comment{color:#5f6b7a;} .terminal .errline{color:#ff6b60;}
+
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600;}
+.field input, .field select, .field textarea{width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text); font-size:13px; font-family:inherit;}
+.field textarea{font-family:var(--mono); font-size:12px; min-height:90px; resize:vertical;}
+.field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--red-dim);}
+
+.hr{height:1px; background:var(--border-soft); margin:20px 0;}
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;} .sidebar{display:none;}}
+.tag-list{display:flex; flex-wrap:wrap; gap:8px;}
+.info-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--blue-dim); background:rgba(77,163,255,.06); font-size:12.5px; margin:12px 0;}
+.tip-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--orange); background:rgba(255,171,64,.07); font-size:12.5px; margin:12px 0;}
+.mistake-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--red); background:rgba(255,59,48,.06); font-size:12.5px; margin:12px 0;}
+.hidden{display:none !important;}
+.chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+.chip{padding:8px 13px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s;}
+.chip:hover{border-color:var(--text-faint);}
+.chip.active{background:var(--red-glow); border-color:var(--red-dim);}
+.code-block{background:#0a0d12; border:1px solid #232b36; border-radius:10px; padding:14px; font-family:var(--mono); font-size:12px; color:#c9d2dc; overflow-x:auto; white-space:pre;}
+
+.quiz-q{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border:none;}
+.quiz-q .q-txt{font-weight:700; font-size:14px; margin-bottom:12px;}
+.q-opt{display:flex; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; cursor:pointer; transition:.15s; font-size:13px;}
+.q-opt:hover{border-color:var(--text-faint);}
+.q-opt.correct{border-color:var(--green-dim); background:rgba(61,220,132,.1);}
+.q-opt.incorrect{border-color:var(--red-dim); background:rgba(255,59,48,.1);}
+.q-explain{margin-top:8px; padding:10px 12px; background:var(--panel2); border-radius:9px; font-size:12px; color:var(--text-dim); display:none; border-left:3px solid var(--blue-dim);}
+.q-explain.show{display:block;}
+
+.ach-card{text-align:center; padding:20px 12px; border-radius:14px; border:1px solid var(--border); background:var(--panel); transition:.2s;}
+.ach-card.locked{opacity:.35; filter:grayscale(1);}
+.ach-card .ico{font-size:32px; margin-bottom:8px;}
+.ach-card h5{font-size:12.5px; margin-bottom:4px;}
+.ach-card p{font-size:10.5px; color:var(--text-dim);}
+
+.health-meter{margin-bottom:12px;}
+.health-meter .hm-lbl{display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-bottom:5px;}
+.hm-track{height:8px; border-radius:6px; background:var(--border-soft); overflow:hidden;}
+.hm-fill{height:100%; border-radius:6px; transition:width .5s ease;}
+
+.toggle{width:40px; height:22px; border-radius:20px; background:var(--border); position:relative; cursor:pointer; flex-shrink:0; transition:.2s;}
+.toggle.on{background:var(--green-dim);}
+.toggle .knob{width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:.2s;}
+.toggle.on .knob{left:20px;}
+
+.finding-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:6px; background:var(--panel2); font-size:12.5px;}
+.sev-badge{font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; text-transform:uppercase;}
+.sev-badge.critical{background:rgba(255,59,48,.2); color:var(--red);}
+.sev-badge.high{background:rgba(255,59,48,.14); color:var(--red);}
+.sev-badge.medium{background:rgba(255,171,64,.18); color:var(--orange);}
+.sev-badge.low{background:rgba(77,163,255,.18); color:var(--blue);}
+.sev-badge.allowed{background:rgba(61,220,132,.18); color:var(--green);}
+.sev-badge.denied{background:rgba(255,59,48,.18); color:var(--red);}
+
+.arch-diagram{display:flex; flex-direction:column; align-items:center; gap:0; padding:16px 0;}
+.arch-node{padding:10px 18px; border-radius:12px; border:2px solid var(--border); background:var(--panel2); font-weight:700; font-size:12.5px; cursor:default; transition:.2s; text-align:center; min-width:150px;}
+.arch-node.active{border-color:var(--green-dim); background:rgba(61,220,132,.08); box-shadow:0 0 0 3px rgba(61,220,132,.15);}
+.arch-node.pending{opacity:.35;}
+.arch-node.branch{cursor:pointer;}
+.arch-arrow{font-size:18px; color:var(--text-faint); padding:2px 0;}
+.arch-row{display:flex; gap:14px; flex-wrap:wrap; justify-content:center;}
+
+.cidr-viz{font-family:var(--mono); font-size:12px; padding:12px; background:var(--panel2); border-radius:9px; border:1px solid var(--border);}
+
+.incident-card{border:1px solid var(--border); border-radius:12px; padding:16px; background:var(--panel2); margin-bottom:12px;}
+.incident-card.resolved{border-color:var(--green-dim); opacity:.6;}
+
+.gauge-wrap{text-align:center;}
+.gauge-track{height:8px; border-radius:6px; background:var(--border-soft); overflow:hidden; margin:8px 0;}
+.gauge-fill{height:100%; border-radius:6px; transition:width .6s ease;}
+
+/* ============ OCI CONSOLE CHROME (always light — matches the real console) ============ */
+.oci-console{
+  background:#fff; color:#1B1B1B; border-radius:8px; border:1px solid #d6d7d9; overflow:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,.25); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  margin-bottom:16px;
+}
+.oci-topbar{background:#1B1B1B; color:#fff; display:flex; align-items:center; gap:12px; padding:9px 16px; font-size:13px;}
+.oci-topbar .oci-hamburger{font-size:16px; opacity:.8;}
+.oci-topbar .oci-logo{font-weight:700; letter-spacing:.2px; display:flex; align-items:center; gap:7px; white-space:nowrap;}
+.oci-topbar .oci-logo .dot{width:9px; height:9px; border-radius:50%; background:#C74634; display:inline-block;}
+.oci-topbar .oci-search{flex:1; max-width:360px; background:#2c2c2c; border:1px solid #444; border-radius:4px; padding:5px 10px; font-size:12px; color:#aaa;}
+.oci-topbar .oci-region{margin-left:auto; background:#2c2c2c; border:1px solid #444; padding:5px 12px; border-radius:4px; font-size:12px; white-space:nowrap;}
+.oci-topbar .oci-user{width:26px; height:26px; border-radius:50%; background:#C74634; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0;}
+.oci-breadcrumb{padding:10px 18px; background:#f4f4f5; border-bottom:1px solid #e1e1e3; font-size:12px; color:#6b6b6b; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.oci-breadcrumb b{color:#1B1B1B; font-weight:600;}
+.oci-breadcrumb .sep{color:#c4c4c4;}
+.oci-body{padding:22px 24px; background:#fff;}
+.oci-page-title{font-size:19px; font-weight:600; color:#1B1B1B; margin-bottom:4px;}
+.oci-page-sub{font-size:12.5px; color:#6b6b6b; margin-bottom:14px;}
+.oci-actions{display:flex; gap:8px; margin:14px 0 18px;}
+.oci-btn{padding:7px 16px; border-radius:4px; font-size:13px; font-weight:600; border:1px solid transparent; cursor:pointer; font-family:inherit;}
+.oci-btn-primary{background:#C74634; color:#fff;}
+.oci-btn-primary:hover{background:#B23D2D;}
+.oci-btn-primary:disabled{opacity:.45; cursor:not-allowed;}
+.oci-btn-secondary{background:#fff; color:#1B1B1B; border:1px solid #c4c4c4;}
+.oci-btn-secondary:hover{background:#f4f4f5;}
+.oci-table{width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;}
+.oci-table th{text-align:left; padding:9px 12px; background:#f4f4f5; border-bottom:1px solid #e1e1e3; color:#555; font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.3px;}
+.oci-table td{padding:11px 12px; border-bottom:1px solid #eee; color:#1B1B1B;}
+.oci-table tr:last-child td{border-bottom:none;}
+.oci-table a.oci-link{color:#0572CE; font-weight:600; cursor:pointer;}
+.oci-empty{padding:34px 20px; text-align:center; color:#8a8a8a; font-size:13px; border:1px dashed #d6d7d9; border-radius:6px; margin-top:6px;}
+.oci-status{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;}
+.oci-status .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.oci-status.running .dot,.oci-status.available .dot,.oci-status.active .dot{background:#1E8E3E;}
+.oci-status.provisioning .dot{background:#B58200; animation:ociPulse 1s infinite;}
+@keyframes ociPulse{50%{opacity:.35;}}
+.oci-status.terminated .dot,.oci-status.blocked .dot{background:#C5221F;}
+.oci-status.running{color:#1E8E3E;} .oci-status.available{color:#1E8E3E;} .oci-status.active{color:#1E8E3E;}
+.oci-status.provisioning{color:#946200;} .oci-status.terminated{color:#C5221F;} .oci-status.blocked{color:#C5221F;}
+.oci-field{margin-bottom:16px; max-width:480px;}
+.oci-field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:#1B1B1B;}
+.oci-field input,.oci-field select{width:100%; padding:8px 10px; border:1px solid #c4c4c4; border-radius:4px; font-size:13px; font-family:inherit; color:#1B1B1B; background:#fff;}
+.oci-field input:focus,.oci-field select:focus{outline:2px solid #0572CE; outline-offset:1px; border-color:#0572CE;}
+.oci-help{font-size:11.5px; color:#767676; margin-top:4px;}
+.oci-panel-footer{display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid #e1e1e3; background:#fafafa;}
+.oci-radio-card{border:1px solid #c4c4c4; border-radius:6px; padding:12px 14px; margin-bottom:8px; cursor:pointer; font-size:13px;}
+.oci-radio-card.selected{border-color:#C74634; background:#fdf3f1; box-shadow:0 0 0 1px #C74634;}
+.oci-radio-card b{display:block; margin-bottom:2px;}
+.oci-radio-card span{color:#6b6b6b; font-size:12px;}
+.oci-tabs{display:flex; gap:2px; border-bottom:1px solid #e1e1e3; margin-bottom:16px;}
+.oci-tab{padding:9px 16px; font-size:12.5px; font-weight:600; color:#6b6b6b; cursor:pointer; border-bottom:2px solid transparent;}
+.oci-tab.active{color:#C74634; border-bottom-color:#C74634;}
+.oci-console-note{font-size:12px; color:#6b6b6b; background:#f4f4f5; border-left:3px solid #0572CE; padding:9px 12px; border-radius:4px; margin:12px 0;}
+.oci-copyable{font-family:'SFMono-Regular',Consolas,monospace; font-size:12px; background:#f4f4f5; padding:2px 6px; border-radius:3px;}
+</style>
+</head>
+<body data-theme="dark">
+<div id="toast-wrap"></div>
+<div class="topbar">
+  <div class="brand"><div class="logo">C</div><div>Day 5 Lab <small>1Z0-1067-26 · Production Networking</small></div></div>
+  <div class="crumb">Home <span>›</span> <b id="crumbCurrent">Mission Control</b></div>
+  <div class="topbar-right">
+    <div class="xp-chip"><span class="dot"></span><span id="xpDisplay">0</span> XP</div>
+    <div class="rank-chip" id="rankChip">Network Trainee</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">◐</button>
+  </div>
+</div>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main"></div>
+</div>
+<script>
+/* ================= DATA ================= */
+const NAV = [
+  {id:'home', label:'Mission Control', ico:'⌂', group:'main'},
+  {id:'missionmap', label:'Mission Map', ico:'🗺', group:'main'},
+  {id:'m1', label:'M1 · Create VCN', ico:'①', group:'missions'},
+  {id:'m2', label:'M2 · Public Subnet', ico:'②', group:'missions'},
+  {id:'m3', label:'M3 · Private Subnet', ico:'③', group:'missions'},
+  {id:'m4', label:'M4 · Internet Gateway', ico:'④', group:'missions'},
+  {id:'m5', label:'M5 · NAT Gateway', ico:'⑤', group:'missions'},
+  {id:'m6', label:'M6 · Service Gateway', ico:'⑥', group:'missions'},
+  {id:'m7', label:'M7 · Route Tables', ico:'⑦', group:'missions'},
+  {id:'m8', label:'M8 · Security Lists', ico:'⑧', group:'missions'},
+  {id:'m9', label:'M9 · NSGs', ico:'⑨', group:'missions'},
+  {id:'m10', label:'M10 · Bastion Host', ico:'⑩', group:'missions'},
+  {id:'m11', label:'M11 · Private App Server', ico:'⑪', group:'missions'},
+  {id:'m12', label:'M12 · Cloud-Init', ico:'⑫', group:'missions'},
+  {id:'m13', label:'M13 · Block Volume', ico:'⑬', group:'missions'},
+  {id:'m14', label:'M14 · Object Storage', ico:'⑭', group:'missions'},
+  {id:'m15', label:'M15 · Network Testing', ico:'⑮', group:'missions'},
+  {id:'m16', label:'M16 · Incident Response', ico:'⑯', group:'missions'},
+  {id:'achievements', label:'Achievements', ico:'🏆', group:'extra'},
+  {id:'capstone', label:'Final Capstone', ico:'🎓', group:'extra'},
+];
+
+const MISSIONS = [
+  {id:'m1', num:1, title:'Create VCN', desc:'Build the network foundation.', xp:80},
+  {id:'m2', num:2, title:'Create Public Subnet', desc:'Carve out internet-facing address space.', xp:70},
+  {id:'m3', num:3, title:'Create Private Subnet', desc:'Isolate backend resources.', xp:70},
+  {id:'m4', num:4, title:'Configure Internet Gateway', desc:'Connect the VCN to the internet.', xp:80},
+  {id:'m5', num:5, title:'Configure NAT Gateway', desc:'Enable outbound-only private access.', xp:90},
+  {id:'m6', num:6, title:'Configure Service Gateway', desc:'Reach OCI services over the backbone.', xp:90},
+  {id:'m7', num:7, title:'Route Tables', desc:'Direct traffic to the right gateway.', xp:100},
+  {id:'m8', num:8, title:'Security Lists', desc:'Build subnet-level firewall rules.', xp:100},
+  {id:'m9', num:9, title:'Network Security Groups', desc:'Attach instance-level firewalls.', xp:110},
+  {id:'m10', num:10, title:'Launch Bastion VM', desc:'Your one secure door into the VCN.', xp:100},
+  {id:'m11', num:11, title:'Launch Private VM', desc:'Deploy the application server.', xp:90},
+  {id:'m12', num:12, title:'Cloud-Init', desc:'Automate first-boot provisioning.', xp:90},
+  {id:'m13', num:13, title:'Attach Block Volume', desc:'Add and mount persistent storage.', xp:80},
+  {id:'m14', num:14, title:'Object Storage', desc:'Store and reach objects privately.', xp:80},
+  {id:'m15', num:15, title:'Network Testing', desc:'Prove connectivity end to end.', xp:100},
+  {id:'m16', num:16, title:'Enterprise Incident Response', desc:'Diagnose and repair live incidents.', xp:150},
+];
+const MISSION_ORDER = MISSIONS.map(m=>m.id);
+
+const TOPOLOGY = ['Internet','igw','pubrt','pubsubnet','bastion','privrt','privsubnet','appvm','natgw','svcgw','objstorage'];
+const TOPOLOGY_LABELS = {
+  Internet:'🌐 Internet', igw:'Internet Gateway', pubrt:'Public Route Table', pubsubnet:'Public Subnet (10.0.1.0/24)',
+  bastion:'Bastion VM', privrt:'Private Route Table', privsubnet:'Private Subnet (10.0.2.0/24)', appvm:'Application VM',
+  natgw:'NAT Gateway', svcgw:'Service Gateway', objstorage:'Object Storage',
+};
+
+const CIDR_MISTAKES = [
+  {label:'10.0.0.0/16 for the VCN, then 10.0.1.0/24 for a subnet', ok:true, note:'Valid — the subnet CIDR is fully contained within the VCN CIDR.'},
+  {label:'10.0.0.0/16 for the VCN, then 10.1.0.0/24 for a subnet', ok:false, note:'Invalid — 10.1.0.0/24 falls outside the 10.0.0.0/16 range entirely.'},
+  {label:'Two subnets both using 10.0.1.0/24', ok:false, note:'Invalid — overlapping CIDRs between subnets in the same VCN are not allowed.'},
+];
+
+const CLOUD_INIT_SCRIPT = [
+  {line:'#!/bin/bash', note:'Shebang — tells the instance this is a bash script.'},
+  {line:'dnf update -y', note:'Updates all installed packages to their latest versions.'},
+  {line:'dnf install -y httpd', note:'Installs the Apache HTTP Server.'},
+  {line:'systemctl enable httpd', note:'Configures Apache to start automatically on every boot.'},
+  {line:'systemctl start httpd', note:'Starts Apache immediately, without waiting for a reboot.'},
+  {line:'echo "Production Server Ready" > /var/www/html/index.html', note:'Writes a simple landing page so you can confirm the server responds.'},
+];
+const CLOUD_INIT_STAGES = ['OS Update','Apache Installation','Service Startup','Web Server Ready'];
+
+const NETWORK_COMMANDS = [
+  {cmd:'ssh -i bastion_key opc@144.24.11.9', out:'Last login: Sat Aug 1 06:00:00 2026\n[opc@bastion ~]$', note:'Logs into the Bastion using its public IP and your key.'},
+  {cmd:'ping -c 3 10.0.2.15', out:'64 bytes from 10.0.2.15: icmp_seq=1 ttl=64 time=0.4 ms\n64 bytes from 10.0.2.15: icmp_seq=2 ttl=64 time=0.3 ms\n3 packets transmitted, 3 received, 0% packet loss', note:'Confirms the private App VM is reachable from the Bastion.'},
+  {cmd:'curl -I http://10.0.2.15', out:'HTTP/1.1 200 OK\nServer: Apache/2.4.57', note:'Confirms the App VM\'s web server is responding.'},
+  {cmd:'traceroute 10.0.2.15', out:' 1  10.0.2.15  0.412 ms', note:'Shows the path is a single hop — both VMs are in the same VCN.'},
+  {cmd:'dig objectstorage.us-ashburn-1.oraclecloud.com', out:';; ANSWER SECTION:\nobjectstorage.us-ashburn-1.oraclecloud.com. 60 IN A 134.70.8.1', note:'Resolves the Object Storage endpoint used by the Service Gateway.'},
+  {cmd:'nslookup objectstorage.us-ashburn-1.oraclecloud.com', out:'Server: 169.254.169.254\nAddress: 134.70.8.1', note:'Simplified DNS lookup — same resolution, different tool.'},
+  {cmd:'netstat -tulnp', out:'tcp  0 0 0.0.0.0:80  0.0.0.0:*  LISTEN  812/httpd', note:'Confirms Apache is listening on port 80.'},
+  {cmd:'ss -tulnp', out:'tcp  LISTEN  0 128  0.0.0.0:80  0.0.0.0:*  users:(("httpd",pid=812))', note:'Modern, faster replacement for netstat.'},
+  {cmd:'ip addr', out:'2: eth0: <BROADCAST,MULTICAST,UP> mtu 1500\n    inet 10.0.2.15/24 brd 10.0.2.255 scope global eth0', note:'Shows the App VM\'s private IP and subnet.'},
+];
+
+const TROUBLESHOOT_16 = [
+  {id:'t1', title:'Internet Gateway Missing', logs:'Public subnet route table has no route to 0.0.0.0/0', metrics:'Public VM: unreachable from internet', opts:['Attach an Internet Gateway and add a 0.0.0.0/0 route pointing to it','Delete the VCN and start over','Add a NAT Gateway instead','Change the subnet CIDR'], a:0},
+  {id:'t2', title:'Wrong Route Table', logs:'Private subnet is associated with the Public Route Table', metrics:'Private VM: unexpectedly internet-facing', opts:['Associate the Private Subnet with the Private Route Table','Delete the subnet','Disable routing entirely','Add a second VCN'], a:0},
+  {id:'t3', title:'NAT Gateway Deleted', logs:'Private VM cannot reach dnf/yum repos', metrics:'Outbound updates: failing', opts:['Recreate the NAT Gateway and confirm the private route table points to it','Give the VM a public IP','Disable the firewall','Attach an Internet Gateway to the private subnet'], a:0},
+  {id:'t4', title:'Security List Blocks SSH', logs:'SSH connection to Bastion times out', metrics:'Port 22: no response', opts:['Add an ingress rule allowing TCP/22 from your source CIDR in the public security list','Restart the VCN','Change the SSH port to 8080','Delete the security list entirely'], a:0},
+  {id:'t5', title:'NSG Missing Rule', logs:'App VM unreachable on 8080 from Bastion, despite correct security list', metrics:'NSG: no matching rule', opts:['Add an NSG ingress rule allowing 8080 from the Bastion\'s NSG/subnet','Disable the NSG completely','Attach a public IP to the App VM','Delete and recreate the App VM'], a:0},
+  {id:'t6', title:'Wrong CIDR', logs:'Subnet creation failed: 10.5.0.0/24 outside VCN range', metrics:'VCN CIDR: 10.0.0.0/16', opts:['Use a CIDR that falls within the VCN\'s 10.0.0.0/16 range','Expand the VCN to include 10.5.0.0/16','Ignore the error and retry','Delete the VCN'], a:0},
+  {id:'t7', title:'Subnet Conflict', logs:'Error: CIDR 10.0.1.0/24 overlaps an existing subnet', metrics:'Conflicting subnets: 2', opts:['Choose a non-overlapping CIDR block for the new subnet','Merge both subnets manually','Restart the instance','Disable the route table'], a:0},
+  {id:'t8', title:'Cloud-Init Failed', logs:'cloud-init: script exited with status 127 (command not found)', metrics:'Provisioning: failed', opts:['Check the script for a typo\'d command or missing package name','Reboot the VM repeatedly until it works','Delete cloud-init entirely','Increase the boot volume size'], a:0},
+  {id:'t9', title:'Block Volume Not Mounted', logs:'df -h shows no /dev/sdb entry under any mount point', metrics:'Extra storage: not visible', opts:['Run mkfs to format it (if new) and mount it to a directory','Reboot and hope it auto-mounts','Detach and re-attach ten times','Delete the volume'], a:0},
+  {id:'t10', title:'Object Storage Unreachable', logs:'curl to objectstorage endpoint times out from private subnet', metrics:'Service Gateway: not attached to route table', opts:['Add a route to the Service Gateway for OCI Services in the private route table','Give the VM a public IP','Disable the security list','Recreate the VCN'], a:0},
+  {id:'t11', title:'Private VM Cannot Update', logs:'dnf update hangs indefinitely on the App VM', metrics:'NAT Gateway: missing from route table', opts:['Add a 0.0.0.0/0 route to the NAT Gateway in the private route table','Assign the VM a public IP','Disable the firewall','Reboot the VM'], a:0},
+  {id:'t12', title:'Public VM Cannot Access Internet', logs:'Bastion can\'t curl external sites despite having a public IP', metrics:'Public route table: missing 0.0.0.0/0', opts:['Add a 0.0.0.0/0 route to the Internet Gateway in the public route table','Give it a second public IP','Disable NAT Gateway','Change the subnet to private'], a:0},
+  {id:'t13', title:'SSH Timeout', logs:'ssh opc@<bastion-ip> hangs with no response', metrics:'Port 22: filtered', opts:['Check both the Security List AND NSG for an ingress rule allowing port 22','Reboot your laptop','Use a different username','Increase the boot volume'], a:0},
+  {id:'t14', title:'DNS Failure', logs:'dig objectstorage endpoint returns no answer section', metrics:'Name resolution: failing', opts:['Check the VCN\'s DNS resolution settings and resolver configuration','Disable DNS entirely','Switch to IP addresses forever','Delete the VCN'], a:0},
+  {id:'t15', title:'Service Gateway Missing', logs:'Private subnet has no route for OCI Services CIDR', metrics:'Object Storage access via backbone: unavailable', opts:['Create a Service Gateway and route "All <region> Services in Oracle Services Network" to it','Attach an Internet Gateway instead','Assign a public IP to the VM','Disable the private subnet'], a:0},
+];
+
+const ATTACK_SIM_PORTS = [
+  {port:'22 (SSH)', target:'Bastion', result:'Allowed', reason:'Security List permits 22 from the admin CIDR, and this request matches it.'},
+  {port:'3389 (RDP)', target:'Bastion', result:'Denied', reason:'No rule allows RDP — this is a Linux Bastion, RDP was never opened.'},
+  {port:'80 (HTTP)', target:'Private App VM', result:'Denied', reason:'Private App VM has no public IP and no route from the internet at all.'},
+  {port:'1521 (Database)', target:'Private Subnet', result:'Denied', reason:'Database port is not exposed in any security rule — correctly unreachable from outside.'},
+];
+
+const ACHIEVEMENTS = [
+  {id:'a1', name:'Network Architect', ico:'🏗', cond:'Build VCN, subnets &amp; all three gateways', check:s=>['m1','m2','m3','m4','m5','m6'].every(m=>s.done.has(m))},
+  {id:'a2', name:'Routing Master', ico:'🧭', cond:'Complete Route Tables', check:s=>s.done.has('m7')},
+  {id:'a3', name:'Security Engineer', ico:'🛡', cond:'Complete Security Lists &amp; NSGs', check:s=>s.done.has('m8') && s.done.has('m9')},
+  {id:'a4', name:'Bastion Expert', ico:'🔑', cond:'Launch the Bastion and log in', check:s=>s.done.has('m10')},
+  {id:'a5', name:'Cloud Networking Specialist', ico:'🌐', cond:'Complete compute, storage &amp; testing missions', check:s=>['m11','m12','m13','m14','m15'].every(m=>s.done.has(m))},
+  {id:'a6', name:'Production Engineer', ico:'⚙', cond:'Resolve every incident in Mission 16', check:s=>s.m16.resolved.size>=TROUBLESHOOT_16.length},
+  {id:'a7', name:'OCI Operations Professional Ready', ico:'🎓', cond:'Complete all 16 missions with a strong quiz score', check:s=>MISSION_ORDER.every(m=>s.done.has(m)) && Object.values(s.quizScores).reduce((a,b)=>a+b,0)>=14},
+];
+
+const QUIZZES = {
+  m1:[
+    {q:'What determines the total address space available to everything inside a VCN?', opts:['The VCN\'s CIDR block','The region','The compartment name','The tenancy OCID'], a:0, ex:'Every subnet\'s CIDR must be a subset of the parent VCN\'s CIDR block.'},
+    {q:'Why avoid overlapping CIDR blocks between VCNs you might later peer?', opts:['Overlapping ranges make routing between them ambiguous or impossible','It has no effect on peering','OCI merges the CIDRs automatically','It only affects billing'], a:0, ex:'Peered VCNs need non-overlapping address space so traffic can be routed unambiguously between them.'},
+  ],
+  m2:[
+    {q:'What makes a subnet "public" in OCI?', opts:['Its route table sends 0.0.0.0/0 to an Internet Gateway, and instances can get public IPs','It is manually labeled public in a tag','All subnets are public by default','It uses a /24 CIDR specifically'], a:0, ex:'"Public" is a routing/IP-assignment property, not an inherent subnet type — a route to an IGW plus public IP eligibility makes it public.'},
+    {q:'Why carve out a dedicated /24 for the public subnet instead of using the whole /16?', opts:['To leave room for additional subnets and keep blast radius small','Because /24 is required by OCI','Because larger subnets cost more','Because /16 subnets aren\'t allowed'], a:0, ex:'Segmenting address space keeps design flexible and limits the reach of any single subnet.'},
+  ],
+  m3:[
+    {q:'What is the defining trait of a private subnet?', opts:['Instances in it cannot get public IPs, and its route table has no path to an Internet Gateway','It uses a different VCN entirely','It requires a NAT Gateway to exist','It cannot contain a Compute instance'], a:0, ex:'Private subnets keep resources off the public internet by both routing and IP-assignment restrictions.'},
+    {q:'Why put an application server in a private subnet?', opts:['To reduce its direct attack surface from the internet','To make it faster','To reduce OCI billing','Private subnets are required for all VMs'], a:0, ex:'Removing direct internet reachability is one of the most effective ways to shrink attack surface.'},
+  ],
+  m4:[
+    {q:'What does an Internet Gateway actually provide?', opts:['A path for public-IP traffic between the VCN and the internet','Free outbound bandwidth only','Automatic DDoS protection','DNS resolution'], a:0, ex:'The IGW is purely a routing target — it enables traffic to/from the internet for resources with public IPs.'},
+  ],
+  m5:[
+    {q:'What is the key behavioral difference between a NAT Gateway and an Internet Gateway?', opts:['NAT Gateway allows outbound-only; it cannot be a target for unsolicited inbound connections','NAT Gateway is faster','NAT Gateway costs nothing','They behave identically'], a:0, ex:'NAT Gateways let private resources initiate outbound traffic (e.g. downloading updates) without exposing them to inbound connections.'},
+  ],
+  m6:[
+    {q:'What is the main benefit of a Service Gateway?', opts:['Traffic to OCI services like Object Storage stays on the Oracle network backbone, never touching the public internet','It provides a public IP to private instances','It replaces the need for a VCN','It encrypts all traffic automatically'], a:0, ex:'Service Gateway traffic to supported OCI services never traverses the public internet, improving both security and latency.'},
+  ],
+  m7:[
+    {q:'A private subnet needs outbound internet access. Which route entry is required?', opts:['0.0.0.0/0 → NAT Gateway','0.0.0.0/0 → Internet Gateway','10.0.0.0/16 → Service Gateway','0.0.0.0/0 → Dynamic Routing Gateway'], a:0, ex:'Private subnets route general internet-bound traffic through a NAT Gateway, not an Internet Gateway.'},
+    {q:'Which route target keeps Object Storage traffic off the public internet?', opts:['Service Gateway','NAT Gateway','Internet Gateway','Local Peering Gateway'], a:0, ex:'A route to "All Services in Region" pointed at the Service Gateway keeps that traffic on Oracle\'s backbone.'},
+  ],
+  m8:[
+    {q:'What is a Security List scoped to?', opts:['The subnet','A single instance only','The entire tenancy','A single user'], a:0, ex:'Security Lists apply at the subnet level — every resource in that subnet inherits the same rules.'},
+    {q:'Why give the private security list an SSH rule sourced from the public subnet specifically (not 0.0.0.0/0)?', opts:['So only Bastion-originated SSH traffic is allowed, not the whole internet','Because 0.0.0.0/0 is not allowed in private subnets','Because SSH requires a subnet-scoped source by OCI rule','It has no security benefit'], a:0, ex:'Scoping the source CIDR to the Bastion\'s subnet enforces that the only way in is through your controlled jump host.'},
+  ],
+  m9:[
+    {q:'What is the key difference between Security Lists and NSGs?', opts:['NSGs apply directly to a group of VNICs/instances, independent of subnet','Security Lists are instance-level, NSGs are subnet-level','They are exactly the same feature with two names','NSGs cannot contain ingress rules'], a:0, ex:'Security Lists are tied to a subnet; NSGs are tied to specific VNICs and can group resources across subnets.'},
+    {q:'Can a resource have both a Security List and an NSG applied?', opts:['Yes — traffic must be allowed by both to pass','No, they are mutually exclusive','Only Security Lists apply if both exist','Only NSGs apply if both exist'], a:0, ex:'Both layers are evaluated — the more restrictive combined result determines the outcome.'},
+  ],
+  m10:[
+    {q:'Why does the Bastion get a public IP but the App Server does not?', opts:['The Bastion is the single, controlled entry point; the App Server should never be directly reachable','Public IPs are required for all instances by default','App servers can\'t technically receive public IPs','It\'s purely a cost decision'], a:0, ex:'A Bastion host centralizes and audits all administrative access, minimizing the number of internet-facing resources.'},
+  ],
+  m11:[
+    {q:'How should you reach a private App VM for administration?', opts:['SSH to the Bastion first, then SSH onward to the private VM','Assign it a public IP temporarily','Use RDP directly from your laptop','It cannot be reached at all'], a:0, ex:'Bastion hosts are designed as a secure hop — you never connect to private resources directly from the open internet.'},
+  ],
+  m12:[
+    {q:'What is cloud-init primarily used for?', opts:['Automating first-boot configuration and software installation','Encrypting the boot volume','Creating IAM users','Configuring DNS zones'], a:0, ex:'Cloud-init runs a startup script automatically the first time an instance boots, standardizing provisioning.'},
+  ],
+  m13:[
+    {q:'What must you run on a brand-new block volume before mounting it?', opts:['mkfs (format it with a filesystem)','chmod 777','systemctl start','ip route'], a:0, ex:'A raw new volume has no filesystem yet — mkfs.ext4 (or similar) creates one before it can be mounted.'},
+  ],
+  m14:[
+    {q:'How does a private-subnet VM reach a private Object Storage bucket without a public IP?', opts:['Through a Service Gateway routed to OCI Services','Through a NAT Gateway','It\'s impossible without a public IP','Through a VPN only'], a:0, ex:'The Service Gateway is exactly the mechanism designed for this — private access to public OCI services.'},
+  ],
+  m15:[
+    {q:'Which tool shows the actual network path (hops) to a destination?', opts:['traceroute','ping','curl','ip addr'], a:0, ex:'traceroute reveals each intermediate hop; ping only confirms reachability and latency.'},
+  ],
+  m16:[
+    {q:'During incident response, what should you check first when "SSH Timeout" is reported?', opts:['Security List and NSG rules for port 22','The Object Storage bucket policy','The cloud-init script','The block volume size'], a:0, ex:'An SSH timeout at the network layer is almost always a Security List or NSG rule blocking port 22.'},
+  ],
+};
+
+
+/* ================= STATE ================= */
+const STATE = {
+  view:'home', xp:0, done:new Set(),
+  quizScores:{}, quizAnswered:{}, achUnlocked:new Set(),
+  networkHealth:20, securityScore:20, availabilityScore:20, performanceScore:50,
+  connectedResources:0, packetSuccessRate:0, internetStatus:'Down',
+  m1:{created:false, cidrChecked:{}},
+  m2:{created:false},
+  m3:{created:false},
+  m4:{deployed:false},
+  m5:{deployed:false, tested:false},
+  m6:{deployed:false, tested:false},
+  m7:{routes:{}},
+  m8:{publicRules:{}, privateRules:{}, tested:{}},
+  m9:{nsgCreated:false, attached:{}, simTests:{}},
+  m10:{launched:false, cloudInitStep:0, sshLoggedIn:false},
+  m11:{launched:false},
+  m12:{stagesDone:{}},
+  m13:{created:false, cmdsRun:{}},
+  m14:{bucketCreated:false, uploaded:false},
+  m15:{cmdsRun:{}},
+  m16:{resolved:new Set()},
+  selectedChip:null,
+};
+
+function isUnlocked(id){
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx<=0) return true;
+  return STATE.done.has(MISSION_ORDER[idx-1]);
+}
+function rankFor(xp){
+  if(xp>=1500) return 'OCI Operations Professional Ready';
+  if(xp>=1000) return 'Senior Network Engineer';
+  if(xp>=600) return 'Network Engineer';
+  if(xp>=200) return 'Associate Network Engineer';
+  return 'Network Trainee';
+}
+function addXP(n, label){
+  STATE.xp = Math.max(0, STATE.xp + n);
+  document.getElementById('xpDisplay').textContent = STATE.xp;
+  document.getElementById('rankChip').textContent = rankFor(STATE.xp);
+  toast(n>=0?'xp':'err', (n>=0?'+':'')+n+' XP', label||'');
+  checkAchievements();
+}
+function toast(type, title, msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const ico = type==='xp' ? '⭐' : type==='ok' ? '✅' : type==='err' ? '⛔' : 'ℹ';
+  el.innerHTML = `<div class="t-ico">${ico}</div><div><b>${title}</b><span>${msg||''}</span></div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+function completeMission(id, xp){
+  if(STATE.done.has(id)) return;
+  STATE.done.add(id);
+  STATE.networkHealth = Math.min(100, STATE.networkHealth+5);
+  addXP(xp, MISSIONS.find(m=>m.id===id).title + ' complete');
+  toast('ok','Mission Complete', MISSIONS.find(m=>m.id===id).title);
+  renderSidebar();
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx>=0 && idx<MISSION_ORDER.length-1){
+    setTimeout(()=>toast('info','Next mission unlocked', MISSIONS[idx+1].title), 900);
+  }
+}
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!STATE.achUnlocked.has(a.id) && a.check(STATE)){
+      STATE.achUnlocked.add(a.id);
+      setTimeout(()=>toast('ok','Achievement Unlocked 🏆', a.name), 600);
+    }
+  });
+}
+
+/* ================= NAV ================= */
+function renderSidebar(){
+  const groups = {main:'Overview', missions:'Mission Track', extra:'Beyond the Labs'};
+  let html = '';
+  Object.keys(groups).forEach(g=>{
+    html += `<h4>${groups[g]}</h4>`;
+    NAV.filter(n=>n.group===g).forEach(n=>{
+      let locked=false, done=false;
+      if(MISSION_ORDER.includes(n.id)){ locked=!isUnlocked(n.id); done=STATE.done.has(n.id); }
+      html += `<div class="nav-item ${STATE.view===n.id?'active':''} ${locked?'locked':''} ${done?'done':''}"
+        onclick="${locked?'':`setView('${n.id}')`}">
+        <span class="n-ico">${done?'✓':n.ico}</span>${n.label}
+        ${locked?'<span class="nav-badge">🔒</span>':''}
+      </div>`;
+    });
+  });
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  html += `<div class="progress-mini"><div class="lbl"><span>Mission Progress</span><span>${pct}%</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
+  document.getElementById('sidebar').innerHTML = html;
+}
+function setView(id){
+  STATE.view = id;
+  const nav = NAV.find(n=>n.id===id);
+  document.getElementById('crumbCurrent').textContent = nav ? nav.label : id;
+  renderSidebar();
+  renderMain();
+  const mainEl = document.getElementById('main');
+  if(mainEl.scrollIntoView) mainEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderMain(){
+  const map = {
+    home:renderHome, missionmap:renderMissionMap,
+    m1:renderM1, m2:renderM2, m3:renderM3, m4:renderM4, m5:renderM5, m6:renderM6, m7:renderM7,
+    m8:renderM8, m9:renderM9, m10:renderM10, m11:renderM11, m12:renderM12, m13:renderM13,
+    m14:renderM14, m15:renderM15, m16:renderM16,
+    achievements:renderAchievements, capstone:renderCapstone,
+  };
+  const fn = map[STATE.view] || renderHome;
+  document.getElementById('main').innerHTML = `<div class="view active">${fn()}</div>`;
+  afterRenderHooks[STATE.view] && afterRenderHooks[STATE.view]();
+}
+const afterRenderHooks = {};
+
+function healthBar(label, val, colorVar){
+  return `<div class="health-meter"><div class="hm-lbl"><span>${label}</span><span>${val}%</span></div>
+    <div class="hm-track"><div class="hm-fill" style="width:${val}%; background:var(${colorVar});"></div></div></div>`;
+}
+function topologyDiagram(){
+  return `<div class="arch-diagram">${TOPOLOGY.map((k,i)=>{
+    const present = k==='Internet' || isTopoBuilt(k);
+    return `${i>0?'<div class="arch-arrow">↓</div>':''}<div class="arch-node ${present?'active':'pending'}">${TOPOLOGY_LABELS[k]}</div>`;
+  }).join('')}</div>`;
+}
+function isTopoBuilt(k){
+  const map = {
+    igw:STATE.m4.deployed, pubrt:Object.keys(STATE.m7.routes).length>0, pubsubnet:STATE.m2.created,
+    bastion:STATE.m10.launched, privrt:Object.keys(STATE.m7.routes).length>0, privsubnet:STATE.m3.created,
+    appvm:STATE.m11.launched, natgw:STATE.m5.deployed, svcgw:STATE.m6.deployed, objstorage:STATE.m14.bucketCreated,
+  };
+  return !!map[k];
+}
+
+/* ================= OCI CONSOLE CHROME HELPERS ================= */
+function ociFrame(breadcrumbParts, title, actionsHtml, bodyHtml){
+  return `<div class="oci-console">
+    <div class="oci-topbar">
+      <span class="oci-hamburger">☰</span>
+      <span class="oci-logo"><span class="dot"></span>Oracle Cloud</span>
+      <span class="oci-search">🔍 Search resources, services, and documentation</span>
+      <span class="oci-region">🌐 US East (Ashburn)</span>
+      <span class="oci-user">AB</span>
+    </div>
+    <div class="oci-breadcrumb">${breadcrumbParts.map((p,i)=>`${i>0?'<span class="sep">/</span>':''}${i===breadcrumbParts.length-1?`<b>${p}</b>`:p}`).join('')}</div>
+    <div class="oci-body">
+      <div class="oci-page-title">${title}</div>
+      ${actionsHtml?`<div class="oci-actions">${actionsHtml}</div>`:''}
+      ${bodyHtml}
+    </div>
+  </div>`;
+}
+function ociStatus(state){
+  const map = {RUNNING:'running', AVAILABLE:'available', ACTIVE:'active', PROVISIONING:'provisioning', ATTACHING:'provisioning', TERMINATED:'terminated'};
+  const cls = map[state] || 'provisioning';
+  return `<span class="oci-status ${cls}"><span class="dot"></span>${state}</span>`;
+}
+function ociTable(headers, rows){
+  if(!rows.length) return `<div class="oci-empty">No resources found in this compartment yet. Click the button above to create one.</div>`;
+  return `<table class="oci-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>
+    ${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}
+  </tbody></table>`;
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  const nextMission = MISSIONS[STATE.done.size];
+  return `
+  <div class="section-head">
+    <div class="eyebrow">OCI Operations Professional · 1Z0-1067-26 · Day 5 Lab</div>
+    <h1 class="page-title">Production Networking</h1>
+    <p class="page-sub">You've joined ABC Corporation as a Cloud Network Engineer. Deploy a highly available, secure, production-ready OCI network.</p>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-orange">XP</div><h2 style="margin-top:10px;font-size:24px;">${STATE.xp}</h2></div>
+    <div class="card"><div class="pill pill-blue">Rank</div><h2 style="margin-top:10px;font-size:15px;">${rankFor(STATE.xp)}</h2></div>
+    <div class="card"><div class="pill pill-green">Missions</div><h2 style="margin-top:10px;font-size:24px;">${STATE.done.size}/16</h2></div>
+    <div class="card"><div class="pill pill-red">Network Health</div><h2 style="margin-top:10px;font-size:24px;">${STATE.networkHealth}%</h2></div>
+  </div>
+  <div class="grid grid-2" style="margin-bottom:16px;">
+    <div class="card">
+      ${healthBar('Security Score', STATE.securityScore, '--red')}
+      ${healthBar('Availability Score', STATE.availabilityScore, '--green')}
+      ${healthBar('Performance Score', STATE.performanceScore, '--blue')}
+      ${healthBar('Packet Success Rate', STATE.packetSuccessRate, '--orange')}
+    </div>
+    <div class="card">
+      <div class="tag-list">
+        <span class="pill pill-gray">Connected Resources: ${STATE.connectedResources}</span>
+        <span class="pill ${STATE.internetStatus==='Up'?'pill-green':'pill-gray'}">Internet: ${STATE.internetStatus}</span>
+      </div>
+      <div class="hr"></div>
+      <h4 style="margin-bottom:10px;">Live Network Topology</h4>
+      ${topologyDiagram()}
+    </div>
+  </div>
+  <div class="card" style="text-align:center; padding:40px 24px; background:linear-gradient(180deg, var(--red-glow), var(--panel));">
+    <div style="font-size:13px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Current Mission</div>
+    <h2 style="font-size:20px; margin-bottom:10px;">${nextMission ? 'Mission '+nextMission.num+' — '+nextMission.title : 'All Missions Complete!'}</h2>
+    <p class="page-sub" style="margin:0 auto 20px;">Mission progress: ${pct}%</p>
+    <button class="btn btn-primary" onclick="setView('missionmap')">🚀 Start Mission</button>
+  </div>`;
+}
+
+/* ================= MISSION MAP ================= */
+function renderMissionMap(){
+  let nodes = MISSIONS.map(m=>{
+    const locked = !isUnlocked(m.id); const done = STATE.done.has(m.id); const current = !locked && !done;
+    return `<div class="m-node ${locked?'locked':''} ${done?'done':''} ${current?'current':''}" onclick="${locked?'':`setView('${m.id}')`}">
+      <div class="m-num">${done?'✓':m.num}</div><h4>${m.title}</h4><p>${m.desc}</p>
+      <div class="m-xp">⭐ ${m.xp} XP</div>${locked?'<div class="pill pill-gray" style="margin-top:6px;">🔒</div>':''}
+    </div>`;
+  }).join('');
+  return `<div class="section-head"><div class="eyebrow">Mission Map</div><h1 class="page-title">16 Missions to Production</h1>
+  <p class="page-sub">Complete missions in order — each unlocks the next.</p></div>
+  <div class="mission-map"><div class="mission-track">${nodes}</div></div>`;
+}
+
+/* ================= M1: CREATE VCN ================= */
+function renderM1(){
+  const done = STATE.done.has('m1');
+  const checkedCount = Object.keys(STATE.m1.cidrChecked).length;
+  const rows = STATE.m1.created ? [[
+    `<a class="oci-link">Production-VCN</a>`, ociStatus('AVAILABLE'), `<span class="oci-copyable">10.0.0.0/16</span>`, 'Root', 'Just now'
+  ]] : [];
+  const body = !STATE.m1.created ? `
+    ${ociTable(['Name','State','CIDR Block','Compartment','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Virtual Cloud Network</h4>
+    <div class="oci-field"><label>Name</label><input id="vcnName" value="Production-VCN"></div>
+    <div class="oci-field"><label>CIDR Block</label><input id="vcnCidr" value="10.0.0.0/16"><div class="oci-help">Choose an address range unique to this VCN. It cannot be changed after creation.</div></div>
+    <button class="oci-btn oci-btn-primary" onclick="createVCN()">Create VCN</button>
+  ` : `
+    ${ociTable(['Name','State','CIDR Block','Compartment','Created'], rows)}
+    <div class="oci-console-note">💡 Address space: 10.0.0.0 — 10.0.255.255 · 65,536 usable IPs across the VCN.</div>
+  `;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 1 · 80 XP</div><h1 class="page-title">Create VCN</h1>
+  <p class="page-sub">Build the network foundation everything else attaches to.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks'], 'Virtual Cloud Networks in Production compartment',
+    STATE.m1.created ? '' : '', body)}
+  ${STATE.m1.created ? `
+  <div class="card">
+    <h4 style="margin-bottom:10px;">🎓 Certification Check — Spot the CIDR Mistakes (${checkedCount}/${CIDR_MISTAKES.length})</h4>
+    ${CIDR_MISTAKES.map((c,i)=>{
+      const answered = STATE.m1.cidrChecked[i];
+      return `<div class="finding-row" style="cursor:pointer;" onclick="checkCidr(${i})">
+        <span>${c.label}</span>
+        <span style="margin-left:auto;">${answered ? (answered==='correct'?'<span class="pill pill-green">✓ correctly identified</span>':'<span class="pill pill-red">✗ try again</span>') : '<span class="pill pill-gray">valid or invalid?</span>'}</span>
+      </div>${answered ? `<p class="page-sub" style="margin:-2px 0 8px 4px;">${c.note}</p>` : ''}`;
+    }).join('')}
+  </div>` : ''}
+  ${STATE.m1.created && checkedCount>=CIDR_MISTAKES.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m1',80); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m1') : ''}`;
+}
+function createVCN(){
+  STATE.m1.created = true;
+  toast('ok','VCN created','Production-VCN · 10.0.0.0/16');
+  addXP(15,'VCN created');
+  renderMain();
+}
+function checkCidr(i){
+  if(STATE.m1.cidrChecked[i]) return;
+  const c = CIDR_MISTAKES[i];
+  STATE.m1.cidrChecked[i] = 'correct';
+  addXP(8, c.ok?'Confirmed valid CIDR':'Caught invalid CIDR');
+  renderMain();
+}
+
+/* ================= M2: PUBLIC SUBNET ================= */
+function renderM2(){
+  const done = STATE.done.has('m2');
+  const rows = STATE.m2.created ? [[`<a class="oci-link">public-subnet-1</a>`, ociStatus('AVAILABLE'), `<span class="oci-copyable">10.0.1.0/24</span>`, 'Public', 'Just now']] : [];
+  const body = !STATE.m2.created ? `
+    ${ociTable(['Name','State','CIDR Block','Access','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Subnet</h4>
+    <div class="oci-radio-card selected"><b>◉ Public Subnet</b><span>Instances can receive public IP addresses and be reached from the internet via routing.</span></div>
+    <div class="oci-field"><label>Name</label><input id="pubSubnetName" value="public-subnet-1"></div>
+    <div class="oci-field"><label>CIDR Block</label><input id="pubSubnetCidr" value="10.0.1.0/24"><div class="oci-help">Must be a subset of the VCN CIDR (10.0.0.0/16) and not overlap other subnets.</div></div>
+    <button class="oci-btn oci-btn-primary" onclick="createPublicSubnet()">Create Subnet</button>
+  ` : `${ociTable(['Name','State','CIDR Block','Access','Created'], rows)}
+    <div class="oci-console-note">💡 254 usable IPs · 0 in use · 100% available.</div>`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 2 · 70 XP</div><h1 class="page-title">Create Public Subnet</h1>
+  <p class="page-sub">Carve 10.0.1.0/24 out of the VCN for internet-facing resources.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Subnets'], 'Subnets in Production-VCN', '', body)}
+  ${STATE.m2.created && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m2',70); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m2') : ''}`;
+}
+function createPublicSubnet(){
+  STATE.m2.created = true;
+  STATE.connectedResources++;
+  toast('ok','Public subnet created','10.0.1.0/24');
+  addXP(12,'Public subnet created');
+  renderMain();
+}
+
+/* ================= M3: PRIVATE SUBNET ================= */
+function renderM3(){
+  const done = STATE.done.has('m3');
+  const rows = [
+    [`<a class="oci-link">public-subnet-1</a>`, ociStatus('AVAILABLE'), `<span class="oci-copyable">10.0.1.0/24</span>`, 'Public', 'Earlier'],
+  ];
+  if(STATE.m3.created) rows.push([`<a class="oci-link">private-subnet-1</a>`, ociStatus('AVAILABLE'), `<span class="oci-copyable">10.0.2.0/24</span>`, 'Private', 'Just now']);
+  const body = !STATE.m3.created ? `
+    ${ociTable(['Name','State','CIDR Block','Access','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Subnet</h4>
+    <div class="oci-radio-card selected"><b>◉ Private Subnet</b><span>Instances cannot receive public IP addresses. No direct route to an Internet Gateway.</span></div>
+    <div class="oci-field"><label>Name</label><input id="privSubnetName" value="private-subnet-1"></div>
+    <div class="oci-field"><label>CIDR Block</label><input id="privSubnetCidr" value="10.0.2.0/24"><div class="oci-help">Must not overlap public-subnet-1 (10.0.1.0/24).</div></div>
+    <button class="oci-btn oci-btn-primary" onclick="createPrivateSubnet()">Create Subnet</button>
+  ` : `${ociTable(['Name','State','CIDR Block','Access','Created'], rows)}
+    <div class="oci-console-note">💡 254 usable IPs · public IP assignment disabled for this subnet.</div>`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 3 · 70 XP</div><h1 class="page-title">Create Private Subnet</h1>
+  <p class="page-sub">Carve 10.0.2.0/24 out of the VCN to isolate backend resources.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Subnets'], 'Subnets in Production-VCN', '', body)}
+  ${STATE.m3.created && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m3',70); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m3') : ''}`;
+}
+function createPrivateSubnet(){
+  STATE.m3.created = true;
+  STATE.connectedResources++;
+  toast('ok','Private subnet created','10.0.2.0/24');
+  addXP(12,'Private subnet created');
+  renderMain();
+}
+
+/* ================= M4: INTERNET GATEWAY ================= */
+function renderM4(){
+  const done = STATE.done.has('m4');
+  const rows = STATE.m4.deployed ? [[`<a class="oci-link">Production-IGW</a>`, ociStatus('AVAILABLE'), 'Just now']] : [];
+  const body = !STATE.m4.deployed ? `
+    ${ociTable(['Name','State','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <button class="oci-btn oci-btn-primary" onclick="deployIGW()">Create Internet Gateway</button>
+  ` : `${ociTable(['Name','State','Created'], rows)}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 4 · 80 XP</div><h1 class="page-title">Configure Internet Gateway</h1>
+  <p class="page-sub">Connect the VCN to the public internet.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Internet Gateways'], 'Internet Gateways in Production-VCN', '', body)}
+  ${STATE.m4.deployed ? `
+  <div class="card">
+    <div class="arch-diagram"><div class="arch-node active">🌐 Internet</div><div class="arch-arrow">↕ inbound &amp; outbound</div><div class="arch-node active">Internet Gateway</div><div class="arch-arrow">↕</div><div class="arch-node active">Public Subnet</div></div>
+    <p class="page-sub">Traffic can now flow both directions for any resource with a public IP in a subnet routed to this gateway.</p>
+  </div>` : ''}
+  ${STATE.m4.deployed && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m4',80); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m4') : ''}`;
+}
+function deployIGW(){
+  STATE.m4.deployed = true;
+  STATE.internetStatus = 'Up';
+  toast('ok','Internet Gateway deployed','');
+  addXP(15,'Internet Gateway active');
+  renderMain();
+}
+
+/* ================= M5: NAT GATEWAY ================= */
+function renderM5(){
+  const done = STATE.done.has('m5');
+  const rows = STATE.m5.deployed ? [[`<a class="oci-link">Production-NATGW</a>`, ociStatus('AVAILABLE'), 'Enabled', 'Just now']] : [];
+  const body = !STATE.m5.deployed ? `
+    ${ociTable(['Name','State','Public IP','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <button class="oci-btn oci-btn-primary" onclick="deployNAT()">Create NAT Gateway</button>
+  ` : `${ociTable(['Name','State','Public IP','Created'], rows)}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 5 · 90 XP</div><h1 class="page-title">Configure NAT Gateway</h1>
+  <p class="page-sub">Give private resources outbound-only internet access.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','NAT Gateways'], 'NAT Gateways in Production-VCN', '', body)}
+  ${STATE.m5.deployed ? `
+  <div class="card">
+    ${!STATE.m5.tested ? `<button class="btn btn-ghost" onclick="testNAT()">Simulate: Private VM downloads updates</button>` : `
+    <div class="info-box">✓ Outbound request to yum/dnf repo succeeded via NAT Gateway.</div>
+    <div class="mistake-box">⛔ Inbound test: an external host tried to initiate a connection to the private VM through the NAT Gateway — blocked, as expected. NAT Gateways never accept unsolicited inbound traffic.</div>`}
+  </div>` : ''}
+  ${STATE.m5.deployed && STATE.m5.tested && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m5',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m5') : ''}`;
+}
+function deployNAT(){
+  STATE.m5.deployed = true;
+  toast('ok','NAT Gateway deployed','');
+  addXP(15,'NAT Gateway active');
+  renderMain();
+}
+function testNAT(){
+  STATE.m5.tested = true;
+  addXP(10,'NAT Gateway behavior verified');
+  renderMain();
+}
+
+/* ================= M6: SERVICE GATEWAY ================= */
+function renderM6(){
+  const done = STATE.done.has('m6');
+  const rows = STATE.m6.deployed ? [[`<a class="oci-link">Production-SGW</a>`, ociStatus('AVAILABLE'), 'All US-ASHBURN-1 Services in Oracle Services Network', 'Just now']] : [];
+  const body = !STATE.m6.deployed ? `
+    ${ociTable(['Name','State','Services','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <button class="oci-btn oci-btn-primary" onclick="deploySVC()">Create Service Gateway</button>
+  ` : `${ociTable(['Name','State','Services','Created'], rows)}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 6 · 90 XP</div><h1 class="page-title">Configure Service Gateway</h1>
+  <p class="page-sub">Reach OCI services like Object Storage without touching the public internet.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Service Gateways'], 'Service Gateways in Production-VCN', '', body)}
+  ${STATE.m6.deployed ? `
+  <div class="card">
+    ${!STATE.m6.tested ? `<button class="btn btn-ghost" onclick="testSVC()">Connect Private VM → Object Storage</button>` : `<div class="info-box">✓ Connected — traffic stayed entirely on the Oracle network backbone.</div>`}
+  </div>
+  <div class="two-col" style="margin-top:14px;">
+    <div class="card"><h5 style="margin-bottom:6px;">🌐 Public Internet Path</h5><p class="page-sub">VM → NAT Gateway → Internet → Object Storage public endpoint. More hops, more exposure.</p></div>
+    <div class="card"><h5 style="margin-bottom:6px;">🛡 Oracle Backbone Path</h5><p class="page-sub">VM → Service Gateway → Object Storage. Never leaves Oracle's network.</p></div>
+  </div>` : ''}
+  ${STATE.m6.deployed && STATE.m6.tested && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m6',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m6') : ''}`;
+}
+function deploySVC(){
+  STATE.m6.deployed = true;
+  toast('ok','Service Gateway deployed','');
+  addXP(15,'Service Gateway active');
+  renderMain();
+}
+function testSVC(){
+  STATE.m6.tested = true;
+  addXP(10,'Service Gateway path verified');
+  renderMain();
+}
+
+/* ================= M7: ROUTE TABLES ================= */
+const ROUTE_RULES = [
+  {id:'pub', label:'Public Route: 0.0.0.0/0 → Internet Gateway'},
+  {id:'priv', label:'Private Route: 0.0.0.0/0 → NAT Gateway'},
+  {id:'svc', label:'Oracle Services → Service Gateway'},
+];
+function renderM7(){
+  const done = STATE.done.has('m7');
+  const count = Object.keys(STATE.m7.routes).length;
+  const ROUTE_META = {
+    pub:{dest:'0.0.0.0/0', target:'Internet Gateway'},
+    priv:{dest:'0.0.0.0/0', target:'NAT Gateway'},
+    svc:{dest:'All US-ASHBURN-1 Services', target:'Service Gateway'},
+  };
+  const rows = ROUTE_RULES.filter(r=>STATE.m7.routes[r.id]).map(r=>[
+    `<span class="oci-copyable">${ROUTE_META[r.id].dest}</span>`, ROUTE_META[r.id].target, ociStatus('ACTIVE')
+  ]);
+  const body = `
+    ${ociTable(['Destination','Target','State'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Add Route Rule</h4>
+    ${ROUTE_RULES.map(r=>`
+      <div class="finding-row">
+        <span>${r.label}</span>
+        <span style="margin-left:auto;">${STATE.m7.routes[r.id] ? '<span class="pill pill-green">✓ Added</span>' : `<button class="oci-btn oci-btn-secondary" onclick="addRoute('${r.id}')">Add Route Rule</button>`}</span>
+      </div>`).join('')}
+  `;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 7 · 100 XP</div><h1 class="page-title">Route Table Builder</h1>
+  <p class="page-sub">Add each route — watch packets get directed to the right gateway.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Route Tables'], 'Route Rules', '', body)}
+  ${count>0 ? `<div class="card"><h5 style="margin-bottom:8px;">Packet Animation</h5><p class="page-sub">Private VM → checks Private Route Table → matches 0.0.0.0/0 → forwarded to NAT Gateway → internet. ✓</p></div>` : ''}
+  ${count>=ROUTE_RULES.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m7',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m7') : ''}`;
+}
+function addRoute(id){
+  if(STATE.m7.routes[id]) return;
+  STATE.m7.routes[id] = true;
+  const r = ROUTE_RULES.find(x=>x.id===id);
+  toast('ok','Route added', r.label);
+  addXP(12, r.label);
+  renderMain();
+}
+
+/* ================= M8: SECURITY LISTS ================= */
+const SL_PUBLIC_RULES = [
+  {id:'ssh', label:'Ingress TCP/22 (SSH) from 0.0.0.0/0'},
+  {id:'http', label:'Ingress TCP/80 (HTTP) from 0.0.0.0/0'},
+  {id:'https', label:'Ingress TCP/443 (HTTPS) from 0.0.0.0/0'},
+];
+const SL_PRIVATE_RULES = [
+  {id:'sshFromPublic', label:'Ingress TCP/22 (SSH) from Public Subnet (10.0.1.0/24)'},
+  {id:'port8080', label:'Ingress TCP/8080 from Bastion'},
+];
+function renderM8(){
+  const done = STATE.done.has('m8');
+  const pubCount = Object.keys(STATE.m8.publicRules).length;
+  const privCount = Object.keys(STATE.m8.privateRules).length;
+  const testedCount = Object.keys(STATE.m8.tested).length;
+  const pubRows = SL_PUBLIC_RULES.filter(r=>STATE.m8.publicRules[r.id]).map(r=>['Ingress', r.label.split(' from ')[1]||'0.0.0.0/0', r.label.match(/TCP\/(\d+)/)?.[1]||'', ociStatus('ACTIVE')]);
+  const privRows = SL_PRIVATE_RULES.filter(r=>STATE.m8.privateRules[r.id]).map(r=>['Ingress', r.label.split(' from ')[1]||'', r.label.match(/TCP\/(\d+)/)?.[1]||'', ociStatus('ACTIVE')]);
+  const pubBody = `${ociTable(['Direction','Source','Port',''], pubRows)}
+    <div class="hr" style="margin:16px 0;"></div>
+    ${SL_PUBLIC_RULES.map(r=>`<div class="finding-row"><span>${r.label}</span><span style="margin-left:auto;">${STATE.m8.publicRules[r.id]?'<span class="pill pill-green">✓</span>':`<button class="oci-btn oci-btn-secondary" onclick="addSLRule('publicRules','${r.id}')">Add Ingress Rule</button>`}</span></div>`).join('')}`;
+  const privBody = `${ociTable(['Direction','Source','Port',''], privRows)}
+    <div class="hr" style="margin:16px 0;"></div>
+    ${SL_PRIVATE_RULES.map(r=>`<div class="finding-row"><span>${r.label}</span><span style="margin-left:auto;">${STATE.m8.privateRules[r.id]?'<span class="pill pill-green">✓</span>':`<button class="oci-btn oci-btn-secondary" onclick="addSLRule('privateRules','${r.id}')">Add Ingress Rule</button>`}</span></div>`).join('')}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 8 · 100 XP</div><h1 class="page-title">Security List Designer</h1>
+  <p class="page-sub">Build subnet-level firewall rules for both the public and private security lists.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Security Lists','Public Security List'], 'Ingress Rules — Public Security List', '', pubBody)}
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Security Lists','Private Security List'], 'Ingress Rules — Private Security List', '', privBody)}
+  <div class="card">
+  <h4 style="margin-bottom:10px;">Firewall Test (${testedCount}/3)</h4>
+  <div class="chip-row">
+    <button class="chip" onclick="testFirewall('ssh22')">Send SSH (22) to Public Subnet</button>
+    <button class="chip" onclick="testFirewall('port3306')">Send MySQL (3306) to Public Subnet</button>
+    <button class="chip" onclick="testFirewall('port8080')">Send 8080 from Bastion to Private Subnet</button>
+  </div>
+  <div id="firewallLog"></div>
+  </div>
+  ${pubCount>=SL_PUBLIC_RULES.length && privCount>=SL_PRIVATE_RULES.length && testedCount>=3 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m8',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m8') : ''}`;
+}
+function addSLRule(group, id){
+  if(STATE.m8[group][id]) return;
+  STATE.m8[group][id] = true;
+  addXP(8, 'Security rule added');
+  renderMain();
+}
+function testFirewall(kind){
+  if(STATE.m8.tested[kind]) return;
+  STATE.m8.tested[kind] = true;
+  const log = document.getElementById('firewallLog');
+  const results = {
+    ssh22:{allowed:true, msg:'SSH (22) → Public Subnet: ALLOWED — matches the public security list rule.'},
+    port3306:{allowed:false, msg:'MySQL (3306) → Public Subnet: BLOCKED — no rule permits this port.'},
+    port8080:{allowed:true, msg:'8080 from Bastion → Private Subnet: ALLOWED — matches the private security list rule.'},
+  };
+  const r = results[kind];
+  log.innerHTML = (log.innerHTML||'') + `<div class="finding-row"><span class="sev-badge ${r.allowed?'allowed':'denied'}">${r.allowed?'allowed':'blocked'}</span>${r.msg}</div>`;
+  addXP(8,'Firewall behavior verified');
+  renderMain();
+}
+
+/* ================= M9: NSGs ================= */
+function renderM9(){
+  const done = STATE.done.has('m9');
+  const testedCount = Object.keys(STATE.m9.simTests).length;
+  const rows = STATE.m9.nsgCreated ? [[`<a class="oci-link">app-nsg</a>`, ociStatus('AVAILABLE'), Object.keys(STATE.m9.attached).length+' VNICs attached', 'Just now']] : [];
+  const body = !STATE.m9.nsgCreated ? `
+    ${ociTable(['Name','State','Attached VNICs','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <button class="oci-btn oci-btn-primary" onclick="createNSG()">Create Network Security Group</button>
+  ` : `
+    ${ociTable(['Name','State','Attached VNICs','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Attach to Resources</h4>
+    <div class="chip-row">
+      <button class="chip ${STATE.m9.attached.bastion?'active':''}" onclick="attachNSG('bastion')">${STATE.m9.attached.bastion?'✓ ':''}Attach to Bastion</button>
+      <button class="chip ${STATE.m9.attached.appvm?'active':''}" onclick="attachNSG('appvm')">${STATE.m9.attached.appvm?'✓ ':''}Attach to App VM</button>
+    </div>
+  `;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 9 · 110 XP</div><h1 class="page-title">Network Security Groups</h1>
+  <p class="page-sub">NSGs attach directly to instances, independent of subnet.</p></div>
+  ${ociFrame(['Networking','Virtual Cloud Networks','Production-VCN','Network Security Groups'], 'Network Security Groups in Production-VCN', '', body)}
+  ${STATE.m9.nsgCreated ? `
+  <div class="two-col" style="margin-bottom:14px;">
+    <div class="card"><h5 style="margin-bottom:6px;">Security Lists</h5><p class="page-sub">Subnet-wide. Every resource in the subnet shares the same rules.</p></div>
+    <div class="card"><h5 style="margin-bottom:6px;">NSGs</h5><p class="page-sub">Attached to specific VNICs. Different instances in the same subnet can have different rules.</p></div>
+  </div>
+  <div class="card">
+  <h4 style="margin-bottom:10px;">Security Simulator (${testedCount}/${ATTACK_SIM_PORTS.length})</h4>
+  ${ATTACK_SIM_PORTS.map((a,i)=>`
+    <div class="finding-row">
+      <span>Attacker → ${a.port} on ${a.target}</span>
+      <span style="margin-left:auto;">${STATE.m9.simTests[i] ? `<span class="sev-badge ${a.result==='Allowed'?'allowed':'denied'}">${a.result.toLowerCase()}</span>` : `<button class="btn btn-ghost btn-sm" onclick="runAttackSim(${i})">Attempt</button>`}</span>
+    </div>
+    ${STATE.m9.simTests[i] ? `<p class="page-sub" style="margin:-2px 0 8px 4px;">${a.reason}</p>` : ''}`).join('')}
+  </div>
+  ` : ''}
+  ${STATE.m9.nsgCreated && STATE.m9.attached.bastion && STATE.m9.attached.appvm && testedCount>=ATTACK_SIM_PORTS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m9',110); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m9') : ''}`;
+}
+function createNSG(){
+  STATE.m9.nsgCreated = true;
+  toast('ok','NSG created','app-nsg');
+  addXP(15,'NSG created');
+  renderMain();
+}
+function attachNSG(target){
+  STATE.m9.attached[target] = true;
+  addXP(8,'NSG attached to '+target);
+  renderMain();
+}
+function runAttackSim(i){
+  if(STATE.m9.simTests[i]) return;
+  STATE.m9.simTests[i] = true;
+  addXP(6,'Attack attempt observed');
+  renderMain();
+}
+
+/* ================= M10: BASTION HOST ================= */
+function renderM10(){
+  const done = STATE.done.has('m10');
+  const rows = STATE.m10.launched ? [[`<a class="oci-link">bastion-vm</a>`, ociStatus('RUNNING'), 'VM.Standard.E2.1.Micro', 'public-subnet-1', '144.24.11.9', 'Just now']] : [];
+  const body = !STATE.m10.launched ? `
+    ${ociTable(['Name','State','Shape','Subnet','Public IP','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Compute Instance</h4>
+    <div class="oci-field"><label>Name</label><input id="bastionName" value="bastion-vm"></div>
+    <div class="oci-field"><label>Shape</label><select id="bastionShape"><option>VM.Standard.E2.1.Micro (Always Free)</option></select></div>
+    <div class="oci-field"><label>Subnet</label><select><option>public-subnet-1</option></select></div>
+    <div class="oci-field"><label>Assign Public IP</label><select><option>Yes</option></select></div>
+    <div class="oci-field"><label>SSH Key (public key paste)</label><input placeholder="ssh-rsa AAAAB3NzaC1yc2E..."></div>
+    <button class="oci-btn oci-btn-primary" onclick="launchBastion()">Create</button>
+  ` : `${ociTable(['Name','State','Shape','Subnet','Public IP','Created'], rows)}
+    <div class="oci-console-note">💡 Provisioning timeline: Provisioning → Cloud-Init executed → Running. This is the only resource in the VCN with a public IP.</div>`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 10 · 100 XP</div><h1 class="page-title">Launch Bastion VM</h1>
+  <p class="page-sub">Your one secure, audited door into the VCN.</p></div>
+  ${ociFrame(['Compute','Instances'], 'Instances in Production compartment', '', body)}
+  ${STATE.m10.launched ? `
+  <div class="card">
+    <h5 style="margin-bottom:8px;">Interactive SSH Login</h5>
+    ${!STATE.m10.sshLoggedIn ? `<button class="btn btn-ghost" onclick="sshBastion()">ssh -i bastion_key opc@144.24.11.9</button>` : `<div class="terminal"><div class="line out">Last login: Sat Aug 1 06:00:00 2026\n[opc@bastion-vm ~]$</div></div>`}
+  </div>` : ''}
+  ${STATE.m10.launched && STATE.m10.sshLoggedIn && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m10',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m10') : ''}`;
+}
+function launchBastion(){
+  STATE.m10.launched = true;
+  STATE.connectedResources++;
+  toast('ok','Bastion launching…','');
+  addXP(15,'Bastion VM running');
+  renderMain();
+}
+function sshBastion(){
+  STATE.m10.sshLoggedIn = true;
+  addXP(10,'SSH login successful');
+  renderMain();
+}
+
+/* ================= M11: PRIVATE APP SERVER ================= */
+function renderM11(){
+  const done = STATE.done.has('m11');
+  const rows = [[`<a class="oci-link">bastion-vm</a>`, ociStatus('RUNNING'), 'public-subnet-1', '144.24.11.9']];
+  if(STATE.m11.launched) rows.push([`<a class="oci-link">app-vm-01</a>`, ociStatus('RUNNING'), 'private-subnet-1', '— (no public IP)']);
+  const body = !STATE.m11.launched ? `
+    ${ociTable(['Name','State','Subnet','Public IP'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Compute Instance</h4>
+    <div class="oci-field"><label>Name</label><input id="appName" value="app-vm-01"></div>
+    <div class="oci-field"><label>Subnet</label><select><option>private-subnet-1</option></select></div>
+    <div class="oci-field"><label>Assign Public IP</label><select><option>No</option></select><div class="oci-help">Disabled for private-subnet-1 by design.</div></div>
+    <button class="oci-btn oci-btn-primary" onclick="launchAppVM()">Create</button>
+  ` : `${ociTable(['Name','State','Subnet','Public IP'], rows)}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 11 · 90 XP</div><h1 class="page-title">Launch Private Application Server</h1>
+  <p class="page-sub">No public IP. Reachable only through the Bastion.</p></div>
+  ${ociFrame(['Compute','Instances'], 'Instances in Production compartment', '', body)}
+  ${STATE.m11.launched ? `
+  <div class="card">
+    <div class="arch-diagram"><div class="arch-node active">Bastion (public)</div><div class="arch-arrow">↓ SSH hop</div><div class="arch-node active">App VM (private)</div></div>
+    <p class="page-sub">The only network path to this VM is through the Bastion — it has zero direct internet exposure.</p>
+  </div>` : ''}
+  ${STATE.m11.launched && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m11',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m11') : ''}`;
+}
+function launchAppVM(){
+  STATE.m11.launched = true;
+  STATE.connectedResources++;
+  STATE.availabilityScore = Math.min(100, STATE.availabilityScore+15);
+  toast('ok','App VM launching…','');
+  addXP(15,'Private App VM running');
+  renderMain();
+}
+
+/* ================= M12: CLOUD-INIT ================= */
+function renderM12(){
+  const done = STATE.done.has('m12');
+  const stage = Object.keys(STATE.m12.stagesDone).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 12 · 90 XP</div><h1 class="page-title">Cloud-Init</h1>
+  <p class="page-sub">Automate first-boot provisioning — line by line.</p></div>
+  <div class="code-block" style="margin-bottom:14px;">${CLOUD_INIT_SCRIPT.map(l=>l.line).join('\n')}</div>
+  ${CLOUD_INIT_SCRIPT.map((l,i)=>`<div class="finding-row"><code style="font-family:var(--mono); font-size:11.5px;">${l.line}</code><span class="page-sub" style="margin-left:auto; text-align:right; max-width:55%;">${l.note}</span></div>`).join('')}
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Provisioning Animation (${stage}/${CLOUD_INIT_STAGES.length})</h4>
+  <div class="tag-list">${CLOUD_INIT_STAGES.map((s,i)=>`<span class="pill ${STATE.m12.stagesDone[i]?'pill-green':'pill-gray'}">${STATE.m12.stagesDone[i]?'✓':'○'} ${s}</span>`).join('')}</div>
+  ${stage<CLOUD_INIT_STAGES.length ? `<button class="btn btn-ghost" style="margin-top:10px;" onclick="advanceCloudInit()">▶ Next stage: ${CLOUD_INIT_STAGES[stage]}</button>` : ''}
+  ${stage>=CLOUD_INIT_STAGES.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m12',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m12') : ''}`;
+}
+function advanceCloudInit(){
+  const stage = Object.keys(STATE.m12.stagesDone).length;
+  STATE.m12.stagesDone[stage] = true;
+  addXP(8, CLOUD_INIT_STAGES[stage]);
+  renderMain();
+}
+
+/* ================= M13: BLOCK VOLUME ================= */
+const M13_CMDS = ['lsblk','mkfs.ext4 /dev/sdb','mount /dev/sdb /data','df -h'];
+function renderM13(){
+  const done = STATE.done.has('m13');
+  const rows = STATE.m13.created ? [[`<a class="oci-link">app-vm-01-vol</a>`, ociStatus('AVAILABLE'), '50 GB', 'app-vm-01 (/dev/sdb)']] : [];
+  const body = !STATE.m13.created ? `
+    ${ociTable(['Name','State','Size','Attached To'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <div class="oci-field"><label>Volume Name</label><input value="app-vm-01-vol"></div>
+    <div class="oci-field"><label>Size (GB)</label><input value="50"></div>
+    <button class="oci-btn oci-btn-primary" onclick="createVolume()">Create &amp; Attach to app-vm-01</button>
+  ` : `${ociTable(['Name','State','Size','Attached To'], rows)}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 13 · 80 XP</div><h1 class="page-title">Attach Block Volume</h1>
+  <p class="page-sub">Create a 50GB volume, attach it, then format and mount it.</p></div>
+  ${ociFrame(['Storage','Block Storage','Block Volumes'], 'Block Volumes in Production compartment', '', body)}
+  ${STATE.m13.created ? `
+  <div class="card">
+    <div class="terminal" id="m13term">${Object.keys(STATE.m13.cmdsRun).map(i=>renderM13Line(i)).join('')}</div>
+    ${Object.keys(STATE.m13.cmdsRun).length<M13_CMDS.length ? `<button class="btn btn-ghost" style="margin-top:10px;" onclick="runM13Cmd()">▶ Run: ${M13_CMDS[Object.keys(STATE.m13.cmdsRun).length]}</button>` : `<span class="pill pill-green" style="margin-top:10px; display:inline-block;">Storage mounted</span>`}
+  </div>` : ''}
+  ${Object.keys(STATE.m13.cmdsRun).length>=M13_CMDS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m13',80); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m13') : ''}`;
+}
+const M13_OUT = {
+  'lsblk':'NAME  SIZE  TYPE\nsda    50G   disk\nsdb    50G   disk',
+  'mkfs.ext4 /dev/sdb':'Creating filesystem with 13107200 4k blocks\nWriting superblocks and filesystem accounting information: done',
+  'mount /dev/sdb /data':'',
+  'df -h':'/dev/sdb   50G  52M  47G  1% /data',
+};
+function renderM13Line(i){
+  const cmd = M13_CMDS[i];
+  return `<div class="line"><span class="prompt">$</span> ${cmd}</div>${M13_OUT[cmd]?`<div class="line out">${M13_OUT[cmd].replace(/\n/g,'<br>')}</div>`:''}`;
+}
+function createVolume(){
+  STATE.m13.created = true;
+  STATE.connectedResources++;
+  toast('ok','Volume created &amp; attached','/dev/sdb');
+  addXP(12,'Block volume attached');
+  renderMain();
+}
+function runM13Cmd(){
+  const i = Object.keys(STATE.m13.cmdsRun).length;
+  STATE.m13.cmdsRun[i] = true;
+  addXP(6, M13_CMDS[i]);
+  renderMain();
+}
+
+/* ================= M14: OBJECT STORAGE ================= */
+function renderM14(){
+  const done = STATE.done.has('m14');
+  const rows = STATE.m14.bucketCreated ? [[`<a class="oci-link">app-assets</a>`, 'Private', STATE.m14.uploaded?'1':'0', 'Just now']] : [];
+  const body = !STATE.m14.bucketCreated ? `
+    ${ociTable(['Name','Visibility','Objects','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <div class="oci-field"><label>Bucket Name</label><input id="bucketName" value="app-assets"></div>
+    <div class="oci-field"><label>Default Storage Tier</label><select><option>Standard</option></select></div>
+    <div class="oci-radio-card selected"><b>◉ Private</b><span>No public internet access — objects reachable only via authenticated requests or the Service Gateway.</span></div>
+    <button class="oci-btn oci-btn-primary" onclick="createBucket()">Create Bucket</button>
+  ` : `${ociTable(['Name','Visibility','Objects','Created'], rows)}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 14 · 80 XP</div><h1 class="page-title">Object Storage</h1>
+  <p class="page-sub">Create a private bucket, reached only via the Service Gateway.</p></div>
+  ${ociFrame(['Storage','Object Storage &amp; Archive Storage','Buckets'], 'Buckets in Production compartment', '', body)}
+  ${STATE.m14.bucketCreated ? `
+  <div class="card">
+    ${!STATE.m14.uploaded ? `<button class="btn btn-ghost" onclick="uploadObject()">Upload app-config.json via Service Gateway</button>` : `<div class="info-box">✓ app-config.json uploaded — traffic never left the Oracle network.</div>`}
+  </div>` : ''}
+  ${STATE.m14.bucketCreated && STATE.m14.uploaded && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m14',80); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m14') : ''}`;
+}
+function createBucket(){
+  STATE.m14.bucketCreated = true;
+  STATE.connectedResources++;
+  toast('ok','Bucket created','app-assets (Private)');
+  addXP(12,'Bucket created');
+  renderMain();
+}
+function uploadObject(){
+  STATE.m14.uploaded = true;
+  addXP(10,'Object uploaded via Service Gateway');
+  renderMain();
+}
+
+/* ================= M15: NETWORK TESTING ================= */
+function renderM15(){
+  const done = STATE.done.has('m15');
+  const ranCount = Object.keys(STATE.m15.cmdsRun).length;
+  afterRenderHooks.m15 = ()=>{ const t=document.getElementById('m15term'); if(t) t.scrollTop = t.scrollHeight; };
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 15 · 100 XP</div><h1 class="page-title">Network Testing Lab</h1>
+  <p class="page-sub">Prove connectivity end to end, then trace the full packet journey.</p></div>
+  <div class="chip-row">${NETWORK_COMMANDS.map((c,i)=>`<button class="chip" onclick="runNetTest(${i})">${c.cmd.split(' ')[0]}</button>`).join('')}</div>
+  <div class="terminal" id="m15term"><div class="line comment"># Commands run: ${ranCount}/${NETWORK_COMMANDS.length}</div></div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Packet Flow Visualizer</h4>
+  <div class="arch-diagram">
+    <div class="arch-node active">🌐 Internet</div><div class="arch-arrow">↓ 1 hop</div>
+    <div class="arch-node active">Internet Gateway</div><div class="arch-arrow">↓ 1 hop</div>
+    <div class="arch-node active">Bastion (Public Subnet)</div><div class="arch-arrow">↓ 1 hop, TTL 63</div>
+    <div class="arch-node active">App Server (Private Subnet)</div><div class="arch-arrow">↓ &lt;1ms</div>
+    <div class="arch-node active">Object Storage (via Service Gateway)</div>
+  </div>
+  <div class="tag-list"><span class="pill pill-blue">Total latency: ~2.1ms</span><span class="pill pill-orange">Hop count: 4</span><span class="pill pill-green">Packet loss: 0%</span></div>
+  ${ranCount>=NETWORK_COMMANDS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m15',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m15') : ''}`;
+}
+function runNetTest(i){
+  const c = NETWORK_COMMANDS[i];
+  const term = document.getElementById('m15term');
+  term.innerHTML += `<div class="line"><span class="prompt">$</span> ${c.cmd}</div><div class="line out">${c.out.replace(/\n/g,'<br>')}</div><div class="line comment"># ${c.note}</div>`;
+  term.scrollTop = term.scrollHeight;
+  STATE.m15.cmdsRun[c.cmd] = true;
+  STATE.packetSuccessRate = Math.min(100, Object.keys(STATE.m15.cmdsRun).length/NETWORK_COMMANDS.length*100);
+  addXP(8, c.cmd.split(' ')[0]);
+  renderSidebar();
+}
+
+/* ================= M16: ENTERPRISE INCIDENT RESPONSE ================= */
+function renderM16(){
+  const done = STATE.done.has('m16');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 16 · 150 XP</div><h1 class="page-title">Enterprise Incident Response</h1>
+  <p class="page-sub">Resolved: ${STATE.m16.resolved.size}/${TROUBLESHOOT_16.length}.</p></div>
+  ${TROUBLESHOOT_16.map(inc=>{
+    const resolved = STATE.m16.resolved.has(inc.id);
+    return `<div class="incident-card ${resolved?'resolved':''}">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4>🚨 ${inc.title}</h4>${resolved?'<span class="pill pill-green">Resolved</span>':'<span class="pill pill-red">Active</span>'}
+      </div>
+      <p class="page-sub" style="margin:8px 0 4px;">Logs: <code>${inc.logs}</code></p>
+      <p class="page-sub" style="margin-bottom:10px;">Metrics: ${inc.metrics}</p>
+      ${!resolved ? `<div id="inc16-${inc.id}">${inc.opts.map((o,i)=>`<div class="q-opt" onclick="answerIncident16('${inc.id}',${i})">${o}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('')}
+  ${STATE.m16.resolved.size>=TROUBLESHOOT_16.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m16',150); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m16') : ''}`;
+}
+function answerIncident16(id, idx){
+  const inc = TROUBLESHOOT_16.find(x=>x.id===id);
+  const container = document.getElementById('inc16-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{ o.onclick=null; if(i===inc.a) o.classList.add('correct'); else if(i===idx) o.classList.add('incorrect'); });
+  if(idx===inc.a){
+    STATE.m16.resolved.add(id);
+    addXP(12, inc.title+' resolved');
+    toast('ok','Incident resolved', inc.title);
+  } else {
+    addXP(-5, 'Incorrect response to '+inc.title);
+  }
+  renderSidebar();
+  setTimeout(renderMain, 400);
+}
+
+/* ================= ACHIEVEMENTS ================= */
+function renderAchievements(){
+  return `<div class="section-head"><div class="eyebrow">Achievements</div><h1 class="page-title">Trophy Case</h1>
+  <p class="page-sub">${STATE.achUnlocked.size}/${ACHIEVEMENTS.length} unlocked</p></div>
+  <div class="grid grid-4">
+    ${ACHIEVEMENTS.map(a=>{ const u = STATE.achUnlocked.has(a.id);
+      return `<div class="ach-card ${u?'':'locked'}"><div class="ico">${a.ico}</div><h5>${a.name}</h5><p>${u?'Unlocked':a.cond}</p></div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ================= CAPSTONE ================= */
+function renderCapstone(){
+  const allDone = MISSION_ORDER.every(m=>STATE.done.has(m));
+  const checklist = [
+    {label:'Internet Gateway present &amp; routed', ok:STATE.done.has('m4') && STATE.done.has('m7')},
+    {label:'NAT route correct for private subnet', ok:STATE.done.has('m5') && STATE.done.has('m7')},
+    {label:'NSG rules correct', ok:STATE.done.has('m9')},
+    {label:'Private VM not exposed to the internet', ok:STATE.done.has('m11')},
+    {label:'Cloud-Init completed successfully', ok:STATE.done.has('m12')},
+    {label:'Block Volume attached &amp; mounted', ok:STATE.done.has('m13')},
+    {label:'Service Gateway routed to Object Storage', ok:STATE.done.has('m6') && STATE.done.has('m14')},
+    {label:'Object Storage reachable', ok:STATE.done.has('m14')},
+    {label:'SSH, internet, private connectivity &amp; storage all verified', ok:STATE.done.has('m15')},
+    {label:'All incidents resolved', ok:STATE.done.has('m16')},
+  ];
+  return `
+  <div class="section-head"><div class="eyebrow">Final Capstone</div><h1 class="page-title">Repair the Production Network</h1>
+  <p class="page-sub">You've inherited a partially broken production network. Verify everything end to end.</p></div>
+  <div class="card">${checklist.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
+    <span class="pill ${c.ok?'pill-green':'pill-gray'}">${c.ok?'✓':'○'}</span><span>${c.label}</span></div>`).join('')}</div>
+  ${allDone ? `
+  <div class="card" style="text-align:center; margin-top:18px; padding:44px; background:linear-gradient(180deg, rgba(61,220,132,.12), var(--panel));">
+    <div style="font-size:44px;margin-bottom:10px;">🎓</div>
+    <h2 style="margin-bottom:8px;">Production Network Healthy</h2>
+    <p class="page-sub" style="margin-bottom:14px;">OCI Operations Professional Ready · XP ${STATE.xp}</p>
+    <div class="pill pill-green" style="font-size:13px; padding:8px 16px;">Certification Ready</div>
+  </div>` : `<div class="tip-box" style="margin-top:16px;">Complete all 16 missions to fully repair and verify the production network.</div>`}`;
+}
+
+/* ================= QUIZ BLOCK (reused) ================= */
+function renderQuizBlock(missionId){
+  const qs = QUIZZES[missionId];
+  if(!qs) return '';
+  const answered = STATE.quizAnswered[missionId] || {};
+  return `<div class="card" style="margin-top:20px;"><h4 style="margin-bottom:14px;">🎯 Knowledge Check</h4>
+    ${qs.map((q,qi)=>`<div class="quiz-q"><div class="q-txt">${qi+1}. ${q.q}</div>
+      ${q.opts.map((o,oi)=>`<div class="q-opt ${answered[qi]===oi?(oi===q.a?'correct':'incorrect'):''}" onclick="answerQuiz('${missionId}',${qi},${oi})">${o}</div>`).join('')}
+      <div class="q-explain ${answered[qi]!==undefined?'show':''}">${q.ex}</div></div>`).join('')}
+  </div>`;
+}
+function answerQuiz(missionId, qi, oi){
+  if(!STATE.quizAnswered[missionId]) STATE.quizAnswered[missionId] = {};
+  if(STATE.quizAnswered[missionId][qi] !== undefined) return;
+  STATE.quizAnswered[missionId][qi] = oi;
+  const q = QUIZZES[missionId][qi];
+  if(oi===q.a){ STATE.quizScores[missionId] = (STATE.quizScores[missionId]||0)+1; addXP(10,'Correct answer'); }
+  else toast('err','Not quite','Review the explanation.');
+  renderMain();
+}
+
+/* ================= INIT ================= */
+function toggleTheme(){
+  const theme = document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', theme);
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+renderSidebar();
+renderMain();
+window.STATE = STATE;
+Object.assign(window, {QUIZZES, MISSIONS, MISSION_ORDER, CIDR_MISTAKES, ROUTE_RULES, SL_PUBLIC_RULES,
+  SL_PRIVATE_RULES, ATTACK_SIM_PORTS, CLOUD_INIT_STAGES, M13_CMDS, NETWORK_COMMANDS, TROUBLESHOOT_16, ACHIEVEMENTS});
+
+</script>
+</body>
+</html>

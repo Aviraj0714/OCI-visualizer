@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCI IAM Lab Visualizer — Day 1 | 1Z0-1067-26</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#11161d; --panel:#151b23; --panel2:#1a212b;
+  --border:#232b36; --border-soft:#1d2530;
+  --text:#e6ebf1; --text-dim:#9aa7b6; --text-faint:#5f6b7a;
+  --red:#ff3b30; --red-dim:#c62b22; --red-glow:rgba(255,59,48,.25);
+  --blue:#4da3ff; --blue-dim:#2f6fd1;
+  --orange:#ffab40; --green:#3ddc84; --green-dim:#279a5c;
+  --yellow:#ffd54a; --purple:#b48bff;
+  --radius:14px; --radius-sm:9px;
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --mono: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f5f7; --bg2:#eceef1; --panel:#ffffff; --panel2:#f7f8fa;
+  --border:#e1e4e9; --border-soft:#ebedf0;
+  --text:#1b2129; --text-dim:#5b6572; --text-faint:#8b95a3;
+  --red:#e0342a; --red-dim:#c62b22; --red-glow:rgba(224,52,42,.18);
+  --shadow: 0 8px 30px rgba(20,20,30,.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--sans);
+  min-height:100vh; overflow-x:hidden; transition:background .3s,color .3s;
+}
+body::before{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(circle at 15% 10%, var(--red-glow), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(77,163,255,.10), transparent 45%);
+}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:10px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint);}
+
+a{color:inherit;}
+button{font-family:inherit; cursor:pointer;}
+
+/* ---------- Top Bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; gap:14px;
+  padding:10px 18px; background:color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter:blur(14px); border-bottom:1px solid var(--border-soft);
+}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px;}
+.brand .logo{
+  width:30px; height:30px; border-radius:8px;
+  background:linear-gradient(135deg, var(--red), var(--red-dim));
+  display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff; font-weight:800;
+  box-shadow:0 4px 14px var(--red-glow);
+}
+.brand small{display:block; font-weight:500; color:var(--text-faint); font-size:10.5px; letter-spacing:.5px;}
+.crumb{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-dim); flex:1; min-width:0; overflow:hidden; white-space:nowrap;}
+.crumb b{color:var(--text); font-weight:600;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.xp-chip{
+  display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--border);
+  padding:6px 12px; border-radius:20px; font-size:12.5px; font-weight:600;
+}
+.xp-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange);}
+.rank-chip{
+  background:linear-gradient(135deg, var(--red), var(--red-dim)); color:#fff; font-size:11.5px; font-weight:700;
+  padding:6px 11px; border-radius:20px; letter-spacing:.3px;
+}
+.icon-btn{
+  width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--panel2);
+  color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:15px;
+  transition:.15s;
+}
+.icon-btn:hover{color:var(--text); border-color:var(--text-faint);}
+
+/* ---------- Layout ---------- */
+.app{display:flex; min-height:calc(100vh - 54px); position:relative; z-index:1;}
+.sidebar{
+  width:250px; flex-shrink:0; border-right:1px solid var(--border-soft);
+  padding:16px 10px; position:sticky; top:54px; height:calc(100vh - 54px); overflow-y:auto;
+  background:color-mix(in srgb, var(--bg2) 60%, transparent);
+}
+.sidebar h4{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); padding:14px 10px 6px;}
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:13px;
+  color:var(--text-dim); cursor:pointer; transition:.15s; margin-bottom:2px; border:1px solid transparent;
+  position:relative;
+}
+.nav-item .n-ico{width:22px; text-align:center; font-size:13px; flex-shrink:0;}
+.nav-item:hover{background:var(--panel2); color:var(--text);}
+.nav-item.active{background:var(--red-glow); color:var(--text); border-color:var(--red-dim); font-weight:600;}
+.nav-item.locked{opacity:.4; cursor:not-allowed;}
+.nav-item.done .n-ico{color:var(--green);}
+.nav-badge{margin-left:auto; font-size:10px; background:var(--panel); border:1px solid var(--border); padding:1px 6px; border-radius:8px; color:var(--text-faint);}
+.nav-item.done .nav-badge{color:var(--green); border-color:var(--green-dim);}
+
+.progress-mini{margin:10px 8px 4px; padding:10px; background:var(--panel); border:1px solid var(--border); border-radius:10px;}
+.progress-mini .lbl{display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-bottom:6px;}
+.bar-track{height:6px; border-radius:5px; background:var(--border-soft); overflow:hidden;}
+.bar-fill{height:100%; background:linear-gradient(90deg, var(--red), var(--orange)); border-radius:5px; transition:width .5s ease;}
+
+.main{flex:1; min-width:0; padding:26px 30px 80px;}
+.view{display:none; animation:fadeIn .35s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+.section-head{margin-bottom:22px;}
+.eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--red); font-weight:700; margin-bottom:6px;}
+h1.page-title{font-size:26px; font-weight:800; letter-spacing:-.3px;}
+.page-sub{color:var(--text-dim); font-size:13.5px; margin-top:5px; max-width:680px;}
+
+.card{
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; box-shadow:var(--shadow);
+}
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:1000px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:10px; border:none;
+  font-weight:700; font-size:13.5px; transition:.15s;
+}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--red-dim)); color:#fff; box-shadow:0 6px 20px var(--red-glow);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 10px 26px var(--red-glow);}
+.btn-ghost{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text-faint);}
+.btn-sm{padding:7px 13px; font-size:12px; border-radius:8px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
+
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.pill-green{background:rgba(61,220,132,.14); color:var(--green);}
+.pill-red{background:rgba(255,59,48,.14); color:var(--red);}
+.pill-orange{background:rgba(255,171,64,.14); color:var(--orange);}
+.pill-blue{background:rgba(77,163,255,.14); color:var(--blue);}
+.pill-gray{background:var(--panel2); color:var(--text-faint); border:1px solid var(--border);}
+
+/* Toast */
+#toast-wrap{position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; flex-direction:column; gap:10px;}
+.toast{
+  background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:13px 16px;
+  box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; min-width:260px;
+  animation:toastIn .3s ease; font-size:13px;
+}
+@keyframes toastIn{from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);}}
+.toast .t-ico{font-size:18px;}
+.toast b{display:block; font-size:12.5px;}
+.toast span{color:var(--text-dim); font-size:11.5px;}
+.toast.xp b{color:var(--orange);}
+.toast.ok .t-ico{color:var(--green);}
+.toast.err .t-ico{color:var(--red);}
+
+/* Console frame (signature motif) */
+.console-frame{
+  background:#0a0d12; border:1px solid #232b36; border-radius:12px; overflow:hidden;
+  box-shadow: var(--shadow);
+}
+[data-theme="light"] .console-frame{background:#12161c;}
+.console-topbar{
+  display:flex; align-items:center; gap:8px; padding:9px 14px; background:#12161d; border-bottom:1px solid #232b36;
+}
+.console-dot{width:10px; height:10px; border-radius:50%;}
+.console-topbar .url{
+  margin-left:10px; flex:1; background:#0d1117; border:1px solid #232b36; border-radius:7px; padding:4px 10px;
+  font-family:var(--mono); font-size:11px; color:#7d8b9c;
+}
+.console-body{display:flex; min-height:280px;}
+.console-nav{width:170px; flex-shrink:0; border-right:1px solid #1c232d; padding:10px 6px; background:#0d1117;}
+.console-nav-item{
+  padding:9px 10px; font-size:12px; color:#8b98a8; border-radius:7px; margin-bottom:2px; display:flex; align-items:center; gap:8px;
+  transition:.15s; cursor:pointer;
+}
+.console-nav-item:hover{background:#171e28; color:#e6ebf1;}
+.console-nav-item.active{background:rgba(255,59,48,.15); color:#ff6b60; font-weight:600;}
+.console-content{flex:1; padding:18px 20px; color:#c9d2dc; font-size:13px;}
+.console-content h3{color:#fff; font-size:16px; margin-bottom:8px;}
+.console-content p{color:#93a1b2; line-height:1.6; margin-bottom:10px; font-size:12.5px;}
+
+/* Mission Map */
+.mission-map{position:relative; padding:30px 10px;}
+.mission-track{
+  display:flex; flex-wrap:wrap; gap:20px; position:relative;
+}
+.m-node{
+  width:220px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px;
+  position:relative; transition:.2s; cursor:pointer;
+}
+.m-node:hover{transform:translateY(-3px); border-color:var(--text-faint);}
+.m-node.locked{opacity:.45; cursor:not-allowed; filter:grayscale(.6);}
+.m-node.locked:hover{transform:none;}
+.m-node.done{border-color:var(--green-dim); background:linear-gradient(180deg, rgba(61,220,132,.06), var(--panel));}
+.m-node.current{border-color:var(--red-dim); box-shadow:0 0 0 3px var(--red-glow);}
+.m-num{
+  width:34px; height:34px; border-radius:10px; background:var(--panel2); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; margin-bottom:10px;
+}
+.m-node.done .m-num{background:var(--green); color:#052e17; border-color:var(--green);}
+.m-node.current .m-num{background:var(--red); color:#fff; border-color:var(--red);}
+.m-node h4{font-size:14.5px; margin-bottom:4px;}
+.m-node p{font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-bottom:10px;}
+.m-node .m-xp{font-size:11px; color:var(--orange); font-weight:700;}
+
+/* Drag & Drop */
+.dropzone{
+  min-height:110px; border:2px dashed var(--border); border-radius:12px; padding:12px; display:flex; flex-wrap:wrap; gap:8px;
+  align-content:flex-start; transition:.15s; background:var(--panel2);
+}
+.dropzone.over{border-color:var(--blue); background:rgba(77,163,255,.06);}
+.dropzone.wrong{animation:shake .4s;}
+.dropzone.correct{border-color:var(--green); background:rgba(61,220,132,.06);}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
+.drag-chip{
+  padding:9px 14px; background:var(--panel); border:1px solid var(--border); border-radius:9px; font-size:12.5px; font-weight:600;
+  cursor:grab; user-select:none; display:flex; align-items:center; gap:6px;
+}
+.drag-chip:active{cursor:grabbing;}
+.drag-chip.placed{opacity:.35; pointer-events:none;}
+
+/* Forms */
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600;}
+.field input, .field select{
+  width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border); background:var(--panel2);
+  color:var(--text); font-size:13px; font-family:inherit;
+}
+.field input:focus, .field select:focus{outline:none; border-color:var(--red-dim);}
+
+/* Terminal */
+.terminal{
+  background:#0a0d12; border-radius:12px; border:1px solid #232b36; font-family:var(--mono); font-size:12.5px;
+  padding:16px; min-height:260px; color:#3ddc84; overflow-y:auto; max-height:400px;
+}
+.terminal .line{margin-bottom:6px; line-height:1.6;}
+.terminal .prompt{color:#4da3ff;}
+.terminal .out{color:#c9d2dc;}
+.terminal .comment{color:#5f6b7a;}
+.term-input-row{display:flex; align-items:center; gap:6px; margin-top:4px;}
+.term-input-row input{
+  flex:1; background:transparent; border:none; color:#3ddc84; font-family:var(--mono); font-size:12.5px; outline:none;
+}
+.cursor-blink{width:7px; height:14px; background:#3ddc84; display:inline-block; animation:blink 1s infinite;}
+@keyframes blink{50%{opacity:0;}}
+
+/* Policy editor */
+.policy-editor{
+  background:#0a0d12; border-radius:12px; border:1px solid #232b36; font-family:var(--mono); font-size:13px;
+  padding:16px; color:#c9d2dc; min-height:120px; line-height:1.9;
+}
+.tok-allow{color:#ff6b60; font-weight:700;}
+.tok-group{color:#4da3ff;}
+.tok-verb{color:#ffd54a; font-weight:700;}
+.tok-resource{color:#3ddc84;}
+.tok-scope{color:#b48bff; font-weight:700;}
+.tok-name{color:#ffab40;}
+
+/* Quiz */
+.quiz-q{margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border:none;}
+.quiz-q .q-txt{font-weight:700; font-size:14px; margin-bottom:12px;}
+.q-opt{
+  display:flex; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border); border-radius:10px;
+  margin-bottom:8px; cursor:pointer; transition:.15s; font-size:13px;
+}
+.q-opt:hover{border-color:var(--text-faint);}
+.q-opt.selected{border-color:var(--blue-dim); background:rgba(77,163,255,.08);}
+.q-opt.correct{border-color:var(--green-dim); background:rgba(61,220,132,.1);}
+.q-opt.incorrect{border-color:var(--red-dim); background:rgba(255,59,48,.1);}
+.q-explain{
+  margin-top:8px; padding:10px 12px; background:var(--panel2); border-radius:9px; font-size:12px; color:var(--text-dim);
+  display:none; border-left:3px solid var(--blue-dim);
+}
+.q-explain.show{display:block;}
+
+/* Achievements */
+.ach-card{
+  text-align:center; padding:22px 14px; border-radius:14px; border:1px solid var(--border); background:var(--panel);
+  transition:.2s;
+}
+.ach-card.locked{opacity:.35; filter:grayscale(1);}
+.ach-card .ico{font-size:34px; margin-bottom:10px;}
+.ach-card h5{font-size:13px; margin-bottom:4px;}
+.ach-card p{font-size:11px; color:var(--text-dim);}
+
+/* Globe / regions */
+.region-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px;}
+.region-card{
+  padding:14px; border-radius:12px; border:1px solid var(--border); background:var(--panel); cursor:pointer; transition:.15s;
+  position:relative;
+}
+.region-card:hover{border-color:var(--blue-dim); transform:translateY(-2px);}
+.region-card.home{border-color:var(--red-dim); background:linear-gradient(180deg, var(--red-glow), var(--panel));}
+.region-card .flag{font-size:20px; margin-bottom:6px;}
+.region-card h5{font-size:12.5px;}
+.region-card small{color:var(--text-faint); font-size:10.5px;}
+
+/* AD / FD */
+.dc-row{display:flex; gap:18px; flex-wrap:wrap;}
+.dc-building{
+  flex:1; min-width:150px; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:18px; text-align:center;
+  cursor:pointer; transition:.2s; position:relative;
+}
+.dc-building:hover{border-color:var(--blue-dim);}
+.dc-building.failed{border-color:var(--red-dim); background:rgba(255,59,48,.06);}
+.dc-building .ico{font-size:30px; margin-bottom:8px;}
+.dc-building.active-glow{box-shadow:0 0 0 3px rgba(61,220,132,.25); border-color:var(--green-dim);}
+
+/* Relationship graph */
+.rgraph{display:flex; align-items:center; justify-content:center; gap:0; flex-wrap:wrap; padding:20px 0;}
+.rg-col{display:flex; flex-direction:column; gap:12px; align-items:center;}
+.rg-node{
+  padding:10px 16px; border-radius:10px; border:1px solid var(--border); background:var(--panel2); font-size:12px; font-weight:600;
+  white-space:nowrap;
+}
+.rg-arrow{color:var(--text-faint); font-size:20px; padding:0 18px;}
+
+/* misc */
+.kbd{font-family:var(--mono); background:var(--panel2); border:1px solid var(--border); padding:1px 6px; border-radius:5px; font-size:11px;}
+.hr{height:1px; background:var(--border-soft); margin:20px 0;}
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;} .sidebar{display:none;}}
+.tag-list{display:flex; flex-wrap:wrap; gap:8px;}
+.info-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--blue-dim); background:rgba(77,163,255,.06); font-size:12.5px; margin:12px 0;}
+.tip-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--orange); background:rgba(255,171,64,.07); font-size:12.5px; margin:12px 0;}
+.mistake-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--red); background:rgba(255,59,48,.06); font-size:12.5px; margin:12px 0;}
+.hidden{display:none !important;}
+</style>
+</head>
+<body data-theme="dark">
+
+<div id="toast-wrap"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand"><div class="logo">C</div><div>OCI IAM Lab <small>1Z0-1067-26 · Day 1</small></div></div>
+  <div class="crumb">Home <span>›</span> <b id="crumbCurrent">Mission Control</b></div>
+  <div class="topbar-right">
+    <div class="xp-chip"><span class="dot"></span><span id="xpDisplay">0</span> XP</div>
+    <div class="rank-chip" id="rankChip">Recruit</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">◐</button>
+  </div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- MAIN -->
+  <div class="main" id="main"></div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+
+const NAV = [
+  {id:'home', label:'Mission Control', ico:'⌂', group:'main'},
+  {id:'missionmap', label:'Mission Map', ico:'🗺', group:'main'},
+  {id:'console', label:'OCI Console Explorer', ico:'☁', group:'explore'},
+  {id:'regions', label:'Regions Explorer', ico:'🌐', group:'explore'},
+  {id:'ad', label:'Availability Domains', ico:'🏢', group:'explore'},
+  {id:'fd', label:'Fault Domains', ico:'⚡', group:'explore'},
+  {id:'m1', label:'M1 · Create Account', ico:'①', group:'missions'},
+  {id:'m2', label:'M2 · Compartments', ico:'②', group:'missions'},
+  {id:'m3', label:'M3 · Create Users', ico:'③', group:'missions'},
+  {id:'m4', label:'M4 · Groups', ico:'④', group:'missions'},
+  {id:'m5', label:'M5 · Assign Users', ico:'⑤', group:'missions'},
+  {id:'m6', label:'M6 · Policy Builder', ico:'⑥', group:'missions'},
+  {id:'m7', label:'M7 · Policy Simulator', ico:'⑦', group:'missions'},
+  {id:'m8', label:'M8 · OCI CLI', ico:'⑧', group:'missions'},
+  {id:'cliconfig', label:'CLI Config Simulator', ico:'⌘', group:'extra'},
+  {id:'challenges', label:'Real-World Challenges', ico:'🧩', group:'extra'},
+  {id:'achievements', label:'Achievements', ico:'🏆', group:'extra'},
+  {id:'dashboard', label:'Dashboard', ico:'📊', group:'extra'},
+  {id:'capstone', label:'Final Capstone', ico:'🎓', group:'extra'},
+];
+
+const MISSIONS = [
+  {id:'m1', num:1, title:'Create OCI Account', desc:'Simulate signing up for OCI Free Tier.', xp:100},
+  {id:'m2', num:2, title:'Create Compartments', desc:'Build the Dev / Test / Prod hierarchy.', xp:120},
+  {id:'m3', num:3, title:'Create Users', desc:'Provision AdminUser, DevUser, Auditor.', xp:120},
+  {id:'m4', num:4, title:'Create Groups', desc:'Administrators, Developers, Auditors.', xp:100},
+  {id:'m5', num:5, title:'Assign Users to Groups', desc:'Drag-and-drop assignment challenge.', xp:130},
+  {id:'m6', num:6, title:'IAM Policy Builder', desc:'Write real OCI policy statements.', xp:150},
+  {id:'m7', num:7, title:'Policy Simulator', desc:'Test who can do what, and why.', xp:150},
+  {id:'m8', num:8, title:'OCI CLI', desc:'Run identity commands in Cloud Shell.', xp:130},
+];
+
+const REGIONS = [
+  {code:'us-ashburn-1', name:'US East (Ashburn)', flag:'🇺🇸', lat:14, home:true, ads:3},
+  {code:'us-phoenix-1', name:'US West (Phoenix)', flag:'🇺🇸', lat:22, home:false, ads:3},
+  {code:'uk-london-1', name:'UK South (London)', flag:'🇬🇧', lat:96, home:false, ads:1},
+  {code:'eu-frankfurt-1', name:'Germany Central (Frankfurt)', flag:'🇩🇪', lat:88, home:false, ads:1},
+  {code:'ap-mumbai-1', name:'India West (Mumbai)', flag:'🇮🇳', lat:170, home:false, ads:1},
+  {code:'ap-tokyo-1', name:'Japan East (Tokyo)', flag:'🇯🇵', lat:150, home:false, ads:1},
+  {code:'ap-sydney-1', name:'Australia East (Sydney)', flag:'🇦🇺', lat:120, home:false, ads:1},
+  {code:'sa-saopaulo-1', name:'Brazil East (Sao Paulo)', flag:'🇧🇷', lat:60, home:false, ads:1},
+];
+
+const CONSOLE_MENUS = {
+  Compute:{ico:'🖥', text:'Create and manage virtual machines (Instances), bare metal hosts, and Instance Pools/Autoscaling. Compute resources always live inside a Compartment and a VCN subnet.'},
+  Networking:{ico:'🌐', text:'Virtual Cloud Networks (VCNs), subnets, route tables, security lists, load balancers, and gateways. Networking is the backbone every other service depends on.'},
+  Storage:{ico:'💾', text:'Block Volumes, Object Storage buckets, File Storage, and Archive Storage. IAM policies control who can read/write which buckets and volumes.'},
+  Identity:{ico:'🔑', text:'The IAM service itself — Users, Groups, Dynamic Groups, Compartments, Policies, Identity Domains, and Federation. This is what today\'s lab focuses on.'},
+  Governance:{ico:'📋', text:'Tagging, Budgets, Cost Analysis, Cloud Guard, and Audit. Governance tools let administrators enforce policy and track spend across compartments.'},
+  'Developer Services':{ico:'⚙', text:'OCI Resource Manager (Terraform), DevOps pipelines, Container Registry, Functions, and API Gateway.'},
+  Monitoring:{ico:'📈', text:'Metrics, Alarms, Notifications, and Logging. Used to observe IAM sign-in events and policy evaluation failures.'},
+};
+
+const QUIZZES = {
+  m1:[
+    {q:'What is required to activate an OCI Free Tier account?', opts:['Email + phone + credit card verification','Only an email address','A GitHub account','A government ID upload'], a:0, ex:'Oracle verifies identity via email, SMS/phone, and a card for fraud prevention (no charge unless you upgrade).'},
+    {q:'What do you get automatically with OCI Free Tier?', opts:['Always Free resources + 30-day trial credits','Unlimited compute forever','Only object storage','Nothing until you pay'], a:0, ex:'Free Tier combines Always Free eligible services with time-limited trial credits.'},
+    {q:'Which region is assigned as your Home Region at signup?', opts:['The one you pick during account creation','Always us-ashburn-1','A random region','Whichever is cheapest'], a:0, ex:'You choose your Home Region during signup and it cannot be changed later — it hosts your IAM resources.'},
+  ],
+  m2:[
+    {q:'What is the top-level container in every OCI tenancy?', opts:['Root Compartment','Default VCN','Admin Group','Home Region'], a:0, ex:'Every tenancy starts with a Root Compartment; all other compartments nest beneath it.'},
+    {q:'Why do enterprises separate Dev/Test/Prod into compartments?', opts:['Isolate resources, billing, and access boundaries','Compartments are required for networking','To reduce region latency','Compartments increase compute quota'], a:0, ex:'Compartments are logical boundaries for access control, cost tracking, and resource organization — not physical/network boundaries.'},
+    {q:'Can a compartment be nested inside another compartment?', opts:['Yes, up to six levels deep','No, only one level is allowed','Only in Free Tier','Only Production can be nested'], a:0, ex:'OCI supports compartment nesting up to six levels beneath the root.'},
+  ],
+  m3:[
+    {q:'What OCI IAM entity represents an individual person or application needing access?', opts:['User','Group','Policy','Compartment'], a:0, ex:'A User is an individual identity (person or service) that authenticates to OCI.'},
+    {q:'How should permissions typically be granted to a user?', opts:['Indirectly, via group membership','Directly attached to the user only','Via the compartment name','Through the tenancy OCID'], a:0, ex:'Best practice is never to write policies against individual users — always grant access through groups.'},
+    {q:'What happens the first time a local IAM user\'s credentials are generated?', opts:['A one-time password/API key must be securely downloaded','The password is emailed automatically','No credentials are needed','The user auto-joins Administrators'], a:0, ex:'OCI shows the generated password/API key once — it must be captured and stored securely at creation time.'},
+  ],
+  m4:[
+    {q:'What is the primary benefit of using Groups in IAM?', opts:['Simplifies permission management at scale','Groups increase compute performance','Groups replace compartments','Groups are required for networking'], a:0, ex:'Groups let you manage permissions once at the group level instead of per-user, which scales far better.'},
+    {q:'Can a user belong to more than one group?', opts:['Yes, a user can belong to multiple groups','No, only one group per user','Only Administrators can join multiple groups','Groups are mutually exclusive'], a:0, ex:'Users can be members of multiple groups, and their effective permissions are the union of all attached policies.'},
+    {q:'Which group typically receives "manage all-resources in tenancy"?', opts:['Administrators','Auditors','Developers','Guests'], a:0, ex:'The Administrators group is generally the only one granted full tenancy-wide manage rights.'},
+  ],
+  m5:[
+    {q:'What determines what a user can actually do in OCI?', opts:['The policies attached to the groups they belong to','The user\'s display name','The compartment they were created in','Their sign-in time'], a:0, ex:'Effective access = union of all policy statements referencing any group the user is a member of.'},
+    {q:'If DevUser is mistakenly added to Administrators, what happens?', opts:['DevUser inherits full tenancy admin rights','Nothing changes until re-login','Only compute access is affected','OCI blocks the assignment automatically'], a:0, ex:'Group membership immediately grants whatever the group\'s policies allow — over-provisioning group membership is a common real-world security mistake.'},
+  ],
+  m6:[
+    {q:'What is the correct basic structure of an OCI policy statement?', opts:['Allow <subject> to <verb> <resource-type> in <location>','Grant <resource> to <user> at <region>','Policy <group> = <permission>','IAM(<user>,<resource>,<action>)'], a:0, ex:'OCI policies read like English: Allow group X to manage instance-family in compartment Y.'},
+    {q:'Which verb grants the LEAST access?', opts:['inspect','read','use','manage'], a:0, ex:'Verb hierarchy from least to most access: inspect < read < use < manage.'},
+    {q:'What does "all-resources" refer to in a policy?', opts:['Every resource type OCI offers','Only compute instances','Only IAM resources','Only storage buckets'], a:0, ex:'all-resources is a broad aggregate resource-type covering everything in the target compartment/tenancy.'},
+  ],
+  m7:[
+    {q:'If no policy grants an action, what is the default result?', opts:['Denied — OCI IAM defaults to deny','Allowed — OCI IAM defaults to allow','It depends on the region','It depends on the compartment name'], a:0, ex:'OCI IAM is deny-by-default: without an explicit Allow statement, access is denied.'},
+    {q:'Auditor has "inspect all-resources in tenancy". Can Auditor delete a bucket?', opts:['No — inspect only allows viewing metadata, not deleting','Yes, inspect includes delete','Only if the bucket is empty','Only on weekdays'], a:0, ex:'inspect is the lowest verb — list/metadata only. Deleting requires at least manage (or use, for some resource types).'},
+  ],
+  m8:[
+    {q:'Which CLI command lists IAM users in the tenancy?', opts:['oci iam user list','oci user get-all','oci identity users','oci list users'], a:0, ex:'The OCI CLI follows the pattern: oci <service> <resource> <action> — so "oci iam user list".'},
+    {q:'What must you run once before using the OCI CLI?', opts:['oci setup config','oci login','oci init','oci --activate'], a:0, ex:'"oci setup config" walks you through generating the ~/.oci/config file with your keys and tenancy details.'},
+  ],
+};
+
+const CHALLENGES = [
+  {id:'c1', title:'Developer cannot create a VM', scenario:'DevUser reports "Authorization failed" when launching a Compute instance in the Development compartment.', opts:['The Developers group is missing a policy granting manage instance-family in compartment Development','The VCN is in the wrong region','DevUser forgot their password','The compartment has too many tags'], a:0, ex:'Without an explicit manage instance-family (or all-resources) statement scoped to Development, OCI denies the action by default.'},
+  {id:'c2', title:'Auditor deletes a bucket — then it\'s denied', scenario:'The Auditor account is told to delete an old Object Storage bucket but the console shows "Not Authorized".', opts:['Auditors only have "inspect", which cannot delete anything','Auditors have a corrupted password','The bucket is in a locked region','Buckets can never be deleted by anyone'], a:0, ex:'This is by design — Auditors are read-only. Deleting requires elevated verbs like manage.'},
+  {id:'c3', title:'Wrong compartment selected', scenario:'A learner creates a Compute instance but can\'t find it later — it doesn\'t appear under the Production compartment.', opts:['The console compartment selector was left on a different compartment during creation','The instance was deleted automatically','OCI hides new instances for 24 hours','The instance was created in another tenancy'], a:0, ex:'OCI console always scopes list views to the compartment selected in the left filter — a very common real-world mistake.'},
+  {id:'c4', title:'Policy typo', scenario:'A policy reads: "Alow group Developers to manage instance-family in compartment Development" and grants nothing.', opts:['"Alow" is misspelled — it must be exactly "Allow"','The compartment name needs quotes','Groups can\'t be named Developers','Policies must be all lowercase'], a:0, ex:'OCI policy statements require exact keyword syntax; a misspelled verb/keyword causes the whole statement to fail validation.'},
+  {id:'c5', title:'CLI Authentication Failed', scenario:'Running "oci iam user list" returns "NotAuthenticated — The required information to complete authentication was not provided".', opts:['The ~/.oci/config file has a missing/incorrect key fingerprint or private key path','The internet connection is down','The CLI needs to be reinstalled','The tenancy has no users yet'], a:0, ex:'Most CLI auth failures trace back to config file fields: user OCID, tenancy OCID, fingerprint, key_file path, or region being wrong or mismatched with the uploaded public key.'},
+];
+
+const ACHIEVEMENTS = [
+  {id:'a1', name:'First Login', ico:'🔑', cond:'Complete Mission 1', check:s=>s.done.has('m1')},
+  {id:'a2', name:'IAM Architect', ico:'🏛', cond:'Complete Missions 2–5', check:s=>['m2','m3','m4','m5'].every(m=>s.done.has(m))},
+  {id:'a3', name:'Policy Master', ico:'📜', cond:'Complete Mission 6 with a perfect quiz', check:s=>s.done.has('m6') && (s.quizScores.m6||0)>=3},
+  {id:'a4', name:'CLI Explorer', ico:'💻', cond:'Complete Mission 8', check:s=>s.done.has('m8')},
+  {id:'a5', name:'Security Expert', ico:'🛡', cond:'Solve all 5 real-world challenges', check:s=>s.challengesDone.size>=5},
+];
+
+const CLI_STEPS = [
+  {cmd:'oci --version', out:'3.45.2', note:'Confirms the CLI is installed and shows the current version.'},
+  {cmd:'oci setup config', out:'Config written to /home/user/.oci/config\nDone.', note:'Interactive wizard: prompts for tenancy OCID, user OCID, region, and generates an API signing key pair.'},
+  {cmd:'oci iam user list', out:'{\n  "data": [\n    {"name":"AdminUser","lifecycle-state":"ACTIVE"},\n    {"name":"DevUser","lifecycle-state":"ACTIVE"},\n    {"name":"Auditor","lifecycle-state":"ACTIVE"}\n  ]\n}', note:'Lists every IAM user visible in the tenancy as JSON.'},
+  {cmd:'oci iam group list', out:'{\n  "data": [\n    {"name":"Administrators"},\n    {"name":"Developers"},\n    {"name":"Auditors"}\n  ]\n}', note:'Lists all IAM groups.'},
+  {cmd:'oci iam compartment list', out:'{\n  "data": [\n    {"name":"Development","lifecycle-state":"ACTIVE"},\n    {"name":"Testing","lifecycle-state":"ACTIVE"},\n    {"name":"Production","lifecycle-state":"ACTIVE"}\n  ]\n}', note:'Lists compartments visible from the root.'},
+];
+
+
+/* ================= STATE ================= */
+const STATE = {
+  view:'home',
+  xp:0,
+  done:new Set(),
+  quizScores:{},
+  quizAnswered:{},
+  challengesDone:new Set(),
+  theme:'dark',
+  selectedChip:null,
+  m2:{placed:{}},          // compartment name -> true if correctly placed
+  m3:{created:{}},         // username -> {email}
+  m4:{created:{}},         // group name -> true
+  m5:{assigned:{}},        // user -> group placed
+  m6:{written:{}},         // statement index -> true
+  m7:{role:'AdminUser', tested:{}},
+  m8:{step:0, history:[]},
+  cliConfigStep:0,
+  cliConfigDone:false,
+  achUnlocked:new Set(),
+};
+
+const MISSION_ORDER = ['m1','m2','m3','m4','m5','m6','m7','m8'];
+
+function isUnlocked(id){
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx<=0) return true;
+  return STATE.done.has(MISSION_ORDER[idx-1]);
+}
+
+function rankFor(xp){
+  if(xp>=1000) return 'OCI IAM Expert';
+  if(xp>=700) return 'Security Architect';
+  if(xp>=400) return 'Cloud Engineer';
+  if(xp>=150) return 'Associate';
+  return 'Recruit';
+}
+
+function addXP(n, label){
+  STATE.xp += n;
+  document.getElementById('xpDisplay').textContent = STATE.xp;
+  document.getElementById('rankChip').textContent = rankFor(STATE.xp);
+  toast('xp', `+${n} XP`, label||'Nice work!');
+  checkAchievements();
+}
+
+function toast(type, title, msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const ico = type==='xp' ? '⭐' : type==='ok' ? '✅' : type==='err' ? '⛔' : 'ℹ';
+  el.innerHTML = `<div class="t-ico">${ico}</div><div><b>${title}</b><span>${msg||''}</span></div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+
+function completeMission(id, xp){
+  if(STATE.done.has(id)) return;
+  STATE.done.add(id);
+  addXP(xp, MISSIONS.find(m=>m.id===id).title + ' complete');
+  toast('ok','Mission Complete', MISSIONS.find(m=>m.id===id).title);
+  renderSidebar();
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx>=0 && idx<MISSION_ORDER.length-1){
+    setTimeout(()=>toast('info','Next mission unlocked', MISSIONS[idx+1].title), 900);
+  }
+}
+
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!STATE.achUnlocked.has(a.id) && a.check(STATE)){
+      STATE.achUnlocked.add(a.id);
+      setTimeout(()=>toast('ok','Achievement Unlocked 🏆', a.name), 600);
+    }
+  });
+}
+
+/* ================= NAV / SIDEBAR ================= */
+function renderSidebar(){
+  const groups = {main:'Overview', explore:'Explore OCI', missions:'Mission Track', extra:'Beyond the Labs'};
+  let html = '';
+  Object.keys(groups).forEach(g=>{
+    html += `<h4>${groups[g]}</h4>`;
+    NAV.filter(n=>n.group===g).forEach(n=>{
+      let locked = false, done = false;
+      if(MISSION_ORDER.includes(n.id)){
+        locked = !isUnlocked(n.id);
+        done = STATE.done.has(n.id);
+      }
+      html += `<div class="nav-item ${STATE.view===n.id?'active':''} ${locked?'locked':''} ${done?'done':''}"
+        onclick="${locked?'':`setView('${n.id}')`}">
+        <span class="n-ico">${done?'✓':n.ico}</span>${n.label}
+        ${locked?'<span class=\"nav-badge\">🔒</span>':''}
+      </div>`;
+    });
+  });
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  html += `<div class="progress-mini">
+    <div class="lbl"><span>Mission Progress</span><span>${pct}%</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+  </div>`;
+  document.getElementById('sidebar').innerHTML = html;
+}
+
+function setView(id){
+  STATE.view = id;
+  const nav = NAV.find(n=>n.id===id);
+  document.getElementById('crumbCurrent').textContent = nav ? nav.label : id;
+  renderSidebar();
+  renderMain();
+  const mainEl = document.getElementById('main');
+  if(mainEl.scrollIntoView) mainEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderMain(){
+  const map = {
+    home:renderHome, missionmap:renderMissionMap, console:renderConsoleView,
+    regions:renderRegions, ad:renderAD, fd:renderFD,
+    m1:renderM1, m2:renderM2, m3:renderM3, m4:renderM4, m5:renderM5, m6:renderM6, m7:renderM7, m8:renderM8,
+    cliconfig:renderCliConfig, challenges:renderChallenges, achievements:renderAchievements,
+    dashboard:renderDashboard, capstone:renderCapstone,
+  };
+  const fn = map[STATE.view] || renderHome;
+  document.getElementById('main').innerHTML = `<div class="view active">${fn()}</div>`;
+  afterRenderHooks[STATE.view] && afterRenderHooks[STATE.view]();
+}
+
+const afterRenderHooks = {};
+
+/* ================= HOME ================= */
+function renderHome(){
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Oracle Cloud Infrastructure Operations Professional · 1Z0-1067-26</div>
+    <h1 class="page-title">Day 1 Lab — OCI Identity &amp; Access Management</h1>
+    <p class="page-sub">Mission: Build a complete enterprise identity architecture — compartments, users, groups, policies, and CLI access — exactly like you would inside a real OCI tenancy.</p>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:18px;">
+    <div class="card"><div class="pill pill-orange">XP</div><h2 style="margin-top:10px;font-size:26px;">${STATE.xp}</h2><p class="page-sub" style="margin-top:2px;">Total experience</p></div>
+    <div class="card"><div class="pill pill-blue">Rank</div><h2 style="margin-top:10px;font-size:20px;">${rankFor(STATE.xp)}</h2><p class="page-sub" style="margin-top:2px;">Current standing</p></div>
+    <div class="card"><div class="pill pill-green">Missions</div><h2 style="margin-top:10px;font-size:26px;">${STATE.done.size}/8</h2><p class="page-sub" style="margin-top:2px;">Completed</p></div>
+    <div class="card"><div class="pill pill-red">Completion</div><h2 style="margin-top:10px;font-size:26px;">${pct}%</h2><div class="bar-track" style="margin-top:8px;"><div class="bar-fill" style="width:${pct}%"></div></div></div>
+  </div>
+  <div class="card" style="text-align:center; padding:44px 24px; background:linear-gradient(180deg, var(--red-glow), var(--panel));">
+    <div style="font-size:13px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Current Lab</div>
+    <h2 style="font-size:22px; margin-bottom:10px;">${STATE.done.size===0 ? 'Mission 1 — Create OCI Account' : (MISSION_ORDER[STATE.done.size] ? 'Mission '+(STATE.done.size+1)+' — '+MISSIONS[STATE.done.size].title : 'All Missions Complete!')}</div>
+    <p class="page-sub" style="margin:0 auto 20px; text-align:center;">Estimated time remaining: ${(8-STATE.done.size)*8} minutes</p>
+    <button class="btn btn-primary" onclick="setView('missionmap')">🚀 Start Mission</button>
+  </div>
+  <div class="hr"></div>
+  <h3 style="margin-bottom:12px; font-size:15px;">Explore before you build</h3>
+  <div class="grid grid-3">
+    <div class="card" style="cursor:pointer;" onclick="setView('console')"><div style="font-size:22px;margin-bottom:8px;">☁</div><h4 style="font-size:14px;">OCI Console Explorer</h4><p class="page-sub" style="margin-top:6px;">Click through the real console navigation.</p></div>
+    <div class="card" style="cursor:pointer;" onclick="setView('regions')"><div style="font-size:22px;margin-bottom:8px;">🌐</div><h4 style="font-size:14px;">Regions Explorer</h4><p class="page-sub" style="margin-top:6px;">Understand Home Region and latency.</p></div>
+    <div class="card" style="cursor:pointer;" onclick="setView('ad')"><div style="font-size:22px;margin-bottom:8px;">🏢</div><h4 style="font-size:14px;">Availability Domains</h4><p class="page-sub" style="margin-top:6px;">See fault-tolerant data center design.</p></div>
+  </div>`;
+}
+
+/* ================= MISSION MAP ================= */
+function renderMissionMap(){
+  let nodes = MISSIONS.map(m=>{
+    const locked = !isUnlocked(m.id);
+    const done = STATE.done.has(m.id);
+    const current = !locked && !done;
+    return `<div class="m-node ${locked?'locked':''} ${done?'done':''} ${current?'current':''}" onclick="${locked?'':`setView('${m.id}')`}">
+      <div class="m-num">${done?'✓':m.num}</div>
+      <h4>${m.title}</h4>
+      <p>${m.desc}</p>
+      <div class="m-xp">⭐ ${m.xp} XP</div>
+      ${locked?'<div class="pill pill-gray" style="margin-top:8px;">🔒 Locked</div>':''}
+    </div>`;
+  }).join('');
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission Map</div>
+    <h1 class="page-title">Choose Your Mission</h1>
+    <p class="page-sub">Each mission unlocks the next. Complete them in order to build a full enterprise IAM architecture.</p>
+  </div>
+  <div class="mission-map"><div class="mission-track">${nodes}</div></div>`;
+}
+
+/* ================= CONSOLE EXPLORER ================= */
+function renderConsoleView(){
+  const keys = Object.keys(CONSOLE_MENUS);
+  afterRenderHooks.console = ()=>selectConsoleMenu(keys[0]);
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Explore OCI Console</div>
+    <h1 class="page-title">OCI Console Explorer</h1>
+    <p class="page-sub">Click every menu on the left. This is exactly how the real Oracle Cloud console is organized.</p>
+  </div>
+  <div class="console-frame">
+    <div class="console-topbar"><span class="console-dot" style="background:#ff5f57;"></span><span class="console-dot" style="background:#febc2e;"></span><span class="console-dot" style="background:#28c840;"></span>
+      <div class="url">console.oraclecloud.com/identity/domains</div></div>
+    <div class="console-body">
+      <div class="console-nav" id="consoleNav">
+        ${keys.map(k=>`<div class="console-nav-item" id="cnav-${k.replace(/\s/g,'')}" onclick="selectConsoleMenu('${k}')">${CONSOLE_MENUS[k].ico} ${k}</div>`).join('')}
+      </div>
+      <div class="console-content" id="consoleContent"></div>
+    </div>
+  </div>
+  <div class="info-box" style="margin-top:16px;">💡 Tip: The <b>Identity</b> menu is where every task in this lab happens — Users, Groups, Compartments, and Policies all live there.</div>`;
+}
+function selectConsoleMenu(k){
+  document.querySelectorAll('.console-nav-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('cnav-'+k.replace(/\s/g,'')); if(el) el.classList.add('active');
+  const info = CONSOLE_MENUS[k];
+  document.getElementById('consoleContent').innerHTML = `<h3>${info.ico} ${k}</h3><p>${info.text}</p>`;
+}
+
+/* ================= REGIONS ================= */
+function renderRegions(){
+  const cards = REGIONS.map(r=>`
+    <div class="region-card ${r.home?'home':''}" onclick="selectRegion('${r.code}')">
+      ${r.home?'<div class="pill pill-red" style="position:absolute;top:10px;right:10px;">HOME</div>':''}
+      <div class="flag">${r.flag}</div><h5>${r.name}</h5><small>${r.code}</small>
+    </div>`).join('');
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Regions Explorer</div>
+    <h1 class="page-title">Choose a Region, Understand Latency</h1>
+    <p class="page-sub">Click a region to see details. Your Home Region is fixed at signup and is where core IAM resources are replicated from.</p>
+  </div>
+  <div class="region-grid">${cards}</div>
+  <div class="card" id="regionDetail" style="margin-top:18px;">Click a region above to see details.</div>
+  <div class="card" style="margin-top:16px;">
+    <div class="quiz-q" style="margin-bottom:0;border:none;padding-bottom:0;">
+      <div class="q-txt">Quiz: Which region stores your core IAM resources?</div>
+      <div class="q-opt" onclick="answerRegionQuiz(this,true)">Your Home Region</div>
+      <div class="q-opt" onclick="answerRegionQuiz(this,false)">Whichever region has the lowest latency right now</div>
+      <div class="q-opt" onclick="answerRegionQuiz(this,false)">All regions equally, always in sync</div>
+      <div class="q-explain" id="regionQuizExplain">Correct — IAM (Users, Groups, Policies, Compartments) is defined once and is global, but administered from your Home Region.</div>
+    </div>
+  </div>`;
+}
+function selectRegion(code){
+  const r = REGIONS.find(x=>x.code===code);
+  document.getElementById('regionDetail').innerHTML = `
+    <h4 style="margin-bottom:8px;">${r.flag} ${r.name}</h4>
+    <div class="tag-list">
+      <span class="pill pill-blue">Region: ${r.code}</span>
+      <span class="pill pill-orange">Availability Domains: ${r.ads}</span>
+      <span class="pill ${r.home?'pill-red':'pill-gray'}">${r.home?'Home Region':'Non-home Region'}</span>
+    </div>`;
+}
+function answerRegionQuiz(el, correct){
+  document.querySelectorAll('#main .q-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  const ex = document.getElementById('regionQuizExplain');
+  ex.classList.add('show');
+  if(correct) addXP(15,'Region quiz correct');
+}
+
+/* ================= AVAILABILITY DOMAINS ================= */
+function renderAD(){
+  const ads = [1,2,3];
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Explore OCI · Fault Tolerance</div>
+    <h1 class="page-title">Availability Domain Simulation</h1>
+    <p class="page-sub">Click each data center. Each Availability Domain (AD) has independent power, cooling, and networking.</p>
+  </div>
+  <div class="dc-row" id="adRow">
+    ${ads.map(n=>`<div class="dc-building" id="ad-${n}" onclick="clickAD(${n})"><div class="ico">🏢</div><h4>AD-${n}</h4><p class="page-sub" style="margin-top:6px;">Click to inspect</p></div>`).join('')}
+  </div>
+  <div class="card" id="adDetail" style="margin-top:16px;">Click a building above.</div>
+  <div class="hr"></div>
+  <button class="btn btn-ghost" onclick="simulateFailover()">▶ Simulate Failover: AD-1 goes down</button>
+  <div id="failoverLog" class="info-box hidden" style="margin-top:14px;"></div>`;
+}
+function clickAD(n){
+  document.getElementById('adDetail').innerHTML = `<h4>Availability Domain AD-${n}</h4>
+    <div class="tag-list" style="margin-top:8px;">
+      <span class="pill pill-green">⚡ Independent power</span>
+      <span class="pill pill-blue">❄ Independent cooling</span>
+      <span class="pill pill-orange">🔌 Independent networking</span>
+    </div>
+    <p class="page-sub" style="margin-top:10px;">A failure in one AD is designed to never cascade into another AD within the same region.</p>`;
+}
+function simulateFailover(){
+  const ad1 = document.getElementById('ad-1');
+  ad1.classList.add('failed');
+  const ad2 = document.getElementById('ad-2');
+  ad2.classList.add('active-glow');
+  const log = document.getElementById('failoverLog');
+  log.classList.remove('hidden');
+  log.innerHTML = '⚠ AD-1 lost power. Workload automatically rerouted to AD-2 — application stayed online with zero data loss.';
+  addXP(20,'Failover simulation observed');
+  setTimeout(()=>{ ad1.classList.remove('failed'); ad2.classList.remove('active-glow'); }, 3500);
+}
+
+/* ================= FAULT DOMAINS ================= */
+function renderFD(){
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Explore OCI · Fault Isolation</div>
+    <h1 class="page-title">Fault Domain Simulation</h1>
+    <p class="page-sub">Inside a single AD, Fault Domains (FDs) group hardware that doesn't share a single point of failure — like a rack.</p>
+  </div>
+  <div class="dc-row" id="fdRow">
+    ${[1,2,3].map(n=>`<div class="dc-building" id="fd-${n}"><div class="ico">🖥</div><h4>FD-${n}</h4><p class="page-sub" style="margin-top:6px;" id="fd-${n}-label">2 instances running</p></div>`).join('')}
+  </div>
+  <button class="btn btn-ghost" style="margin-top:16px;" onclick="simulateFDFailure()">▶ Simulate Hardware Failure in FD-1</button>
+  <div id="fdLog" class="info-box hidden" style="margin-top:14px;"></div>
+  <div class="tip-box" style="margin-top:16px;">🎓 Exam tip: Spread instances across multiple Fault Domains (not just ADs) for HA within a single-AD region.</div>`;
+}
+function simulateFDFailure(){
+  document.getElementById('fd-1').classList.add('failed');
+  document.getElementById('fd-1-label').textContent = 'Hardware fault detected';
+  document.getElementById('fd-2').classList.add('active-glow');
+  document.getElementById('fd-2-label').textContent = '4 instances running (+2 moved)';
+  const log = document.getElementById('fdLog');
+  log.classList.remove('hidden');
+  log.innerHTML = '⚠ Rack-level failure isolated to FD-1. Workloads scheduled in FD-2/FD-3 were never affected — this is fault isolation in action.';
+  addXP(20,'Fault domain isolation observed');
+}
+
+/* ================= MISSION 1: CREATE ACCOUNT ================= */
+function renderM1(){
+  const done = STATE.done.has('m1');
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 1 · 100 XP</div>
+    <h1 class="page-title">Create Your OCI Free Tier Account</h1>
+    <p class="page-sub">Simulated signup — no real account is created. This mirrors the exact steps of cloud.oracle.com/free.</p>
+  </div>
+  <div class="card" style="max-width:520px;">
+    ${done ? `<div class="pill pill-green" style="margin-bottom:14px;">✓ Account Created Successfully</div>` : ''}
+    <div class="field"><label>Email Address</label><input id="m1email" placeholder="you@company.com" ${done?'disabled':''}></div>
+    <div class="field"><label>Country</label><select id="m1country" ${done?'disabled':''}><option>India</option><option>United States</option><option>United Kingdom</option><option>Germany</option><option>Australia</option></select></div>
+    <div class="field"><label>Password</label><input type="password" id="m1pass" placeholder="Minimum 12 characters" ${done?'disabled':''}></div>
+    <div class="field"><label>Phone Number (for verification)</label><input id="m1phone" placeholder="+91 XXXXX XXXXX" ${done?'disabled':''}></div>
+    <div class="field"><label>Card (verification only — never charged on Free Tier)</label><input id="m1card" placeholder="XXXX XXXX XXXX XXXX" ${done?'disabled':''}></div>
+    ${!done ? `<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="submitM1()">Start for Free →</button>` : `<button class="btn btn-ghost" style="width:100%;justify-content:center;" onclick="setView('missionmap')">Continue to Mission Map</button>`}
+  </div>
+  ${done ? renderQuizBlock('m1') : ''}`;
+}
+function submitM1(){
+  const email = document.getElementById('m1email').value.trim();
+  const phone = document.getElementById('m1phone').value.trim();
+  const card = document.getElementById('m1card').value.trim();
+  const pass = document.getElementById('m1pass').value.trim();
+  if(!email || !email.includes('@')){ toast('err','Invalid email','Enter a valid email address.'); return; }
+  if(pass.length<8){ toast('err','Weak password','Use at least 8 characters.'); return; }
+  if(!phone){ toast('err','Phone required','Phone verification is mandatory.'); return; }
+  if(!card){ toast('err','Card required','Card verification is mandatory (no charge on Free Tier).'); return; }
+  toast('info','Sending verification code…','Simulated SMS + email verification');
+  setTimeout(()=>{
+    completeMission('m1',100);
+    renderMain();
+  }, 900);
+}
+
+/* ================= MISSION 2: COMPARTMENTS ================= */
+const M2_TARGETS = ['Development','Testing','Production'];
+function renderM2(){
+  const done = STATE.done.has('m2');
+  const allPlaced = M2_TARGETS.every(t=>STATE.m2.placed[t]);
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 2 · 120 XP</div>
+    <h1 class="page-title">Build the Compartment Hierarchy</h1>
+    <p class="page-sub">Click a compartment chip, then click the Root compartment to place it. All three must be placed correctly.</p>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Compartments to create</h4>
+      <div class="tag-list" id="m2chips">
+        ${M2_TARGETS.map(t=>`<div class="drag-chip ${STATE.m2.placed[t]?'placed':''}" onclick="selectM2Chip('${t}', this)">📁 ${t}</div>`).join('')}
+      </div>
+      <div class="info-box">💡 In real OCI, compartments are created via Identity → Compartments → Create Compartment, always with a parent selected.</div>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Root Compartment (Tenancy)</h4>
+      <div class="dropzone" id="m2drop" onclick="placeInRoot()">
+        <span style="color:var(--text-faint); font-size:12px;">${Object.keys(STATE.m2.placed).length===0?'Select a chip, then click here to place it under Root':''}</span>
+        ${Object.keys(STATE.m2.placed).map(t=>`<div class="pill pill-green">📁 ${t}</div>`).join('')}
+      </div>
+    </div>
+  </div>
+  ${allPlaced && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m2',120); renderMain();">✓ Confirm Hierarchy &amp; Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m2') : ''}`;
+}
+function selectM2Chip(name, el){
+  if(STATE.m2.placed[name]) return;
+  document.querySelectorAll('#m2chips .drag-chip').forEach(c=>c.style.outline='');
+  STATE.selectedChip = name;
+  el.style.outline = '2px solid var(--blue)';
+}
+function placeInRoot(){
+  if(!STATE.selectedChip){ toast('err','Nothing selected','Select a compartment chip first.'); return; }
+  STATE.m2.placed[STATE.selectedChip] = true;
+  toast('ok','Compartment placed', STATE.selectedChip+' → Root');
+  STATE.selectedChip = null;
+  renderMain();
+}
+
+/* ================= MISSION 3: CREATE USERS ================= */
+const M3_TARGETS = [
+  {u:'AdminUser', desc:'Full administrative access'},
+  {u:'DevUser', desc:'Application developer'},
+  {u:'Auditor', desc:'Read-only compliance reviewer'},
+];
+function renderM3(){
+  const done = STATE.done.has('m3');
+  const createdCount = Object.keys(STATE.m3.created).length;
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 3 · 120 XP</div>
+    <h1 class="page-title">Create OCI Users</h1>
+    <p class="page-sub">Use the User Creation Wizard to provision three identities.</p>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <h4 style="margin-bottom:12px;">User Creation Wizard</h4>
+      <div class="field"><label>Username</label><select id="m3user">${M3_TARGETS.filter(t=>!STATE.m3.created[t.u]).map(t=>`<option value="${t.u}">${t.u}</option>`).join('') || '<option>All users created</option>'}</select></div>
+      <div class="field"><label>Description</label><input id="m3desc" placeholder="e.g. Application developer"></div>
+      <div class="field"><label>Email</label><input id="m3mail" placeholder="user@company.com"></div>
+      <button class="btn btn-primary" ${createdCount>=3?'disabled':''} onclick="createM3User()">+ Create User</button>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Provisioned Users (${createdCount}/3)</h4>
+      <div id="m3cards" style="display:flex; flex-direction:column; gap:10px;">
+        ${Object.keys(STATE.m3.created).map(u=>{
+          const t = M3_TARGETS.find(x=>x.u===u);
+          return `<div class="card" style="padding:12px;"><b>${u}</b><div class="page-sub">${t.desc}</div><span class="pill pill-green" style="margin-top:6px;">🔑 Password generated — download credentials</span></div>`;
+        }).join('') || '<p class="page-sub">No users yet.</p>'}
+      </div>
+    </div>
+  </div>
+  ${createdCount>=3 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m3',120); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m3') : ''}`;
+}
+function createM3User(){
+  const sel = document.getElementById('m3user');
+  const u = sel.value;
+  const mail = document.getElementById('m3mail').value.trim();
+  if(!M3_TARGETS.find(t=>t.u===u)) return;
+  if(!mail || !mail.includes('@')){ toast('err','Email required','Enter a valid email for the new user.'); return; }
+  STATE.m3.created[u] = {email:mail};
+  toast('ok','User created', u+' — a one-time password has been generated');
+  renderMain();
+}
+
+/* ================= MISSION 4: GROUPS ================= */
+const M4_TARGETS = ['Administrators','Developers','Auditors'];
+function renderM4(){
+  const done = STATE.done.has('m4');
+  const count = Object.keys(STATE.m4.created).length;
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 4 · 100 XP</div>
+    <h1 class="page-title">Create IAM Groups</h1>
+    <p class="page-sub">Groups let you manage permissions once, for many users. Drag each group card into the IAM panel.</p>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Groups to create</h4>
+      <div class="tag-list">
+        ${M4_TARGETS.map(g=>`<div class="drag-chip ${STATE.m4.created[g]?'placed':''}" onclick="createM4Group('${g}')">👥 ${g}</div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:12px;">IAM Panel — Groups (${count}/3)</h4>
+      <div class="dropzone">${Object.keys(STATE.m4.created).map(g=>`<div class="pill pill-blue">👥 ${g}</div>`).join('') || '<span style="color:var(--text-faint); font-size:12px;">No groups yet — click a chip to add it here.</span>'}</div>
+    </div>
+  </div>
+  <div class="info-box">💡 Groups simplify permission management: write one policy per group instead of one per user.</div>
+  ${count>=3 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m4',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m4') : ''}`;
+}
+function createM4Group(g){
+  if(STATE.m4.created[g]) return;
+  STATE.m4.created[g] = true;
+  toast('ok','Group created', g);
+  renderMain();
+}
+
+/* ================= MISSION 5: ASSIGN USERS ================= */
+const M5_MAP = {AdminUser:'Administrators', DevUser:'Developers', Auditor:'Auditors'};
+function renderM5(){
+  const done = STATE.done.has('m5');
+  const users = Object.keys(M5_MAP);
+  const assignedCount = Object.keys(STATE.m5.assigned).length;
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 5 · 130 XP</div>
+    <h1 class="page-title">Assign Users to Groups</h1>
+    <p class="page-sub">Select a user, then click the correct group. Wrong assignments will shake and bounce back.</p>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Users</h4>
+      <div class="tag-list">
+        ${users.map(u=>`<div class="drag-chip ${STATE.m5.assigned[u]?'placed':''}" onclick="selectM5User('${u}', this)">👤 ${u}</div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Groups</h4>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        ${M4_TARGETS.map(g=>`<div class="dropzone" id="m5-${g}" style="min-height:50px;" onclick="assignM5('${g}')">
+          <b style="width:100%;">${g}</b>
+          ${users.filter(u=>STATE.m5.assigned[u]===g).map(u=>`<span class="pill pill-green">${u}</span>`).join('')}
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  ${assignedCount>=3 ? `
+  <div class="card" style="margin-top:16px;">
+    <h4 style="margin-bottom:10px;">Relationship Graph</h4>
+    <div class="rgraph">
+      <div class="rg-col">${users.map(u=>`<div class="rg-node">👤 ${u}</div>`).join('')}</div>
+      <div class="rg-arrow">→</div>
+      <div class="rg-col">${M4_TARGETS.map(g=>`<div class="rg-node">👥 ${g}</div>`).join('')}</div>
+      <div class="rg-arrow">→</div>
+      <div class="rg-col"><div class="rg-node">📜 Policies</div></div>
+    </div>
+  </div>` : ''}
+  ${assignedCount>=3 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m5',130); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m5') : ''}`;
+}
+function selectM5User(u, el){
+  if(STATE.m5.assigned[u]) return;
+  document.querySelectorAll('#main .drag-chip').forEach(c=>c.style.outline='');
+  STATE.selectedChip = u;
+  el.style.outline = '2px solid var(--blue)';
+}
+function assignM5(group){
+  if(!STATE.selectedChip){ toast('err','Select a user first',''); return; }
+  const user = STATE.selectedChip;
+  const zone = document.getElementById('m5-'+group);
+  if(M5_MAP[user] === group){
+    STATE.m5.assigned[user] = group;
+    zone.classList.add('correct');
+    toast('ok','Correct assignment', `${user} → ${group}`);
+    STATE.selectedChip = null;
+    renderMain();
+  } else {
+    zone.classList.add('wrong');
+    toast('err','Wrong group', `${user} does not belong in ${group}`);
+    setTimeout(()=>zone.classList.remove('wrong'), 450);
+  }
+}
+
+/* ================= MISSION 6: POLICY BUILDER ================= */
+const M6_STATEMENTS = [
+  {parts:['Allow','group Developers','to manage','instance-family','in compartment Development']},
+  {parts:['Allow','group Auditors','to inspect','all-resources','in tenancy']},
+  {parts:['Allow','group Administrators','to manage','all-resources','in tenancy']},
+];
+function renderM6(){
+  const done = STATE.done.has('m6');
+  const count = Object.keys(STATE.m6.written).length;
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 6 · 150 XP</div>
+    <h1 class="page-title">IAM Policy Builder</h1>
+    <p class="page-sub">Click "Write Statement" to type each policy into the editor, then click any keyword to see what it means.</p>
+  </div>
+  <div class="policy-editor" id="policyEditor" style="margin-bottom:16px;">
+    ${Object.keys(STATE.m6.written).map(i=>renderPolicyLine(M6_STATEMENTS[i].parts)).join('') || '<span style="color:#5f6b7a;">-- policies will appear here --</span>'}
+  </div>
+  <div class="tag-list" style="margin-bottom:16px;">
+    ${M6_STATEMENTS.map((s,i)=>`<button class="btn btn-ghost btn-sm" ${STATE.m6.written[i]?'disabled':''} onclick="writeM6(${i})">${STATE.m6.written[i]?'✓ ':''}Write Statement ${i+1}</button>`).join('')}
+  </div>
+  <div class="card">
+    <h4 style="margin-bottom:10px;">Keyword Glossary (click a colored word above)</h4>
+    <div id="keywordGloss" class="page-sub">Click any highlighted keyword in a written policy to see its explanation here.</div>
+  </div>
+  <div class="mistake-box" style="margin-top:14px;">⚠ Common mistake: misspelling <b>Allow</b>, forgetting <b>group</b>, or omitting <b>in compartment</b>/<b>in tenancy</b> scope — any of these breaks the statement.</div>
+  ${count>=3 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m6',150); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m6') : ''}`;
+}
+const KEYWORD_INFO = {
+  'Allow':'Every OCI policy statement must start with the keyword Allow.',
+  'to manage':'"manage" is the highest verb — full control including create, update, delete.',
+  'to inspect':'"inspect" is the lowest verb — list resources and view basic metadata only, no read of contents.',
+  'in compartment Development':'Scopes the statement to only the Development compartment — not its siblings.',
+  'in tenancy':'Scopes the statement to the entire tenancy — every compartment, including root.',
+};
+function renderPolicyLine(parts){
+  const cls = ['tok-allow','tok-group','tok-verb','tok-resource','tok-scope'];
+  return `<div class="line">${parts.map((p,i)=>`<span class="${cls[i]}" style="cursor:pointer;" onclick="showKeyword('${p.replace(/'/g,"\\'")}')">${p}</span>`).join(' ')}</div>`;
+}
+function writeM6(i){
+  if(STATE.m6.written[i]) return;
+  STATE.m6.written[i] = true;
+  toast('ok','Policy statement added', 'Statement '+(i+1));
+  renderMain();
+}
+function showKeyword(word){
+  const info = KEYWORD_INFO[word] || (word.startsWith('group') ? 'References an IAM Group — the policy applies to every member of that group.' : 'Part of the policy statement scope/subject.');
+  document.getElementById('keywordGloss').innerHTML = `<b>${word}</b> — ${info}`;
+}
+
+/* ================= MISSION 7: POLICY SIMULATOR ================= */
+const M7_ACTIONS = [
+  {a:'Create Compute Instance', needs:'manage', scope:'Development'},
+  {a:'Delete Compartment', needs:'manage', scope:'tenancy-admin-only'},
+  {a:'Read Policies', needs:'inspect', scope:'tenancy'},
+  {a:'Create VCN', needs:'manage', scope:'Development'},
+  {a:'Delete Instance', needs:'manage', scope:'Development'},
+  {a:'Create Bucket', needs:'manage', scope:'Development'},
+];
+const M7_PERMS = {
+  AdminUser:{verb:'manage', scope:'tenancy'},
+  DevUser:{verb:'manage', scope:'Development'},
+  Auditor:{verb:'inspect', scope:'tenancy'},
+};
+function renderM7(){
+  const done = STATE.done.has('m7');
+  const role = STATE.m7.role;
+  const testedCount = Object.keys(STATE.m7.tested).length;
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 7 · 150 XP</div>
+    <h1 class="page-title">Policy Simulator</h1>
+    <p class="page-sub">Switch roles and try actions. See exactly why OCI allows or denies each one.</p>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <h4 style="margin-bottom:10px;">Login as</h4>
+    <div class="tag-list">
+      ${Object.keys(M7_PERMS).map(u=>`<button class="btn ${role===u?'btn-primary':'btn-ghost'} btn-sm" onclick="setM7Role('${u}')">${u}</button>`).join('')}
+    </div>
+  </div>
+  <div class="grid grid-3">
+    ${M7_ACTIONS.map((act,i)=>`
+      <div class="card">
+        <h5 style="font-size:13px; margin-bottom:8px;">${act.a}</h5>
+        <button class="btn btn-ghost btn-sm" onclick="testM7(${i})">Attempt as ${role}</button>
+        <div id="m7res-${i}" style="margin-top:10px; font-size:12px;"></div>
+      </div>`).join('')}
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <h4 style="margin-bottom:10px;">Evaluation Flow</h4>
+    <div class="rgraph"><div class="rg-node">User</div><div class="rg-arrow">↓</div></div>
+    <div class="rgraph" style="margin-top:-30px;"><div class="rg-node">Group</div><div class="rg-arrow">↓</div></div>
+    <div class="rgraph" style="margin-top:-30px;"><div class="rg-node">Policy</div><div class="rg-arrow">↓</div></div>
+    <div class="rgraph" style="margin-top:-30px;"><div class="rg-node">Decision (Allow / Deny)</div></div>
+  </div>
+  ${testedCount>=4 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m7',150); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m7') : ''}`;
+}
+function setM7Role(u){ STATE.m7.role = u; renderMain(); }
+function testM7(i){
+  const act = M7_ACTIONS[i];
+  const perm = M7_PERMS[STATE.m7.role];
+  const verbRank = {inspect:1, read:2, use:3, manage:4};
+  let allowed;
+  if(act.scope==='tenancy-admin-only'){
+    allowed = STATE.m7.role==='AdminUser';
+  } else {
+    const scopeOk = perm.scope==='tenancy' || perm.scope===act.scope;
+    allowed = scopeOk && verbRank[perm.verb] >= verbRank[act.needs];
+  }
+  STATE.m7.tested[STATE.m7.role+'-'+i] = true;
+  const reason = allowed
+    ? `${STATE.m7.role} has "${perm.verb}" scoped to ${perm.scope}, which covers ${act.needs} on ${act.scope}.`
+    : `${STATE.m7.role} has "${perm.verb}" scoped to ${perm.scope} — not enough to ${act.needs} on ${act.scope}.`;
+  document.getElementById('m7res-'+i).innerHTML = `<span class="pill ${allowed?'pill-green':'pill-red'}">${allowed?'✓ Allowed':'⛔ Denied'}</span><p class="page-sub" style="margin-top:8px;">${reason}</p>`;
+  if(Object.keys(STATE.m7.tested).length>=4) renderSidebar();
+  addXP(5,'Policy tested');
+}
+
+/* ================= MISSION 8: CLI ================= */
+function renderM8(){
+  const done = STATE.done.has('m8');
+  const step = STATE.m8.step;
+  afterRenderHooks.m8 = ()=>{ const t=document.getElementById('terminal'); if(t) t.scrollTop = t.scrollHeight; };
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Mission 8 · 130 XP</div>
+    <h1 class="page-title">OCI CLI — Cloud Shell</h1>
+    <p class="page-sub">Run each command in order. Click "Run" to execute it in the simulated Cloud Shell.</p>
+  </div>
+  <div class="terminal" id="terminal">
+    ${STATE.m8.history.map(h=>`<div class="line"><span class="prompt">$</span> ${h.cmd}</div><div class="line out">${h.out.replace(/\n/g,'<br>')}</div><div class="line comment">${h.note}</div>`).join('')}
+    ${step<CLI_STEPS.length ? `<div class="line"><span class="prompt">$</span> <span style="color:var(--text-faint);">${CLI_STEPS[step].cmd}</span></div>` : ''}
+  </div>
+  <div style="margin-top:14px;">
+    ${step<CLI_STEPS.length ? `<button class="btn btn-primary" onclick="runM8Step()">▶ Run: ${CLI_STEPS[step].cmd}</button>` : `<span class="pill pill-green">All commands executed</span>`}
+  </div>
+  ${step>=CLI_STEPS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m8',130); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m8') : ''}`;
+}
+function runM8Step(){
+  const s = CLI_STEPS[STATE.m8.step];
+  STATE.m8.history.push(s);
+  STATE.m8.step++;
+  addXP(10, s.cmd);
+  renderMain();
+}
+
+/* ================= CLI CONFIG SIMULATOR ================= */
+const CLI_CONFIG_FIELDS = [
+  {key:'tenancy', label:'Tenancy OCID', ph:'ocid1.tenancy.oc1..aaaaaaaa...'},
+  {key:'user', label:'User OCID', ph:'ocid1.user.oc1..aaaaaaaa...'},
+  {key:'region', label:'Region', ph:'us-ashburn-1'},
+  {key:'fingerprint', label:'Fingerprint', ph:'a1:b2:c3:d4:...'},
+  {key:'key_file', label:'Private Key Path', ph:'~/.oci/oci_api_key.pem'},
+];
+function renderCliConfig(){
+  return `
+  <div class="section-head">
+    <div class="eyebrow">CLI Configuration Simulator</div>
+    <h1 class="page-title">Build ~/.oci/config</h1>
+    <p class="page-sub">Paste each value. This mirrors the "oci setup config" wizard.</p>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      ${CLI_CONFIG_FIELDS.map(f=>`<div class="field"><label>${f.label}</label><input id="cfg-${f.key}" placeholder="${f.ph}" oninput="updateCliConfig()"></div>`).join('')}
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:10px;">~/.oci/config</h4>
+      <div class="terminal" id="cliConfigPreview" style="min-height:180px;">[DEFAULT]<br>tenancy=<br>user=<br>region=<br>fingerprint=<br>key_file=</div>
+      <div id="cliConfigExplain" class="info-box" style="margin-top:12px;">Fill in each field — every one is explained here as you type.</div>
+    </div>
+  </div>`;
+}
+function updateCliConfig(){
+  const vals = {};
+  CLI_CONFIG_FIELDS.forEach(f=>{ vals[f.key] = document.getElementById('cfg-'+f.key).value || ''; });
+  document.getElementById('cliConfigPreview').innerHTML =
+    `[DEFAULT]<br>tenancy=${vals.tenancy}<br>user=${vals.user}<br>region=${vals.region}<br>fingerprint=${vals.fingerprint}<br>key_file=${vals.key_file}`;
+  const filled = Object.values(vals).filter(v=>v.trim()).length;
+  if(filled===5 && !STATE.cliConfigDone){
+    STATE.cliConfigDone = true;
+    addXP(40,'CLI config completed');
+  }
+  const explains = {
+    tenancy:'Uniquely identifies your OCI tenancy — found on the Tenancy Details page.',
+    user:'Uniquely identifies the IAM user the CLI authenticates as.',
+    region:'The default region CLI commands run against.',
+    fingerprint:'A hash of your public API key, generated when you add the key to your user.',
+    key_file:'Local path to the private key half of your API signing key pair — never share this file.',
+  };
+  const last = CLI_CONFIG_FIELDS.slice().reverse().find(f=>vals[f.key].trim());
+  if(last) document.getElementById('cliConfigExplain').innerHTML = `<b>${last.label}:</b> ${explains[last.key]}`;
+}
+
+/* ================= CHALLENGES ================= */
+function renderChallenges(){
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Real-World Challenges</div>
+    <h1 class="page-title">Troubleshooting Scenarios</h1>
+    <p class="page-sub">Diagnose each real-world IAM problem. ${STATE.challengesDone.size}/5 solved.</p>
+  </div>
+  ${CHALLENGES.map(c=>`
+    <div class="card" style="margin-bottom:14px;">
+      <h4 style="margin-bottom:6px;">${c.title} ${STATE.challengesDone.has(c.id)?'<span class="pill pill-green">Solved</span>':''}</h4>
+      <p class="page-sub" style="margin-bottom:12px;">${c.scenario}</p>
+      <div id="chal-${c.id}">
+        ${c.opts.map((o,i)=>`<div class="q-opt" onclick="answerChallenge('${c.id}',${i})">${o}</div>`).join('')}
+        <div class="q-explain" id="chalex-${c.id}">${c.ex}</div>
+      </div>
+    </div>`).join('')}`;
+}
+function answerChallenge(id, idx){
+  const c = CHALLENGES.find(x=>x.id===id);
+  const container = document.getElementById('chal-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{
+    o.onclick = null;
+    if(i===c.a) o.classList.add('correct');
+    else if(i===idx) o.classList.add('incorrect');
+  });
+  document.getElementById('chalex-'+id).classList.add('show');
+  if(idx===c.a){
+    if(!STATE.challengesDone.has(id)){ STATE.challengesDone.add(id); addXP(30, c.title+' solved'); }
+  } else {
+    toast('err','Not quite','Check the explanation below.');
+  }
+  renderSidebar();
+}
+
+/* ================= ACHIEVEMENTS ================= */
+function renderAchievements(){
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Achievements</div>
+    <h1 class="page-title">Trophy Case</h1>
+    <p class="page-sub">${STATE.achUnlocked.size}/${ACHIEVEMENTS.length} unlocked</p>
+  </div>
+  <div class="grid grid-4">
+    ${ACHIEVEMENTS.map(a=>{
+      const unlocked = STATE.achUnlocked.has(a.id);
+      return `<div class="ach-card ${unlocked?'':'locked'}"><div class="ico">${a.ico}</div><h5>${a.name}</h5><p>${unlocked?'Unlocked':a.cond}</p></div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ================= DASHBOARD ================= */
+function renderDashboard(){
+  const quizTotal = Object.values(STATE.quizScores).reduce((a,b)=>a+b,0);
+  const cliCount = STATE.m8.history.length;
+  const policyCount = Object.keys(STATE.m6.written).length;
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Dashboard</div>
+    <h1 class="page-title">Your Progress</h1>
+  </div>
+  <div class="grid grid-4">
+    <div class="card"><div class="pill pill-red">Mission Progress</div><h2 style="margin-top:10px;">${STATE.done.size}/8</h2></div>
+    <div class="card"><div class="pill pill-blue">Quiz Score</div><h2 style="margin-top:10px;">${quizTotal} correct</h2></div>
+    <div class="card"><div class="pill pill-green">Labs Completed</div><h2 style="margin-top:10px;">${STATE.done.size}</h2></div>
+    <div class="card"><div class="pill pill-orange">CLI Commands</div><h2 style="margin-top:10px;">${cliCount}</h2></div>
+    <div class="card"><div class="pill pill-blue">Policies Written</div><h2 style="margin-top:10px;">${policyCount}</h2></div>
+    <div class="card"><div class="pill pill-green">Challenges Solved</div><h2 style="margin-top:10px;">${STATE.challengesDone.size}/5</h2></div>
+    <div class="card"><div class="pill pill-red">Current Rank</div><h2 style="margin-top:10px; font-size:18px;">${rankFor(STATE.xp)}</h2></div>
+    <div class="card"><div class="pill pill-orange">Total XP</div><h2 style="margin-top:10px;">${STATE.xp}</h2></div>
+  </div>`;
+}
+
+/* ================= CAPSTONE ================= */
+function renderCapstone(){
+  const allDone = MISSION_ORDER.every(m=>STATE.done.has(m));
+  const checklist = [
+    {label:'Create compartments (Dev/Test/Prod)', ok:STATE.done.has('m2')},
+    {label:'Create users (Admin/Dev/Auditor)', ok:STATE.done.has('m3')},
+    {label:'Create groups', ok:STATE.done.has('m4')},
+    {label:'Assign users to groups', ok:STATE.done.has('m5')},
+    {label:'Write IAM policies', ok:STATE.done.has('m6')},
+    {label:'Test permissions in simulator', ok:STATE.done.has('m7')},
+    {label:'Run CLI identity commands', ok:STATE.done.has('m8')},
+  ];
+  return `
+  <div class="section-head">
+    <div class="eyebrow">Final Capstone</div>
+    <h1 class="page-title">Enterprise IAM Build-Out</h1>
+    <p class="page-sub">Scenario: a company with three environments (Dev/Test/Prod) and three employees (Administrator/Developer/Auditor) needs a complete identity architecture.</p>
+  </div>
+  <div class="card">
+    ${checklist.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
+      <span class="pill ${c.ok?'pill-green':'pill-gray'}">${c.ok?'✓':'○'}</span><span>${c.label}</span></div>`).join('')}
+  </div>
+  ${allDone ? `
+  <div class="card" style="text-align:center; margin-top:18px; padding:44px; background:linear-gradient(180deg, rgba(61,220,132,.12), var(--panel));">
+    <div style="font-size:44px;margin-bottom:10px;">🎓</div>
+    <h2 style="margin-bottom:8px;">Mission Complete — OCI IAM Expert</h2>
+    <p class="page-sub" style="margin-bottom:14px;">Certification Ready · XP ${STATE.xp}</p>
+    <div class="pill pill-green" style="font-size:13px; padding:8px 16px;">Certification Ready</div>
+  </div>` : `<div class="tip-box" style="margin-top:16px;">Complete all 8 missions to unlock your capstone certificate.</div>`}`;
+}
+
+/* ================= QUIZ BLOCK (reused per mission) ================= */
+function renderQuizBlock(missionId){
+  const qs = QUIZZES[missionId];
+  if(!qs) return '';
+  const answered = STATE.quizAnswered[missionId] || {};
+  return `
+  <div class="card" style="margin-top:20px;">
+    <h4 style="margin-bottom:14px;">🎯 Knowledge Check</h4>
+    ${qs.map((q,qi)=>`
+      <div class="quiz-q">
+        <div class="q-txt">${qi+1}. ${q.q}</div>
+        ${q.opts.map((o,oi)=>`<div class="q-opt ${answered[qi]===oi?(oi===q.a?'correct':'incorrect'):''}" onclick="answerQuiz('${missionId}',${qi},${oi})">${o}</div>`).join('')}
+        <div class="q-explain ${answered[qi]!==undefined?'show':''}">${q.ex}</div>
+      </div>`).join('')}
+  </div>`;
+}
+function answerQuiz(missionId, qi, oi){
+  if(!STATE.quizAnswered[missionId]) STATE.quizAnswered[missionId] = {};
+  if(STATE.quizAnswered[missionId][qi] !== undefined) return;
+  STATE.quizAnswered[missionId][qi] = oi;
+  const q = QUIZZES[missionId][qi];
+  if(oi===q.a){
+    STATE.quizScores[missionId] = (STATE.quizScores[missionId]||0)+1;
+    addXP(10,'Correct answer');
+  } else {
+    toast('err','Not quite','Review the explanation.');
+  }
+  renderMain();
+}
+
+/* ================= INIT ================= */
+function toggleTheme(){
+  STATE.theme = STATE.theme==='dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', STATE.theme);
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+renderSidebar();
+renderMain();
+window.STATE = STATE; // debug/introspection hook
+
+</script>
+</body>
+</html>

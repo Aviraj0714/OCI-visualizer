@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 3 Lab — Linux Administration + OCI CLI + OCI SDK | 1Z0-1067-26</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#11161d; --panel:#151b23; --panel2:#1a212b;
+  --border:#232b36; --border-soft:#1d2530;
+  --text:#e6ebf1; --text-dim:#9aa7b6; --text-faint:#5f6b7a;
+  --red:#ff3b30; --red-dim:#c62b22; --red-glow:rgba(255,59,48,.25);
+  --blue:#4da3ff; --blue-dim:#2f6fd1;
+  --orange:#ffab40; --green:#3ddc84; --green-dim:#279a5c;
+  --yellow:#ffd54a; --purple:#b48bff;
+  --radius:14px; --radius-sm:9px;
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --mono: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f5f7; --bg2:#eceef1; --panel:#ffffff; --panel2:#f7f8fa;
+  --border:#e1e4e9; --border-soft:#ebedf0;
+  --text:#1b2129; --text-dim:#5b6572; --text-faint:#8b95a3;
+  --red:#e0342a; --red-dim:#c62b22; --red-glow:rgba(224,52,42,.18);
+  --shadow: 0 8px 30px rgba(20,20,30,.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; transition:background .3s,color .3s;}
+body::before{content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(circle at 15% 10%, var(--red-glow), transparent 40%), radial-gradient(circle at 85% 90%, rgba(77,163,255,.10), transparent 45%);}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:10px;}
+a{color:inherit;} button{font-family:inherit; cursor:pointer;}
+
+.topbar{position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:14px; padding:10px 18px;
+  background:color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter:blur(14px); border-bottom:1px solid var(--border-soft);}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700;}
+.brand .logo{width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg, var(--red), var(--red-dim));
+  display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; font-weight:800; box-shadow:0 4px 14px var(--red-glow);}
+.brand small{display:block; font-weight:500; color:var(--text-faint); font-size:10.5px; letter-spacing:.5px;}
+.crumb{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-dim); flex:1; min-width:0; overflow:hidden; white-space:nowrap;}
+.crumb b{color:var(--text); font-weight:600;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.xp-chip{display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--border); padding:6px 12px; border-radius:20px; font-size:12.5px; font-weight:600;}
+.xp-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange);}
+.rank-chip{background:linear-gradient(135deg, var(--red), var(--red-dim)); color:#fff; font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:20px;}
+.icon-btn{width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:15px; transition:.15s;}
+.icon-btn:hover{color:var(--text); border-color:var(--text-faint);}
+
+.app{display:flex; min-height:calc(100vh - 54px); position:relative; z-index:1;}
+.sidebar{width:255px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:16px 10px; position:sticky; top:54px; height:calc(100vh - 54px); overflow-y:auto; background:color-mix(in srgb, var(--bg2) 60%, transparent);}
+.sidebar h4{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); padding:14px 10px 6px;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:12.5px; color:var(--text-dim); cursor:pointer; transition:.15s; margin-bottom:2px; border:1px solid transparent;}
+.nav-item .n-ico{width:22px; text-align:center; font-size:12.5px; flex-shrink:0;}
+.nav-item:hover{background:var(--panel2); color:var(--text);}
+.nav-item.active{background:var(--red-glow); color:var(--text); border-color:var(--red-dim); font-weight:600;}
+.nav-item.locked{opacity:.4; cursor:not-allowed;}
+.nav-item.done .n-ico{color:var(--green);}
+.nav-badge{margin-left:auto; font-size:10px; background:var(--panel); border:1px solid var(--border); padding:1px 6px; border-radius:8px; color:var(--text-faint);}
+.nav-item.done .nav-badge{color:var(--green); border-color:var(--green-dim);}
+.progress-mini{margin:10px 8px 4px; padding:10px; background:var(--panel); border:1px solid var(--border); border-radius:10px;}
+.progress-mini .lbl{display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-bottom:6px;}
+.bar-track{height:6px; border-radius:5px; background:var(--border-soft); overflow:hidden;}
+.bar-fill{height:100%; background:linear-gradient(90deg, var(--red), var(--orange)); border-radius:5px; transition:width .5s ease;}
+
+.main{flex:1; min-width:0; padding:26px 30px 80px;}
+.view{display:none; animation:fadeIn .35s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+.section-head{margin-bottom:22px;}
+.eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--red); font-weight:700; margin-bottom:6px;}
+h1.page-title{font-size:25px; font-weight:800; letter-spacing:-.3px;}
+.page-sub{color:var(--text-dim); font-size:13.5px; margin-top:5px; max-width:700px;}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);}
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:1000px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr 1fr;}}
+@media(max-width:650px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr;}}
+.btn{display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:10px; border:none; font-weight:700; font-size:13.5px; transition:.15s;}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--red-dim)); color:#fff; box-shadow:0 6px 20px var(--red-glow);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 10px 26px var(--red-glow);}
+.btn-ghost{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text-faint);}
+.btn-sm{padding:7px 13px; font-size:12px; border-radius:8px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.pill-green{background:rgba(61,220,132,.14); color:var(--green);}
+.pill-red{background:rgba(255,59,48,.14); color:var(--red);}
+.pill-orange{background:rgba(255,171,64,.14); color:var(--orange);}
+.pill-blue{background:rgba(77,163,255,.14); color:var(--blue);}
+.pill-gray{background:var(--panel2); color:var(--text-faint); border:1px solid var(--border);}
+#toast-wrap{position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; flex-direction:column; gap:10px;}
+.toast{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:13px 16px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; min-width:260px; animation:toastIn .3s ease; font-size:13px;}
+@keyframes toastIn{from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);}}
+.toast .t-ico{font-size:18px;} .toast b{display:block; font-size:12.5px;} .toast span{color:var(--text-dim); font-size:11.5px;}
+.toast.xp b{color:var(--orange);} .toast.ok .t-ico{color:var(--green);} .toast.err .t-ico{color:var(--red);}
+
+.mission-map{position:relative; padding:20px 10px;}
+.mission-track{display:flex; flex-wrap:wrap; gap:18px;}
+.m-node{width:205px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:16px; position:relative; transition:.2s; cursor:pointer;}
+.m-node:hover{transform:translateY(-3px); border-color:var(--text-faint);}
+.m-node.locked{opacity:.45; cursor:not-allowed; filter:grayscale(.6);}
+.m-node.locked:hover{transform:none;}
+.m-node.done{border-color:var(--green-dim); background:linear-gradient(180deg, rgba(61,220,132,.06), var(--panel));}
+.m-node.current{border-color:var(--red-dim); box-shadow:0 0 0 3px var(--red-glow);}
+.m-num{width:32px; height:32px; border-radius:10px; background:var(--panel2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; margin-bottom:8px;}
+.m-node.done .m-num{background:var(--green); color:#052e17; border-color:var(--green);}
+.m-node.current .m-num{background:var(--red); color:#fff; border-color:var(--red);}
+.m-node h4{font-size:13.5px; margin-bottom:4px;}
+.m-node p{font-size:11px; color:var(--text-dim); line-height:1.5; margin-bottom:8px;}
+.m-node .m-xp{font-size:10.5px; color:var(--orange); font-weight:700;}
+
+.terminal{background:#0a0d12; border-radius:12px; border:1px solid #232b36; font-family:var(--mono); font-size:12.5px; padding:16px; min-height:220px; color:#3ddc84; overflow-y:auto; max-height:420px;}
+.terminal .line{margin-bottom:6px; line-height:1.6; white-space:pre-wrap;}
+.terminal .prompt{color:#4da3ff;} .terminal .out{color:#c9d2dc;} .terminal .comment{color:#5f6b7a;} .terminal .errline{color:#ff6b60;}
+
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600;}
+.field input, .field select{width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text); font-size:13px; font-family:inherit;}
+.field input:focus, .field select:focus{outline:none; border-color:var(--red-dim);}
+
+.health-meter{margin-bottom:12px;}
+.health-meter .hm-lbl{display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-bottom:5px;}
+.hm-track{height:8px; border-radius:6px; background:var(--border-soft); overflow:hidden;}
+.hm-fill{height:100%; border-radius:6px; transition:width .5s ease;}
+
+.service-row{display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; background:var(--panel2);}
+.service-row .svc-name{font-weight:700; width:100px; font-size:13px;}
+.service-row .svc-actions{margin-left:auto; display:flex; gap:6px;}
+
+.perm-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0;}
+.perm-col{text-align:center; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--panel2);}
+.perm-col h5{font-size:12px; margin-bottom:8px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px;}
+.perm-check{display:flex; align-items:center; gap:6px; justify-content:center; padding:4px 0; font-size:12.5px;}
+
+.log-line{padding:6px 10px; font-family:var(--mono); font-size:11.5px; border-radius:6px; cursor:pointer; margin-bottom:3px; color:var(--text-dim);}
+.log-line:hover{background:var(--panel2);}
+.log-line.flagged{background:rgba(255,59,48,.12); color:var(--red); font-weight:600;}
+.log-line.correct-flag{background:rgba(61,220,132,.12); color:var(--green); font-weight:600;}
+
+.incident-card{border:1px solid var(--border); border-radius:12px; padding:16px; background:var(--panel2); margin-bottom:12px;}
+.incident-card.resolved{border-color:var(--green-dim); opacity:.6;}
+.incident-timer{height:5px; border-radius:4px; background:var(--border-soft); overflow:hidden; margin:8px 0;}
+.incident-timer .fill{height:100%; background:linear-gradient(90deg,var(--red),var(--orange)); transition:width 1s linear;}
+
+.quiz-q{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border:none;}
+.quiz-q .q-txt{font-weight:700; font-size:14px; margin-bottom:12px;}
+.q-opt{display:flex; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; cursor:pointer; transition:.15s; font-size:13px;}
+.q-opt:hover{border-color:var(--text-faint);}
+.q-opt.correct{border-color:var(--green-dim); background:rgba(61,220,132,.1);}
+.q-opt.incorrect{border-color:var(--red-dim); background:rgba(255,59,48,.1);}
+.q-explain{margin-top:8px; padding:10px 12px; background:var(--panel2); border-radius:9px; font-size:12px; color:var(--text-dim); display:none; border-left:3px solid var(--blue-dim);}
+.q-explain.show{display:block;}
+
+.ach-card{text-align:center; padding:20px 12px; border-radius:14px; border:1px solid var(--border); background:var(--panel); transition:.2s;}
+.ach-card.locked{opacity:.35; filter:grayscale(1);}
+.ach-card .ico{font-size:32px; margin-bottom:8px;}
+.ach-card h5{font-size:12.5px; margin-bottom:4px;}
+.ach-card p{font-size:10.5px; color:var(--text-dim);}
+
+.hr{height:1px; background:var(--border-soft); margin:20px 0;}
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;} .sidebar{display:none;}}
+.tag-list{display:flex; flex-wrap:wrap; gap:8px;}
+.info-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--blue-dim); background:rgba(77,163,255,.06); font-size:12.5px; margin:12px 0;}
+.tip-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--orange); background:rgba(255,171,64,.07); font-size:12.5px; margin:12px 0;}
+.mistake-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--red); background:rgba(255,59,48,.06); font-size:12.5px; margin:12px 0;}
+.hidden{display:none !important;}
+.chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+.chip{padding:8px 13px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s;}
+.chip:hover{border-color:var(--text-faint);}
+.chip.active{background:var(--red-glow); border-color:var(--red-dim);}
+.code-block{background:#0a0d12; border:1px solid #232b36; border-radius:10px; padding:14px; font-family:var(--mono); font-size:12px; color:#c9d2dc; overflow-x:auto; white-space:pre;}
+</style>
+</head>
+<body data-theme="dark">
+<div id="toast-wrap"></div>
+<div class="topbar">
+  <div class="brand"><div class="logo">C</div><div>Day 3 Lab <small>1Z0-1067-26 · Linux + CLI + SDK</small></div></div>
+  <div class="crumb">Home <span>›</span> <b id="crumbCurrent">Mission Control</b></div>
+  <div class="topbar-right">
+    <div class="xp-chip"><span class="dot"></span><span id="xpDisplay">0</span> XP</div>
+    <div class="rank-chip" id="rankChip">Junior Engineer</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">◐</button>
+  </div>
+</div>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main"></div>
+</div>
+<script>
+/* ================= DATA ================= */
+const NAV = [
+  {id:'home', label:'Mission Control', ico:'⌂', group:'main'},
+  {id:'missionmap', label:'Mission Map', ico:'🗺', group:'main'},
+  {id:'m1', label:'M1 · Provision VM', ico:'①', group:'missions'},
+  {id:'m2', label:'M2 · SSH Login', ico:'②', group:'missions'},
+  {id:'m3', label:'M3 · Linux Users', ico:'③', group:'missions'},
+  {id:'m4', label:'M4 · Groups & Perms', ico:'④', group:'missions'},
+  {id:'m5', label:'M5 · Packages', ico:'⑤', group:'missions'},
+  {id:'m6', label:'M6 · Services', ico:'⑥', group:'missions'},
+  {id:'m7', label:'M7 · Cron Jobs', ico:'⑦', group:'missions'},
+  {id:'m8', label:'M8 · Log Analysis', ico:'⑧', group:'missions'},
+  {id:'m9', label:'M9 · Networking', ico:'⑨', group:'missions'},
+  {id:'m10', label:'M10 · OCI CLI', ico:'⑩', group:'missions'},
+  {id:'m11', label:'M11 · OCI SDK', ico:'⑪', group:'missions'},
+  {id:'m12', label:'M12 · Incident Response', ico:'⑫', group:'missions'},
+  {id:'achievements', label:'Achievements', ico:'🏆', group:'extra'},
+  {id:'capstone', label:'Final Capstone', ico:'🎓', group:'extra'},
+];
+
+const MISSIONS = [
+  {id:'m1', num:1, title:'Provision Oracle Linux VM', desc:'Launch a Compute instance from the OCI Console.', xp:100},
+  {id:'m2', num:2, title:'SSH Login', desc:'Connect to your instance with an SSH key.', xp:90},
+  {id:'m3', num:3, title:'Linux Users', desc:'Create developer, tester, and admin accounts.', xp:100},
+  {id:'m4', num:4, title:'Groups & Permissions', desc:'Master chmod, chown, chgrp.', xp:110},
+  {id:'m5', num:5, title:'Package Management', desc:'Install software with dnf and rpm.', xp:90},
+  {id:'m6', num:6, title:'Service Management', desc:'Control services with systemctl.', xp:110},
+  {id:'m7', num:7, title:'Cron Jobs', desc:'Schedule recurring tasks.', xp:90},
+  {id:'m8', num:8, title:'Log Analysis', desc:'Investigate system logs for failures.', xp:100},
+  {id:'m9', num:9, title:'Networking', desc:'Diagnose connectivity with core network tools.', xp:110},
+  {id:'m10', num:10, title:'OCI CLI', desc:'Configure and run OCI CLI commands.', xp:120},
+  {id:'m11', num:11, title:'OCI SDK', desc:'Call OCI APIs from Python/Java/Node/Go.', xp:120},
+  {id:'m12', num:12, title:'Incident Response Challenge', desc:'Resolve live production incidents.', xp:150},
+];
+
+const MISSION_ORDER = MISSIONS.map(m=>m.id);
+
+const SSH_STEPS = [
+  {cmd:'ssh opc@129.80.12.44', note:'Connecting to your instance\'s public IP as the default Oracle Linux user "opc".'},
+];
+
+const M3_TARGETS = [
+  {u:'developer', uid:1001, gid:1001, home:'/home/developer'},
+  {u:'tester', uid:1002, gid:1002, home:'/home/tester'},
+  {u:'admin', uid:1003, gid:1003, home:'/home/admin'},
+];
+const M3_COMMANDS = ['useradd','passwd','id','whoami','groups','su','sudo'];
+const M3_CMD_INFO = {
+  useradd:'Creates a new user account and home directory.',
+  passwd:'Sets or changes a user\'s password.',
+  id:'Displays a user\'s UID, GID, and group memberships.',
+  whoami:'Prints the currently logged-in username.',
+  groups:'Lists all groups a user belongs to.',
+  su:'Switches to another user account (substitute user).',
+  sudo:'Runs a single command with elevated (root) privileges.',
+};
+
+const PACKAGES = [
+  {name:'git', desc:'Distributed version control system', deps:['perl-Git','git-core']},
+  {name:'httpd', desc:'Apache HTTP Server', deps:['apr','apr-util','mod_http2']},
+  {name:'docker', desc:'Container runtime engine', deps:['containerd.io','runc']},
+  {name:'python3', desc:'Python 3 interpreter', deps:['python3-libs','python3-pip']},
+];
+
+const SERVICES_INIT = {
+  httpd:'stopped', sshd:'running', firewalld:'running', docker:'stopped',
+};
+
+const CRON_ANSWER = '0 2 * * *';
+const CRON_JOBS = [
+  {name:'Daily Backup', hint:'Every day at 2:00 AM', answer:'0 2 * * *'},
+  {name:'Log Cleanup', hint:'Every Sunday at midnight', answer:'0 0 * * 0'},
+  {name:'Disk Monitoring', hint:'Every 15 minutes', answer:'*/15 * * * *'},
+  {name:'Health Check', hint:'Every hour, on the hour', answer:'0 * * * *'},
+];
+
+const LOG_FILES = {
+  messages:[
+    '[INFO] systemd: Started Session 42 of user opc.',
+    '[INFO] kernel: eth0: link up, 1000 Mbps full duplex',
+    {text:'[ERROR] kernel: EXT4-fs error: disk /dev/sda1 100% full — write failed', bad:true, cause:'Disk Full'},
+    '[INFO] dnf: package git-2.39 installed successfully',
+  ],
+  secure:[
+    '[INFO] sshd: Accepted publickey for opc from 10.0.0.5 port 51322',
+    {text:'[WARN] sshd: Failed password for invalid user root from 203.0.113.9 port 22', bad:true, cause:'SSH Failure'},
+    {text:'[WARN] sshd: Failed password for invalid user root from 203.0.113.9 port 22', bad:true, cause:'SSH Failure'},
+    '[INFO] sudo: opc : COMMAND=/bin/systemctl restart httpd',
+  ],
+  cron:[
+    '[INFO] CROND: (root) CMD (run-parts /etc/cron.daily)',
+    {text:'[ERROR] CROND: (opc) PERMISSION DENIED — /opt/backup.sh not executable', bad:true, cause:'Permission Denied'},
+    '[INFO] CROND: (root) CMD (/usr/lib64/sa/sa1 1 1)',
+  ],
+  dmesg:[
+    '[    0.512011] Booting Linux on physical CPU 0x0',
+    {text:'[  842.113092] Kernel panic - not syncing: VFS: Unable to mount root fs', bad:true, cause:'Kernel Error'},
+    '[    1.021044] Freeing unused kernel image memory',
+  ],
+};
+
+const NET_COMMANDS = [
+  {cmd:'ping -c 3 8.8.8.8', out:'64 bytes from 8.8.8.8: icmp_seq=1 ttl=115 time=12.3 ms\n64 bytes from 8.8.8.8: icmp_seq=2 ttl=115 time=11.8 ms\n64 bytes from 8.8.8.8: icmp_seq=3 ttl=115 time=12.1 ms\n--- 8.8.8.8 ping statistics ---\n3 packets transmitted, 3 received, 0% packet loss', note:'Tests basic reachability and round-trip latency to a host.'},
+  {cmd:'traceroute 8.8.8.8', out:' 1  10.0.0.1  0.412 ms\n 2  192.168.1.1  1.203 ms\n 3  * * *\n 4  8.8.8.8  12.905 ms', note:'Shows each network hop between you and the destination.'},
+  {cmd:'dig oraclecloud.com', out:';; ANSWER SECTION:\noraclecloud.com. 300 IN A 138.1.42.10', note:'Queries DNS records directly against a resolver.'},
+  {cmd:'nslookup oraclecloud.com', out:'Server: 169.254.169.254\nAddress: 138.1.42.10', note:'Simplified DNS lookup tool — resolves a hostname to an IP.'},
+  {cmd:'curl -I http://localhost', out:'HTTP/1.1 200 OK\nServer: Apache/2.4.57', note:'Fetches HTTP headers only — quick way to confirm a web server responds.'},
+  {cmd:'netstat -tulnp', out:'tcp  0  0 0.0.0.0:22   0.0.0.0:*  LISTEN  812/sshd\ntcp  0  0 0.0.0.0:80   0.0.0.0:*  LISTEN  0/-', note:'Lists listening ports and the processes bound to them.'},
+  {cmd:'ss -tulnp', out:'tcp  LISTEN  0  128  0.0.0.0:22  0.0.0.0:*  users:(("sshd",pid=812))', note:'Modern, faster replacement for netstat.'},
+  {cmd:'ip addr', out:'2: eth0: <BROADCAST,MULTICAST,UP> mtu 1500\n    inet 10.0.0.5/24 brd 10.0.0.255 scope global eth0', note:'Shows network interfaces and assigned IP addresses.'},
+  {cmd:'ip route', out:'default via 10.0.0.1 dev eth0\n10.0.0.0/24 dev eth0 scope link', note:'Displays the routing table, including the default gateway.'},
+  {cmd:'hostnamectl', out:'   Static hostname: oci-linux-01\n         Icon name: computer-vm\n           Chassis: vm', note:'Shows and manages the system hostname and related metadata.'},
+];
+
+const NET_FAILURES = [
+  {id:'dns', label:'DNS Failure', fixCmd:'dig', explain:'A broken /etc/resolv.conf or unreachable DNS server causes name resolution to fail — dig/nslookup confirm it.'},
+  {id:'loss', label:'Packet Loss', fixCmd:'ping -c 3 8.8.8.8', explain:'High latency or dropped packets shown by ping point to a network path or security list issue.'},
+  {id:'gateway', label:'Gateway Failure', fixCmd:'ip route', explain:'A missing or wrong default route means traffic to other networks has nowhere to go.'},
+  {id:'port', label:'Closed Port', fixCmd:'ss -tulnp', explain:'If the expected port (e.g. 80) isn\'t in the listening list, the service isn\'t bound or a security list/firewall is blocking it.'},
+];
+
+const CLI_STEPS_M10 = [
+  {cmd:'oci setup config', out:'Config written to /home/opc/.oci/config\nDone.', note:'Interactive wizard that generates your OCI CLI config and API signing key.'},
+  {cmd:'oci os ns get', out:'{\n  "data": "axqhmxxxexample"\n}', note:'Retrieves your unique Object Storage namespace.'},
+  {cmd:'oci compute instance list', out:'{\n  "data": [\n    {"display-name":"oci-linux-01","lifecycle-state":"RUNNING"}\n  ]\n}', note:'Lists Compute instances visible in the current compartment.'},
+  {cmd:'oci network vcn list', out:'{\n  "data": [\n    {"display-name":"prod-vcn","cidr-block":"10.0.0.0/16"}\n  ]\n}', note:'Lists Virtual Cloud Networks in the compartment.'},
+  {cmd:'oci iam compartment list', out:'{\n  "data": [\n    {"name":"Production"},{"name":"Development"}\n  ]\n}', note:'Lists IAM compartments visible from the root.'},
+  {cmd:'oci os bucket list -ns axqhmxxxexample --compartment-id ocid1.compartment.oc1..aaa', out:'{\n  "data": [\n    {"name":"app-logs"},{"name":"backups"}\n  ]\n}', note:'Lists Object Storage buckets in a compartment/namespace.'},
+  {cmd:'oci iam user list', out:'{\n  "data": [\n    {"name":"AdminUser"},{"name":"opc-cli-user"}\n  ]\n}', note:'Lists IAM users in the tenancy.'},
+  {cmd:'oci compute image list', out:'{\n  "data": [\n    {"display-name":"Oracle-Linux-8.9-2024.05.01-0"}\n  ]\n}', note:'Lists available Compute images, including Oracle Linux.'},
+];
+
+const CLI_TROUBLESHOOT = [
+  {id:'ct1', title:'Invalid Config', scenario:'"oci iam user list" returns "ConfigFileNotFound".', opts:['~/.oci/config is missing or in the wrong path','The internet is down','The tenancy has no users','CLI needs reinstalling'], a:0, ex:'The CLI looks for ~/.oci/config by default — if it\'s missing or misnamed, every command fails immediately.'},
+  {id:'ct2', title:'Wrong Region', scenario:'Commands succeed but return no resources you expect to see.', opts:['The CLI region in config doesn\'t match where resources live','The user has no permissions','The tenancy is suspended','The CLI version is outdated'], a:0, ex:'OCI CLI scopes list calls to the configured region — resources in another region simply won\'t appear.'},
+  {id:'ct3', title:'Authentication Failed', scenario:'"NotAuthenticated: The required information to complete authentication was not provided."', opts:['Fingerprint or key_file path in config is wrong','Object Storage is down','The compartment was deleted','No issue — this is expected'], a:0, ex:'This error almost always traces to a mismatched fingerprint, wrong key_file path, or a public key not uploaded to the OCI user.'},
+  {id:'ct4', title:'Private Key Missing', scenario:'"Private key file not found at ~/.oci/oci_api_key.pem".', opts:['The key_file path in config points to a file that doesn\'t exist locally','The tenancy OCID is wrong','The CLI needs sudo','Region mismatch'], a:0, ex:'key_file must be a valid local path to your private API signing key — if the file was moved/deleted, auth fails.'},
+  {id:'ct5', title:'Expired API Key', scenario:'CLI worked yesterday, now returns "NotAuthenticated" for every call.', opts:['The API signing key may have been deleted/rotated in the OCI Console','Only OCI SDK is affected, not CLI','The internet connection dropped','CLI commands expire every 24 hours by design'], a:0, ex:'If an admin removes/rotates the uploaded public key under the user\'s API Keys, the old local key pair stops authenticating.'},
+  {id:'ct6', title:'Permission Denied', scenario:'CLI authenticates fine, but "oci compute instance launch" returns "NotAuthorizedOrNotFound".', opts:['The user\'s group lacks a policy granting manage on instance-family in that compartment','The CLI is the wrong version','The instance shape doesn\'t exist','Region is misconfigured'], a:0, ex:'Successful authentication just proves identity — authorization (IAM policy) still governs what the user can actually do.'},
+];
+
+const SDK_LANGS = {
+  Python:`import oci
+
+config = oci.config.from_file()
+compute = oci.core.ComputeClient(config)
+
+instances = compute.list_instances(
+    compartment_id=config["tenancy"]
+)
+for i in instances.data:
+    print(i.display_name, i.lifecycle_state)`,
+  Java:`ConfigFileReader.ConfigFile configFile =
+    ConfigFileReader.parseDefault();
+AuthenticationDetailsProvider provider =
+    new ConfigFileAuthenticationDetailsProvider(configFile);
+
+ComputeClient client = ComputeClient.builder().build(provider);
+ListInstancesRequest request = ListInstancesRequest.builder()
+    .compartmentId(compartmentId).build();
+ListInstancesResponse response = client.listInstances(request);`,
+  'Node.js':`const common = require("oci-common");
+const core = require("oci-core");
+
+const provider = new common.ConfigFileAuthenticationDetailsProvider();
+const client = new core.ComputeClient({ authenticationDetailsProvider: provider });
+
+const response = await client.listInstances({ compartmentId });
+response.items.forEach(i => console.log(i.displayName, i.lifecycleState));`,
+  Go:`provider := common.DefaultConfigProvider()
+client, _ := core.NewComputeClientWithConfigurationProvider(provider)
+
+request := core.ListInstancesRequest{CompartmentId: &compartmentId}
+response, _ := client.ListInstances(context.Background(), request)
+for _, i := range response.Items {
+    fmt.Println(*i.DisplayName, i.LifecycleState)
+}`,
+};
+const SDK_RESPONSES = {
+  'List Compute Instances':'{\n  "data": [\n    {"displayName":"oci-linux-01","lifecycleState":"RUNNING"}\n  ]\n}',
+  'List Buckets':'{\n  "data": [\n    {"name":"app-logs"},{"name":"backups"}\n  ]\n}',
+  'List Compartments':'{\n  "data": [\n    {"name":"Production"},{"name":"Development"}\n  ]\n}',
+};
+
+const API_DEBUG_GAME = [
+  {q:'The app throws "AuthenticationException" on every SDK call. First thing to check?', opts:['Whether the config file/keys match what\'s uploaded in the OCI Console','Whether the VCN has internet access','Whether the compartment has enough quota','Whether the SDK version is the newest one'], a:0, ex:'Just like the CLI, SDK authentication failures are almost always a config/key/fingerprint mismatch.'},
+];
+
+const INCIDENTS = [
+  {id:'i1', title:'Server Offline', logs:'systemd: instance unreachable via health check ping', metrics:'CPU: -- | Health check: FAIL', opts:['Instance stopped or network path down — check instance state, then security list','Reboot the OCI Console','Delete the compartment','Ignore, it will self-heal'], a:0},
+  {id:'i2', title:'Disk 100%', logs:'EXT4-fs error: disk /dev/sda1 100% full', metrics:'Disk: 100% | Free: 0.1GB', opts:['Clear old logs/temp files or expand the boot volume','Restart sshd','Change the hostname','Reinstall the OS'], a:0},
+  {id:'i3', title:'CPU 95%', logs:'top: httpd consuming 92% CPU sustained', metrics:'CPU: 95% | Load avg: 6.2', opts:['Identify the runaway process (top/ps) and investigate or restart it','Increase XP manually','Delete the VCN','Disable monitoring'], a:0},
+  {id:'i4', title:'Memory Leak', logs:'OOM killer invoked on process docker (pid 1932)', metrics:'Memory: 98% used', opts:['Restart the leaking service and review its logs for the root cause','Add more users','Disable cron','Change file permissions'], a:0},
+  {id:'i5', title:'SSH Failure', logs:'sshd: Failed password for invalid user root — repeated attempts', metrics:'Failed logins: 214 in 5 min', opts:['Check sshd config/firewall and consider fail2ban or key-only auth','Uninstall sshd','Reboot the whole VCN','Delete the user'], a:0},
+  {id:'i6', title:'Service Crash', logs:'systemd: httpd.service: Failed with result exit-code', metrics:'httpd: failed', opts:['Check journalctl -u httpd and restart the service','Reinstall the OS','Change the hostname','Disable the firewall'], a:0},
+  {id:'i7', title:'Network Timeout', logs:'ping to gateway 10.0.0.1: 100% packet loss', metrics:'Latency: timeout', opts:['Check ip route and the VCN route table/security list','Restart cron','Reinstall docker','Change the SSH key'], a:0},
+  {id:'i8', title:'Permission Denied', logs:'cron: PERMISSION DENIED — /opt/backup.sh not executable', metrics:'Automation Score: dropping', opts:['chmod +x the script and verify ownership with chown','Delete the cron job permanently','Disable the user','Reboot the instance'], a:0},
+  {id:'i9', title:'Apache Down', logs:'systemctl status httpd: inactive (dead)', metrics:'HTTP health check: FAIL', opts:['systemctl start httpd and enable it to survive reboot','Uninstall Apache','Change DNS records','Restart sshd'], a:0},
+  {id:'i10', title:'OCI CLI Failure', logs:'oci iam user list: NotAuthenticated', metrics:'CLI commands failing: 100%', opts:['Verify ~/.oci/config fingerprint and key_file path','Reinstall Oracle Linux','Delete the compartment','Disable IAM'], a:0},
+  {id:'i11', title:'API Authentication Error', logs:'SDK: AuthenticationException on ComputeClient', metrics:'API error rate: 100%', opts:['Confirm the SDK is reading the correct config profile and matching key','Restart cron','Change the VCN CIDR','Disable monitoring'], a:0},
+  {id:'i12', title:'DNS Failure', logs:'dig oraclecloud.com: no answer section', metrics:'Name resolution: FAIL', opts:['Check /etc/resolv.conf and the VCN DNS resolver settings','Change file permissions','Restart docker','Delete the security list'], a:0},
+  {id:'i13', title:'Route Misconfiguration', logs:'ip route: missing default via entry', metrics:'Outbound connectivity: FAIL', opts:['Add/repair the default route in the route table','Restart httpd','Change the hostname','Disable SSH'], a:0},
+  {id:'i14', title:'Wrong Security List', logs:'curl -I http://localhost: connects, but external curl times out', metrics:'External reachability: FAIL', opts:['Open the required ingress port (e.g. 80/443) in the security list','Delete the VCN','Reinstall docker','Change the SSH port to 22'], a:0},
+  {id:'i15', title:'Cron Not Running', logs:'crond: no jobs executed in 24h', metrics:'Automation Score: 0 recent runs', opts:['Check crond service status and crontab syntax','Delete crontab entirely','Disable the network','Change the timezone only'], a:0},
+];
+
+const ACHIEVEMENTS = [
+  {id:'a1', name:'Linux Administrator', ico:'🐧', cond:'Complete Users & Permissions (M3, M4)', check:s=>s.done.has('m3') && s.done.has('m4')},
+  {id:'a2', name:'CLI Explorer', ico:'💻', cond:'Complete Mission 10', check:s=>s.done.has('m10')},
+  {id:'a3', name:'Network Detective', ico:'🌐', cond:'Complete Mission 9', check:s=>s.done.has('m9')},
+  {id:'a4', name:'Service Doctor', ico:'🩺', cond:'Complete Mission 6', check:s=>s.done.has('m6')},
+  {id:'a5', name:'Automation Expert', ico:'⏱', cond:'Complete Mission 7', check:s=>s.done.has('m7')},
+  {id:'a6', name:'Incident Responder', ico:'🚨', cond:'Resolve 5 incidents', check:s=>s.m12.resolved.size>=5},
+  {id:'a7', name:'Cloud Operations Engineer', ico:'☁', cond:'Complete all 12 missions', check:s=>MISSION_ORDER.every(m=>s.done.has(m))},
+  {id:'a8', name:'OCI Professional Ready', ico:'🎓', cond:'Complete everything + strong quiz score', check:s=>MISSION_ORDER.every(m=>s.done.has(m)) && Object.values(s.quizScores).reduce((a,b)=>a+b,0)>=10},
+];
+
+const QUIZZES = {
+  m1:[
+    {q:'Which shape name indicates an "Always Free" eligible Compute instance?', opts:['VM.Standard.E2.1.Micro','VM.Standard3.Flex','BM.DenseIO2.52','VM.GPU3.1'], a:0, ex:'VM.Standard.E2.1.Micro is one of the Always Free eligible shapes for Oracle Linux/Ubuntu instances.'},
+    {q:'What must exist before you can launch a Compute instance into a subnet?', opts:['A VCN with that subnet already created','A running instance in another region','An Object Storage bucket','A dynamic group'], a:0, ex:'Compute instances attach to a pre-existing VCN/subnet — networking is provisioned first.'},
+  ],
+  m2:[
+    {q:'What is the default SSH username for an Oracle Linux OCI image?', opts:['opc','root','ec2-user','ubuntu'], a:0, ex:'Oracle-provided Linux images use "opc" as the default non-root user with sudo rights.'},
+    {q:'What happens if you connect with the wrong private key?', opts:['Permission denied (publickey)','Instant root access','The instance reboots','A new key is generated automatically'], a:0, ex:'SSH rejects the connection with a "Permission denied (publickey)" error when the key doesn\'t match.'},
+  ],
+  m3:[
+    {q:'Which command changes a user\'s password?', opts:['passwd','useradd','chpasswd-user','id'], a:0, ex:'"passwd username" sets or updates a password interactively.'},
+    {q:'What does "id" show?', opts:['UID, GID, and group memberships','Only the username','Disk usage','Running processes'], a:0, ex:'"id" prints the numeric UID/GID plus all group memberships for a user.'},
+  ],
+  m4:[
+    {q:'In permission "rwxr-xr--", what can "others" do?', opts:['Read only','Read and write','Execute only','Nothing'], a:0, ex:'The last triad "r--" means others have read-only access.'},
+    {q:'Which command changes file ownership to a different user?', opts:['chown','chmod','chgrp','passwd'], a:0, ex:'chown changes the owning user (and optionally group); chmod changes permission bits; chgrp changes only the group.'},
+  ],
+  m5:[
+    {q:'Which command installs a package on Oracle Linux 8/9?', opts:['dnf install <pkg>','apt-get install <pkg>','yum-only install <pkg>','pkg add <pkg>'], a:0, ex:'Oracle Linux 8+ uses DNF (apt-get is Debian/Ubuntu-specific).'},
+    {q:'What does "rpm -qa" do?', opts:['Lists all installed packages','Installs a package','Removes all packages','Updates the kernel'], a:0, ex:'"rpm -qa" queries (-q) all (-a) installed RPM packages.'},
+  ],
+  m6:[
+    {q:'Which command makes a service start automatically on boot?', opts:['systemctl enable <service>','systemctl start <service>','systemctl status <service>','systemctl mask <service>'], a:0, ex:'"enable" configures autostart at boot; "start" only starts it for the current session.'},
+    {q:'Where would you look for a failed service\'s detailed logs?', opts:['journalctl -u <service>','/etc/passwd','crontab -l','ip route'], a:0, ex:'journalctl -u <service> shows the systemd journal entries scoped to that unit.'},
+  ],
+  m7:[
+    {q:'In cron syntax "0 2 * * *", what does the "*" in position 3 mean?', opts:['Every day of the month','Only the 1st','Never runs','Only weekends'], a:0, ex:'Each "*" means "every value" for that field — here, every day of the month.'},
+    {q:'What are the 5 fields in a standard crontab entry, in order?', opts:['Minute Hour Day Month Weekday','Second Minute Hour Day Month','Hour Minute Day Weekday Month','Year Month Day Hour Minute'], a:0, ex:'Standard cron order is: minute, hour, day-of-month, month, day-of-week.'},
+  ],
+  m8:[
+    {q:'Which log file typically records authentication/SSH events on Oracle Linux?', opts:['/var/log/secure','/var/log/dmesg','/var/log/cron','/var/log/messages only'], a:0, ex:'/var/log/secure holds authentication-related events, including SSH login attempts.'},
+    {q:'"journalctl -xe" is most useful for:', opts:['Viewing the most recent, detailed systemd journal entries with explanations','Editing crontabs','Listing installed packages','Changing file permissions'], a:0, ex:'-x adds explanatory help text and -e jumps to the end (most recent) entries.'},
+  ],
+  m9:[
+    {q:'Which tool shows the path (hops) packets take to a destination?', opts:['traceroute','ping','curl','ip addr'], a:0, ex:'traceroute reveals each intermediate router hop; ping only confirms reachability and latency.'},
+    {q:'"ss -tulnp" without expected output on port 80 most likely means:', opts:['No service is currently listening on port 80','DNS is broken','The gateway is down','SSH is misconfigured'], a:0, ex:'ss/netstat list bound listening ports — an absent port 80 entry means nothing is serving HTTP yet.'},
+  ],
+  m10:[
+    {q:'Which file does the OCI CLI read credentials from by default?', opts:['~/.oci/config','/etc/oci.conf','~/.ssh/config','~/.aws/credentials'], a:0, ex:'OCI CLI defaults to ~/.oci/config unless --config-file overrides it.'},
+    {q:'"oci iam compartment list" with no results in a known-populated tenancy suggests:', opts:['Wrong region or compartment scope in the request','The CLI is uninstalled','The user has too much access','Object Storage is down'], a:0, ex:'List calls are scoped by region/compartment — mismatches return empty results, not errors.'},
+  ],
+  m11:[
+    {q:'What does oci.config.from_file() do in the Python SDK?', opts:['Loads the same ~/.oci/config used by the CLI','Creates a new compartment','Installs the SDK','Starts a VM'], a:0, ex:'The SDK reuses the standard OCI config file/profile format shared with the CLI.'},
+    {q:'An SDK call throws AuthenticationException. Most likely cause?', opts:['Config/key/fingerprint mismatch, same as CLI auth issues','The SDK version is too new','Python is the wrong language','The VCN has no internet gateway'], a:0, ex:'SDK authentication uses the identical credential model as the CLI — same root causes apply.'},
+  ],
+  m12:[
+    {q:'During incident response, what should you check first for a "Server Offline" alert?', opts:['Instance state and basic reachability (ping/health check)','Immediately delete the instance','Change the SSH port','Increase the boot volume size'], a:0, ex:'Confirm the instance is actually running and reachable before diagnosing deeper layers.'},
+  ],
+};
+
+
+/* ================= STATE ================= */
+const STATE = {
+  view:'home', xp:0, done:new Set(),
+  quizScores:{}, quizAnswered:{}, achUnlocked:new Set(),
+  health:{cpu:22, mem:35, disk:40, net:98},
+  opsScore:0, security:60, automation:0, reliability:70,
+  cliCount:0, selectedChip:null,
+  m1:{state:'idle'},
+  m2:{loggedIn:false, attempts:0},
+  m3:{created:{}, cmdsRun:{}},
+  m4:{owner:{r:1,w:1,x:0}, group:{r:1,w:0,x:0}, others:{r:0,w:0,x:0}, target:{r:1,w:1,x:1,gr:1,gw:0,gx:1,or:1,ow:0,ox:0}, fixed:false},
+  m5:{installed:{}},
+  m6:{services:Object.assign({}, SERVICES_INIT), crashed:null, repairedCount:0},
+  m7:{built:{}},
+  m8:{investigated:{}, flaggedTotal:0},
+  m9:{ran:{}, failureActive:null, diagnosed:{}, fixed:{}},
+  m10:{step:0, history:[]},
+  m10ct:{},
+  m11:{lang:'Python', executed:{}},
+  m12:{resolved:new Set(), active:null},
+};
+
+function isUnlocked(id){
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx<=0) return true;
+  return STATE.done.has(MISSION_ORDER[idx-1]);
+}
+function rankFor(xp){
+  if(xp>=1400) return 'Cloud Operations Engineer';
+  if(xp>=900) return 'Senior Ops Engineer';
+  if(xp>=500) return 'Ops Engineer';
+  if(xp>=150) return 'Associate Engineer';
+  return 'Junior Engineer';
+}
+function addXP(n, label){
+  STATE.xp = Math.max(0, STATE.xp + n);
+  document.getElementById('xpDisplay').textContent = STATE.xp;
+  document.getElementById('rankChip').textContent = rankFor(STATE.xp);
+  toast(n>=0?'xp':'err', (n>=0?'+':'')+n+' XP', label||'');
+  checkAchievements();
+}
+function toast(type, title, msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const ico = type==='xp' ? '⭐' : type==='ok' ? '✅' : type==='err' ? '⛔' : 'ℹ';
+  el.innerHTML = `<div class="t-ico">${ico}</div><div><b>${title}</b><span>${msg||''}</span></div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+function completeMission(id, xp){
+  if(STATE.done.has(id)) return;
+  STATE.done.add(id);
+  STATE.opsScore += 10;
+  STATE.reliability = Math.min(100, STATE.reliability+3);
+  addXP(xp, MISSIONS.find(m=>m.id===id).title + ' complete');
+  toast('ok','Mission Complete', MISSIONS.find(m=>m.id===id).title);
+  renderSidebar();
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx>=0 && idx<MISSION_ORDER.length-1){
+    setTimeout(()=>toast('info','Next mission unlocked', MISSIONS[idx+1].title), 900);
+  }
+}
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!STATE.achUnlocked.has(a.id) && a.check(STATE)){
+      STATE.achUnlocked.add(a.id);
+      setTimeout(()=>toast('ok','Achievement Unlocked 🏆', a.name), 600);
+    }
+  });
+}
+
+/* ================= NAV ================= */
+function renderSidebar(){
+  const groups = {main:'Overview', missions:'Mission Track', extra:'Beyond the Labs'};
+  let html = '';
+  Object.keys(groups).forEach(g=>{
+    html += `<h4>${groups[g]}</h4>`;
+    NAV.filter(n=>n.group===g).forEach(n=>{
+      let locked=false, done=false;
+      if(MISSION_ORDER.includes(n.id)){ locked=!isUnlocked(n.id); done=STATE.done.has(n.id); }
+      html += `<div class="nav-item ${STATE.view===n.id?'active':''} ${locked?'locked':''} ${done?'done':''}"
+        onclick="${locked?'':`setView('${n.id}')`}">
+        <span class="n-ico">${done?'✓':n.ico}</span>${n.label}
+        ${locked?'<span class="nav-badge">🔒</span>':''}
+      </div>`;
+    });
+  });
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  html += `<div class="progress-mini"><div class="lbl"><span>Mission Progress</span><span>${pct}%</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
+  document.getElementById('sidebar').innerHTML = html;
+}
+function setView(id){
+  STATE.view = id;
+  const nav = NAV.find(n=>n.id===id);
+  document.getElementById('crumbCurrent').textContent = nav ? nav.label : id;
+  renderSidebar();
+  renderMain();
+  const mainEl = document.getElementById('main');
+  if(mainEl.scrollIntoView) mainEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderMain(){
+  const map = {
+    home:renderHome, missionmap:renderMissionMap,
+    m1:renderM1, m2:renderM2, m3:renderM3, m4:renderM4, m5:renderM5, m6:renderM6,
+    m7:renderM7, m8:renderM8, m9:renderM9, m10:renderM10, m11:renderM11, m12:renderM12,
+    achievements:renderAchievements, capstone:renderCapstone,
+  };
+  const fn = map[STATE.view] || renderHome;
+  document.getElementById('main').innerHTML = `<div class="view active">${fn()}</div>`;
+  afterRenderHooks[STATE.view] && afterRenderHooks[STATE.view]();
+}
+const afterRenderHooks = {};
+
+function healthBar(label, val, colorVar){
+  return `<div class="health-meter"><div class="hm-lbl"><span>${label}</span><span>${val}%</span></div>
+    <div class="hm-track"><div class="hm-fill" style="width:${val}%; background:var(${colorVar});"></div></div></div>`;
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  const nextMission = MISSIONS[STATE.done.size];
+  return `
+  <div class="section-head">
+    <div class="eyebrow">OCI Operations Professional · 1Z0-1067-26 · Day 3 Lab</div>
+    <h1 class="page-title">Linux Administration + OCI CLI + OCI SDK</h1>
+    <p class="page-sub">You've just joined ABC Corporation as a Junior Cloud Operations Engineer. A production Oracle Linux server needs to be provisioned, secured, and kept healthy.</p>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-orange">XP</div><h2 style="margin-top:10px;font-size:24px;">${STATE.xp}</h2></div>
+    <div class="card"><div class="pill pill-blue">Rank</div><h2 style="margin-top:10px;font-size:17px;">${rankFor(STATE.xp)}</h2></div>
+    <div class="card"><div class="pill pill-green">Missions</div><h2 style="margin-top:10px;font-size:24px;">${STATE.done.size}/12</h2></div>
+    <div class="card"><div class="pill pill-red">Ops Score</div><h2 style="margin-top:10px;font-size:24px;">${STATE.opsScore}</h2></div>
+  </div>
+  <div class="grid grid-2" style="margin-bottom:16px;">
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Server Health</h4>
+      ${healthBar('CPU', STATE.health.cpu, '--blue')}
+      ${healthBar('Memory', STATE.health.mem, '--purple')}
+      ${healthBar('Disk', STATE.health.disk, '--orange')}
+      ${healthBar('Network', STATE.health.net, '--green')}
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Scores</h4>
+      ${healthBar('Security Score', STATE.security, '--red')}
+      ${healthBar('Automation Score', STATE.automation, '--blue')}
+      ${healthBar('Reliability Score', STATE.reliability, '--green')}
+      <div class="tag-list" style="margin-top:8px;">
+        <span class="pill pill-gray">CLI commands executed: ${STATE.cliCount}</span>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="text-align:center; padding:40px 24px; background:linear-gradient(180deg, var(--red-glow), var(--panel));">
+    <div style="font-size:13px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Current Mission</div>
+    <h2 style="font-size:21px; margin-bottom:10px;">${nextMission ? 'Mission '+nextMission.num+' — '+nextMission.title : 'All Missions Complete!'}</h2>
+    <p class="page-sub" style="margin:0 auto 20px;">Running services: ${Object.entries(STATE.m6.services).filter(([,v])=>v==='running').map(([k])=>k).join(', ') || 'none yet'}</p>
+    <button class="btn btn-primary" onclick="setView('missionmap')">🚀 Start Mission</button>
+  </div>`;
+}
+
+/* ================= MISSION MAP ================= */
+function renderMissionMap(){
+  let nodes = MISSIONS.map(m=>{
+    const locked = !isUnlocked(m.id); const done = STATE.done.has(m.id); const current = !locked && !done;
+    return `<div class="m-node ${locked?'locked':''} ${done?'done':''} ${current?'current':''}" onclick="${locked?'':`setView('${m.id}')`}">
+      <div class="m-num">${done?'✓':m.num}</div><h4>${m.title}</h4><p>${m.desc}</p>
+      <div class="m-xp">⭐ ${m.xp} XP</div>${locked?'<div class="pill pill-gray" style="margin-top:6px;">🔒 Locked</div>':''}
+    </div>`;
+  }).join('');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission Map</div><h1 class="page-title">12 Missions to Cloud Operations Mastery</h1>
+  <p class="page-sub">Complete missions in order — each one unlocks the next.</p></div>
+  <div class="mission-map"><div class="mission-track">${nodes}</div></div>`;
+}
+
+/* ================= M1: PROVISION VM ================= */
+function renderM1(){
+  const done = STATE.done.has('m1');
+  const st = STATE.m1.state;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 1 · 100 XP</div><h1 class="page-title">Provision an Oracle Linux VM</h1>
+  <p class="page-sub">Configure and launch a Compute instance exactly as you would in the real OCI Console.</p></div>
+  <div class="two-col">
+    <div class="card">
+      <div class="field"><label>Image</label><select id="m1image"><option>Oracle Linux 8.9</option><option>Oracle Linux 9.3</option></select></div>
+      <div class="field"><label>Shape</label><select id="m1shape"><option>VM.Standard.E2.1.Micro (Always Free)</option><option>VM.Standard3.Flex</option></select></div>
+      <div class="field"><label>VCN</label><select id="m1vcn"><option>prod-vcn (10.0.0.0/16)</option></select></div>
+      <div class="field"><label>Subnet</label><select id="m1subnet"><option>public-subnet-1</option><option>private-subnet-1</option></select></div>
+      <div class="field"><label>SSH Key (public key paste)</label><input id="m1key" placeholder="ssh-rsa AAAAB3NzaC1yc2E..."></div>
+      <div class="field"><label>Boot Volume Size (GB)</label><input id="m1boot" value="50"></div>
+      <div class="field"><label>Availability Domain</label><select id="m1ad"><option>AD-1</option><option>AD-2</option><option>AD-3</option></select></div>
+      <div class="field"><label>Fault Domain</label><select id="m1fd"><option>FD-1</option><option>FD-2</option><option>FD-3</option></select></div>
+      ${!done ? `<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="launchM1()">🚀 Launch Instance</button>` : `<button class="btn btn-ghost" style="width:100%;justify-content:center;" onclick="setView('missionmap')">Continue</button>`}
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:12px;">Instance State</h4>
+      <div id="m1stateBox" style="text-align:center; padding:30px 0;">
+        <div class="pill ${st==='running'?'pill-green':st==='idle'?'pill-gray':'pill-orange'}" style="font-size:14px; padding:10px 18px;">${st==='idle'?'Not launched':st.toUpperCase()}</div>
+      </div>
+      <div class="info-box">💡 Provisioning → Starting → Running is the real OCI lifecycle for a new Compute instance.</div>
+    </div>
+  </div>
+  ${st==='running' && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m1',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m1') : ''}`;
+}
+function launchM1(){
+  const key = document.getElementById('m1key').value.trim();
+  if(!key){ toast('err','SSH key required','Paste a public key to secure access.'); return; }
+  STATE.m1.state = 'provisioning';
+  renderMain();
+  toast('info','Provisioning…','Allocating compute resources');
+  setTimeout(()=>{ STATE.m1.state='starting'; renderMain(); toast('info','Starting…','Booting Oracle Linux'); },900);
+  setTimeout(()=>{ STATE.m1.state='running'; renderMain(); addXP(10,'Instance is RUNNING'); },1900);
+}
+
+/* ================= M2: SSH LOGIN ================= */
+function renderM2(){
+  const done = STATE.done.has('m2');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 2 · 90 XP</div><h1 class="page-title">SSH Login</h1>
+  <p class="page-sub">Connect to your new instance using SSH key-based authentication.</p></div>
+  <div class="terminal" id="m2term">
+    <div class="line comment"># Public IP: 129.80.12.44 · user: opc</div>
+  </div>
+  <div class="field" style="max-width:420px; margin-top:14px;"><label>Which private key will you use?</label>
+    <select id="m2keychoice"><option value="correct">id_rsa (matches the uploaded public key)</option><option value="wrong">old_key.pem (unrelated key)</option></select></div>
+  <button class="btn btn-primary" onclick="attemptSSH()">Connect via SSH</button>
+  ${done ? renderQuizBlock('m2') : ''}
+  <div class="tip-box" style="margin-top:14px;">🎓 Best practice: disable password auth and use key-only SSH (PasswordAuthentication no in sshd_config).</div>`;
+}
+function attemptSSH(){
+  const choice = document.getElementById('m2keychoice').value;
+  const term = document.getElementById('m2term');
+  term.innerHTML += `<div class="line"><span class="prompt">$</span> ssh -i ${choice==='correct'?'id_rsa':'old_key.pem'} opc@129.80.12.44</div>`;
+  STATE.m2.attempts++;
+  if(choice==='correct'){
+    term.innerHTML += `<div class="line out">Last login: Thu Jul 30 06:00:00 2026 from 10.0.0.5\n[opc@oci-linux-01 ~]$</div>`;
+    STATE.m2.loggedIn = true;
+    toast('ok','Login successful','SSH key authentication verified');
+    if(!STATE.done.has('m2')){ completeMission('m2',90); }
+    renderMain();
+  } else {
+    term.innerHTML += `<div class="line errline">Permission denied (publickey).</div>`;
+    toast('err','Permission denied','That key doesn\'t match the one on the instance.');
+  }
+  term.scrollTop = term.scrollHeight;
+}
+
+/* ================= M3: LINUX USERS ================= */
+function renderM3(){
+  const done = STATE.done.has('m3');
+  const createdCount = Object.keys(STATE.m3.created).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 3 · 100 XP</div><h1 class="page-title">Linux User Management</h1>
+  <p class="page-sub">Practice useradd, passwd, id, whoami, groups, su, and sudo — then create developer, tester, and admin.</p></div>
+  <div class="chip-row">${M3_COMMANDS.map(c=>`<button class="chip" onclick="runM3Cmd('${c}')">${c}</button>`).join('')}</div>
+  <div class="terminal" id="m3term"><div class="line comment"># Click a command chip above, or create a user below.</div></div>
+  <div class="two-col" style="margin-top:16px;">
+    <div class="card">
+      <h4 style="margin-bottom:10px;">Create User</h4>
+      <div class="field"><label>Username</label><select id="m3user">${M3_TARGETS.filter(t=>!STATE.m3.created[t.u]).map(t=>`<option value="${t.u}">${t.u}</option>`).join('') || '<option>All created</option>'}</select></div>
+      <button class="btn btn-primary" ${createdCount>=3?'disabled':''} onclick="createM3User()">useradd</button>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:10px;">Users (${createdCount}/3)</h4>
+      ${Object.values(STATE.m3.created).map(u=>`<div class="card" style="padding:10px;margin-bottom:8px;"><b>${u.u}</b> — UID ${u.uid} · GID ${u.gid}<br><span class="page-sub">${u.home}</span></div>`).join('') || '<p class="page-sub">No users yet.</p>'}
+    </div>
+  </div>
+  ${createdCount>=3 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m3',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m3') : ''}`;
+}
+function runM3Cmd(c){
+  const term = document.getElementById('m3term');
+  const users = Object.values(STATE.m3.created);
+  let out = '';
+  if(c==='id') out = users.length ? `uid=${users[0].uid}(${users[0].u}) gid=${users[0].gid}(${users[0].u}) groups=${users[0].gid}(${users[0].u})` : 'id: no users created yet';
+  else if(c==='whoami') out = 'opc';
+  else if(c==='groups') out = users.length ? users.map(u=>u.u).join(' ') : 'opc wheel';
+  else if(c==='passwd') out = users.length ? `Changing password for user ${users[0].u}.\nnew password: ********\npasswd: all authentication tokens updated successfully.` : 'passwd: specify a user first';
+  else if(c==='useradd') out = 'useradd: run via the "Create User" panel below to provision developer/tester/admin.';
+  else if(c==='su') out = users.length ? `su - ${users[0].u}\n[${users[0].u}@oci-linux-01 ~]$` : 'su: no target user yet';
+  else if(c==='sudo') out = 'sudo systemctl restart httpd\n[sudo] password for opc: ********';
+  term.innerHTML += `<div class="line"><span class="prompt">$</span> ${c}</div><div class="line out">${out}</div><div class="line comment"># ${M3_CMD_INFO[c]}</div>`;
+  term.scrollTop = term.scrollHeight;
+  STATE.m3.cmdsRun[c] = true;
+  addXP(5, c+' explained');
+}
+function createM3User(){
+  const sel = document.getElementById('m3user');
+  const u = M3_TARGETS.find(t=>t.u===sel.value);
+  if(!u) return;
+  STATE.m3.created[u.u] = u;
+  toast('ok','User created', `${u.u} · UID ${u.uid} · home ${u.home}`);
+  renderMain();
+}
+
+/* ================= M4: GROUPS & PERMISSIONS ================= */
+function permString(p){
+  return (p.r?'r':'-')+(p.w?'w':'-')+(p.x?'x':'-');
+}
+function chmodNumber(){
+  const m = STATE.m4.owner, g = STATE.m4.group, o = STATE.m4.others;
+  const num = who => (who.r?4:0)+(who.w?2:0)+(who.x?1:0);
+  return ''+num(m)+num(g)+num(o);
+}
+function renderM4(){
+  const done = STATE.done.has('m4');
+  const t = STATE.m4.target;
+  const matches = STATE.m4.owner.r===t.r && STATE.m4.owner.w===t.w && STATE.m4.owner.x===t.x &&
+    STATE.m4.group.r===t.gr && STATE.m4.group.w===t.gw && STATE.m4.group.x===t.gx &&
+    STATE.m4.others.r===t.or && STATE.m4.others.w===t.ow && STATE.m4.others.x===t.ox;
+  if(matches && !STATE.m4.fixed){ STATE.m4.fixed = true; }
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 4 · 110 XP</div><h1 class="page-title">Groups &amp; Permissions</h1>
+  <p class="page-sub">Fix the broken permissions on /opt/backup.sh so it matches the target: owner rwx, group r-x, others r--.</p></div>
+  <div class="card">
+    <div class="tag-list" style="margin-bottom:10px;"><span class="pill pill-blue">chmod ${chmodNumber()}</span><span class="pill pill-gray">${permString(STATE.m4.owner)}${permString(STATE.m4.group)}${permString(STATE.m4.others)} /opt/backup.sh</span>${matches?'<span class="pill pill-green">✓ Matches target</span>':'<span class="pill pill-red">✗ Does not match target (rwxr-xr--)</span>'}</div>
+    <div class="perm-grid">
+      ${['owner','group','others'].map(who=>`
+        <div class="perm-col"><h5>${who}</h5>
+          ${['r','w','x'].map(k=>`<label class="perm-check"><input type="checkbox" ${STATE.m4[who][k]?'checked':''} onchange="toggleM4('${who}','${k}',this.checked)"> ${k}</label>`).join('')}
+        </div>`).join('')}
+    </div>
+  </div>
+  <div class="info-box">💡 chmod uses octal digits: read=4, write=2, execute=1, summed per owner/group/others (e.g. 754 = rwxr-xr--).</div>
+  ${matches && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m4',110); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m4') : ''}`;
+}
+function toggleM4(who, key, checked){
+  STATE.m4[who][key] = checked ? 1 : 0;
+  renderMain();
+}
+
+/* ================= M5: PACKAGE MANAGEMENT ================= */
+function renderM5(){
+  const done = STATE.done.has('m5');
+  const count = Object.keys(STATE.m5.installed).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 5 · 90 XP</div><h1 class="page-title">Package Management with DNF</h1>
+  <p class="page-sub">Install git, httpd, docker, and python3 — watch dependency resolution happen live.</p></div>
+  <div class="grid grid-2">
+    ${PACKAGES.map(p=>`
+      <div class="card">
+        <h4 style="margin-bottom:4px;">${p.name} ${STATE.m5.installed[p.name]?'<span class="pill pill-green">Installed</span>':''}</h4>
+        <p class="page-sub" style="margin-bottom:10px;">${p.desc}</p>
+        <button class="btn btn-ghost btn-sm" ${STATE.m5.installed[p.name]?'disabled':''} onclick="installM5('${p.name}')">dnf install ${p.name}</button>
+        <div id="m5log-${p.name}" style="margin-top:8px;"></div>
+      </div>`).join('')}
+  </div>
+  <div class="tip-box" style="margin-top:16px;">🎓 "dnf update" refreshes all packages; "rpm -qa" lists everything currently installed.</div>
+  ${count>=4 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m5',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m5') : ''}`;
+}
+function installM5(name){
+  const pkg = PACKAGES.find(p=>p.name===name);
+  const log = document.getElementById('m5log-'+name);
+  log.innerHTML = `<div class="terminal" style="min-height:auto; padding:10px;"><div class="line out">Resolving dependencies: ${pkg.deps.join(', ')}...</div></div>`;
+  setTimeout(()=>{
+    STATE.m5.installed[name] = true;
+    toast('ok','Package installed', name);
+    addXP(8, name+' installed');
+    renderMain();
+  }, 700);
+}
+
+/* ================= M6: SERVICE MANAGEMENT ================= */
+function renderM6(){
+  const done = STATE.done.has('m6');
+  const svcNames = Object.keys(STATE.m6.services);
+  const allHealthy = svcNames.every(s=>STATE.m6.services[s]==='running' || s==='docker'); // docker default stopped is fine unless crashed
+  const noneFailed = svcNames.every(s=>STATE.m6.services[s]!=='failed');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 6 · 110 XP</div><h1 class="page-title">Service Management with systemctl</h1>
+  <p class="page-sub">Start, stop, and repair services. A crash can happen any time — you're on call.</p></div>
+  ${svcNames.map(s=>`
+    <div class="service-row">
+      <span class="svc-name">${s}</span>
+      <span class="pill ${STATE.m6.services[s]==='running'?'pill-green':STATE.m6.services[s]==='failed'?'pill-red':'pill-gray'}">${STATE.m6.services[s]}</span>
+      <div class="svc-actions">
+        <button class="btn btn-ghost btn-sm" onclick="svcAction('${s}','start')">start</button>
+        <button class="btn btn-ghost btn-sm" onclick="svcAction('${s}','stop')">stop</button>
+        <button class="btn btn-ghost btn-sm" onclick="svcAction('${s}','restart')">restart</button>
+        <button class="btn btn-ghost btn-sm" onclick="svcAction('${s}','journal')">journalctl</button>
+      </div>
+    </div>`).join('')}
+  <div id="m6journal"></div>
+  <button class="btn btn-ghost" style="margin-top:10px;" onclick="crashM6()">⚠ Simulate random crash</button>
+  <div class="info-box">💡 "enable" ≠ "start": enable configures autostart on boot; start only affects the current session.</div>
+  ${noneFailed && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m6',110); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m6') : ''}`;
+}
+function svcAction(name, action){
+  const s = STATE.m6.services;
+  if(action==='start') s[name]='running';
+  else if(action==='stop') s[name]='stopped';
+  else if(action==='restart'){ s[name]='running'; toast('ok','Restarted', name); STATE.m6.repairedCount++; }
+  else if(action==='journal'){
+    document.getElementById('m6journal').innerHTML = `<div class="terminal"><div class="line out">-- Journal for ${name} --\n${name}.service: Main process exited\n${name}.service: ${s[name]==='failed'?'Failed with result exit-code':'Active and running'}</div></div>`;
+    return;
+  }
+  addXP(5, `systemctl ${action} ${name}`);
+  renderMain();
+}
+function crashM6(){
+  const names = Object.keys(STATE.m6.services);
+  const pick = names[Math.floor(Math.random()*names.length)];
+  STATE.m6.services[pick] = 'failed';
+  toast('err','Service crashed!', pick+' has failed — investigate with journalctl and restart it.');
+  STATE.reliability = Math.max(0, STATE.reliability-5);
+  renderMain();
+}
+
+/* ================= M7: CRON JOBS ================= */
+function renderM7(){
+  const done = STATE.done.has('m7');
+  const builtCount = Object.keys(STATE.m7.built).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 7 · 90 XP</div><h1 class="page-title">Cron Job Builder</h1>
+  <p class="page-sub">Build the correct 5-field cron expression for each scheduled task.</p></div>
+  ${CRON_JOBS.map((j,i)=>{
+    const answered = STATE.m7.built[i];
+    return `<div class="card" style="margin-bottom:12px;">
+      <h4>${j.name} ${answered?(answered==='correct'?'<span class="pill pill-green">✓ Correct</span>':'<span class="pill pill-red">Try again</span>'):''}</h4>
+      <p class="page-sub" style="margin-bottom:10px;">${j.hint}</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input id="cronInput-${i}" placeholder="min hour day month weekday" style="flex:1; min-width:200px; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel2); color:var(--text); font-family:var(--mono);">
+        <button class="btn btn-ghost btn-sm" onclick="checkCron(${i})">Check</button>
+      </div>
+    </div>`;
+  }).join('')}
+  <div class="info-box">💡 Fields in order: minute (0-59), hour (0-23), day-of-month (1-31), month (1-12), weekday (0-6, Sun=0). Use "*" for "every".</div>
+  ${builtCount>=CRON_JOBS.length && Object.values(STATE.m7.built).every(v=>v==='correct') && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m7',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m7') : ''}`;
+}
+function checkCron(i){
+  const val = document.getElementById('cronInput-'+i).value.trim().replace(/\s+/g,' ');
+  const correct = val === CRON_JOBS[i].answer;
+  STATE.m7.built[i] = correct ? 'correct' : 'wrong';
+  if(correct){ addXP(10, CRON_JOBS[i].name+' scheduled'); STATE.automation = Math.min(100, STATE.automation+15); }
+  else toast('err','Not quite', 'Expected format: minute hour day month weekday');
+  renderMain();
+}
+
+/* ================= M8: LOG ANALYSIS ================= */
+function renderM8(){
+  const done = STATE.done.has('m8');
+  const files = Object.keys(LOG_FILES);
+  afterRenderHooks.m8 = ()=>selectLogFile(files[0]);
+  const totalBad = Object.values(LOG_FILES).flat().filter(l=>l.bad).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 8 · 100 XP</div><h1 class="page-title">Log Analysis</h1>
+  <p class="page-sub">Click through each log file and flag the suspicious entries. Found ${STATE.m8.flaggedTotal}/${totalBad}.</p></div>
+  <div class="chip-row">${files.map(f=>`<button class="chip" id="logchip-${f}" onclick="selectLogFile('${f}')">${f}</button>`).join('')}</div>
+  <div class="card" id="logView"></div>
+  ${STATE.m8.flaggedTotal>=totalBad && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m8',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m8') : ''}`;
+}
+function selectLogFile(f){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  const chip = document.getElementById('logchip-'+f); if(chip) chip.classList.add('active');
+  const lines = LOG_FILES[f];
+  document.getElementById('logView').innerHTML = `<h4 style="margin-bottom:10px;">/var/log/${f}</h4>` + lines.map((l,i)=>{
+    const isObj = typeof l === 'object';
+    const text = isObj ? l.text : l;
+    const key = f+'-'+i;
+    const flaggedState = STATE.m8.investigated[key];
+    const cls = flaggedState==='correct' ? 'correct-flag' : flaggedState==='wrong' ? 'flagged' : '';
+    return `<div class="log-line ${cls}" onclick="flagLog('${f}',${i})">${text}</div>`;
+  }).join('');
+}
+function flagLog(f, i){
+  const l = LOG_FILES[f][i];
+  const key = f+'-'+i;
+  if(STATE.m8.investigated[key]) return;
+  if(typeof l === 'object' && l.bad){
+    STATE.m8.investigated[key] = 'correct';
+    STATE.m8.flaggedTotal++;
+    toast('ok','Anomaly found', l.cause);
+    addXP(10, 'Flagged: '+l.cause);
+  } else {
+    STATE.m8.investigated[key] = 'wrong';
+    toast('err','Not suspicious','That line looks routine — keep investigating.');
+  }
+  selectLogFile(f);
+  renderSidebar();
+}
+
+/* ================= M9: NETWORKING ================= */
+function renderM9(){
+  const done = STATE.done.has('m9');
+  const ranCount = Object.keys(STATE.m9.ran).length;
+  afterRenderHooks.m9 = ()=>{ const t=document.getElementById('m9term'); if(t) t.scrollTop = t.scrollHeight; };
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 9 · 110 XP</div><h1 class="page-title">Networking Lab</h1>
+  <p class="page-sub">Run each diagnostic command, then use them to resolve an injected failure.</p></div>
+  <div class="chip-row">${NET_COMMANDS.map((c,i)=>`<button class="chip" onclick="runNetCmd(${i})">${c.cmd.split(' ')[0]}</button>`).join('')}</div>
+  <div class="terminal" id="m9term"><div class="line comment"># Commands run: ${ranCount}/${NET_COMMANDS.length}</div></div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Network Troubleshooting Game</h4>
+  <p class="page-sub" style="margin-bottom:10px;">Scenario: the website is unavailable. Inject a failure, then run the matching command to diagnose it.</p>
+  <div class="chip-row">${NET_FAILURES.map(f=>`<button class="chip ${STATE.m9.failureActive===f.id?'active':''}" onclick="injectFailure('${f.id}')">${f.label}</button>`).join('')}</div>
+  <div id="failureBox"></div>
+  ${ranCount>=NET_COMMANDS.length && Object.keys(STATE.m9.fixed).length>=1 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m9',110); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m9') : ''}`;
+}
+function runNetCmd(i){
+  const c = NET_COMMANDS[i];
+  const term = document.getElementById('m9term');
+  term.innerHTML += `<div class="line"><span class="prompt">$</span> ${c.cmd}</div><div class="line out">${c.out.replace(/\n/g,'<br>')}</div><div class="line comment"># ${c.note}</div>`;
+  term.scrollTop = term.scrollHeight;
+  STATE.m9.ran[c.cmd] = true;
+  if(STATE.m9.failureActive){
+    const f = NET_FAILURES.find(x=>x.id===STATE.m9.failureActive);
+    if(f && c.cmd.startsWith(f.fixCmd.split(' ')[0])){
+      STATE.m9.diagnosed[f.id] = true;
+      document.getElementById('failureBox').innerHTML = `<div class="info-box">✓ Correct diagnostic tool for ${f.label}: ${f.explain}</div>
+        <button class="btn btn-primary btn-sm" onclick="fixFailure('${f.id}')">Apply Fix</button>`;
+    }
+  }
+  addXP(5, c.cmd.split(' ')[0]+' explained');
+  renderSidebar();
+}
+function injectFailure(id){
+  STATE.m9.failureActive = id;
+  const f = NET_FAILURES.find(x=>x.id===id);
+  document.getElementById('failureBox').innerHTML = `<div class="mistake-box">⚠ ${f.label} injected — the site is now unreachable. Run the right diagnostic command above to find out why.</div>`;
+  renderMain();
+}
+function fixFailure(id){
+  STATE.m9.fixed[id] = true;
+  STATE.m9.failureActive = null;
+  toast('ok','Issue resolved', NET_FAILURES.find(x=>x.id===id).label+' fixed');
+  addXP(15,'Network issue resolved');
+  renderMain();
+}
+
+/* ================= M10: OCI CLI ================= */
+function renderM10(){
+  const done = STATE.done.has('m10');
+  const step = STATE.m10.step;
+  afterRenderHooks.m10 = ()=>{ const t=document.getElementById('m10term'); if(t) t.scrollTop = t.scrollHeight; };
+  const ctAnswered = Object.keys(STATE.m10ct).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 10 · 120 XP</div><h1 class="page-title">OCI CLI</h1>
+  <p class="page-sub">Configure and run real OCI CLI commands from this Cloud Shell.</p></div>
+  <div class="terminal" id="m10term">
+    ${STATE.m10.history.map(h=>`<div class="line"><span class="prompt">$</span> ${h.cmd}</div><div class="line out">${h.out.replace(/\n/g,'<br>')}</div><div class="line comment"># ${h.note}</div>`).join('')}
+    ${step<CLI_STEPS_M10.length ? `<div class="line"><span class="prompt">$</span> <span style="color:var(--text-faint);">${CLI_STEPS_M10[step].cmd}</span></div>` : ''}
+  </div>
+  <div style="margin-top:14px;">${step<CLI_STEPS_M10.length ? `<button class="btn btn-primary" onclick="runM10Step()">▶ Run: ${CLI_STEPS_M10[step].cmd.split(' ').slice(0,3).join(' ')}...</button>` : `<span class="pill pill-green">All commands executed</span>`}</div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">CLI Troubleshooting (${ctAnswered}/${CLI_TROUBLESHOOT.length})</h4>
+  ${CLI_TROUBLESHOOT.map(c=>`
+    <div class="card" style="margin-bottom:12px;">
+      <h5 style="margin-bottom:6px;">${c.title} ${STATE.m10ct[c.id]?'<span class="pill pill-green">Solved</span>':''}</h5>
+      <p class="page-sub" style="margin-bottom:10px;">${c.scenario}</p>
+      <div id="ctwrap-${c.id}">
+        ${c.opts.map((o,i)=>`<div class="q-opt" onclick="answerCT('${c.id}',${i})">${o}</div>`).join('')}
+        <div class="q-explain" id="ctex-${c.id}">${c.ex}</div>
+      </div>
+    </div>`).join('')}
+  ${step>=CLI_STEPS_M10.length && ctAnswered>=CLI_TROUBLESHOOT.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m10',120); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m10') : ''}`;
+}
+function runM10Step(){
+  const s = CLI_STEPS_M10[STATE.m10.step];
+  STATE.m10.history.push(s);
+  STATE.m10.step++;
+  STATE.cliCount++;
+  addXP(8, s.cmd.split(' ').slice(0,2).join(' '));
+  renderMain();
+}
+function answerCT(id, idx){
+  const c = CLI_TROUBLESHOOT.find(x=>x.id===id);
+  const container = document.getElementById('ctwrap-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{ o.onclick=null; if(i===c.a) o.classList.add('correct'); else if(i===idx) o.classList.add('incorrect'); });
+  document.getElementById('ctex-'+id).classList.add('show');
+  if(idx===c.a){ if(!STATE.m10ct[id]){ STATE.m10ct[id]=true; addXP(12, c.title+' resolved'); } }
+  else toast('err','Not quite','Check the explanation below.');
+  renderSidebar();
+}
+
+/* ================= M11: OCI SDK ================= */
+function renderM11(){
+  const done = STATE.done.has('m11');
+  const execCount = Object.keys(STATE.m11.executed).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 11 · 120 XP</div><h1 class="page-title">OCI SDK — API Explorer</h1>
+  <p class="page-sub">Choose a language, generate sample code, and execute API calls.</p></div>
+  <div class="chip-row">${Object.keys(SDK_LANGS).map(l=>`<button class="chip ${STATE.m11.lang===l?'active':''}" onclick="setSdkLang('${l}')">${l}</button>`).join('')}</div>
+  <div class="code-block">${SDK_LANGS[STATE.m11.lang]}</div>
+  <div class="chip-row" style="margin-top:14px;">${Object.keys(SDK_RESPONSES).map(a=>`<button class="btn btn-ghost btn-sm" onclick="execSdk('${a}')">Execute: ${a}</button>`).join('')}</div>
+  <div id="sdkResult"></div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">API Debugging Game</h4>
+  ${API_DEBUG_GAME.map((q,qi)=>`
+    <div class="quiz-q">
+      <div class="q-txt">${q.q}</div>
+      ${q.opts.map((o,oi)=>`<div class="q-opt" onclick="answerApiDebug(${qi},${oi})">${o}</div>`).join('')}
+      <div class="q-explain" id="apidebug-ex-${qi}">${q.ex}</div>
+    </div>`).join('')}
+  ${execCount>=3 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m11',120); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m11') : ''}`;
+}
+function setSdkLang(l){ STATE.m11.lang = l; renderMain(); }
+function execSdk(action){
+  STATE.m11.executed[action] = true;
+  document.getElementById('sdkResult').innerHTML = `<div class="code-block" style="margin-top:10px;">${SDK_RESPONSES[action]}</div>`;
+  addXP(10, action);
+  renderSidebar();
+}
+function answerApiDebug(qi, oi){
+  const q = API_DEBUG_GAME[qi];
+  document.getElementById('apidebug-ex-'+qi).classList.add('show');
+  if(oi===q.a) addXP(10,'API debugging solved');
+  else toast('err','Not quite','Review the explanation.');
+}
+
+/* ================= M12: INCIDENT RESPONSE ================= */
+function renderM12(){
+  const done = STATE.done.has('m12');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 12 · 150 XP</div><h1 class="page-title">Incident Response Challenge</h1>
+  <p class="page-sub">Live Operations Center — resolve incidents to raise your Ops Score. Resolved: ${STATE.m12.resolved.size}/${INCIDENTS.length}.</p></div>
+  ${INCIDENTS.map(inc=>{
+    const resolved = STATE.m12.resolved.has(inc.id);
+    return `<div class="incident-card ${resolved?'resolved':''}">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4>🚨 ${inc.title}</h4>${resolved?'<span class="pill pill-green">Resolved</span>':'<span class="pill pill-red">Active</span>'}
+      </div>
+      <p class="page-sub" style="margin:8px 0 4px;">Logs: <code>${inc.logs}</code></p>
+      <p class="page-sub" style="margin-bottom:10px;">Metrics: ${inc.metrics}</p>
+      ${!resolved ? `<div id="inc-${inc.id}">${inc.opts.map((o,i)=>`<div class="q-opt" onclick="answerIncident('${inc.id}',${i})">${o}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('')}
+  ${STATE.m12.resolved.size>=10 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m12',150); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m12') : ''}`;
+}
+function answerIncident(id, idx){
+  const inc = INCIDENTS.find(x=>x.id===id);
+  const container = document.getElementById('inc-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{ o.onclick=null; if(i===inc.a) o.classList.add('correct'); else if(i===idx) o.classList.add('incorrect'); });
+  if(idx===inc.a){
+    STATE.m12.resolved.add(id);
+    STATE.opsScore += 15;
+    addXP(15, inc.title+' resolved');
+    toast('ok','Incident resolved', inc.title);
+  } else {
+    addXP(-5, 'Incorrect response to '+inc.title);
+  }
+  renderSidebar();
+  setTimeout(renderMain, 500);
+}
+
+/* ================= ACHIEVEMENTS ================= */
+function renderAchievements(){
+  return `
+  <div class="section-head"><div class="eyebrow">Achievements</div><h1 class="page-title">Trophy Case</h1>
+  <p class="page-sub">${STATE.achUnlocked.size}/${ACHIEVEMENTS.length} unlocked</p></div>
+  <div class="grid grid-4">
+    ${ACHIEVEMENTS.map(a=>{ const u = STATE.achUnlocked.has(a.id);
+      return `<div class="ach-card ${u?'':'locked'}"><div class="ico">${a.ico}</div><h5>${a.name}</h5><p>${u?'Unlocked':a.cond}</p></div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ================= CAPSTONE ================= */
+function renderCapstone(){
+  const allDone = MISSION_ORDER.every(m=>STATE.done.has(m));
+  const checklist = [
+    {label:'SSH access secured', ok:STATE.done.has('m2')},
+    {label:'Users &amp; permissions correct', ok:STATE.done.has('m3') && STATE.done.has('m4')},
+    {label:'Required packages &amp; services running', ok:STATE.done.has('m5') && STATE.done.has('m6')},
+    {label:'Cron automation scheduled', ok:STATE.done.has('m7')},
+    {label:'Logs reviewed, no unresolved anomalies', ok:STATE.done.has('m8')},
+    {label:'Networking &amp; DNS verified', ok:STATE.done.has('m9')},
+    {label:'OCI CLI configured &amp; working', ok:STATE.done.has('m10')},
+    {label:'OCI SDK authenticating successfully', ok:STATE.done.has('m11')},
+    {label:'All incidents resolved', ok:STATE.done.has('m12')},
+  ];
+  return `
+  <div class="section-head"><div class="eyebrow">Final Capstone</div><h1 class="page-title">Enterprise Server Restoration</h1>
+  <p class="page-sub">A broken production Oracle Linux server needs full recovery across Linux, networking, services, CLI, and SDK.</p></div>
+  <div class="card">${checklist.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
+    <span class="pill ${c.ok?'pill-green':'pill-gray'}">${c.ok?'✓':'○'}</span><span>${c.label}</span></div>`).join('')}</div>
+  ${allDone ? `
+  <div class="card" style="text-align:center; margin-top:18px; padding:44px; background:linear-gradient(180deg, rgba(61,220,132,.12), var(--panel));">
+    <div style="font-size:44px;margin-bottom:10px;">🎓</div>
+    <h2 style="margin-bottom:8px;">Mission Complete — Enterprise Server Restored</h2>
+    <p class="page-sub" style="margin-bottom:14px;">Linux Expert · OCI CLI Expert · Cloud Operations Engineer · XP ${STATE.xp}</p>
+    <div class="pill pill-green" style="font-size:13px; padding:8px 16px;">Certification Ready</div>
+  </div>` : `<div class="tip-box" style="margin-top:16px;">Complete all 12 missions to restore the server and unlock your capstone certificate.</div>`}`;
+}
+
+/* ================= QUIZ BLOCK (reused) ================= */
+function renderQuizBlock(missionId){
+  const qs = QUIZZES[missionId];
+  if(!qs) return '';
+  const answered = STATE.quizAnswered[missionId] || {};
+  return `<div class="card" style="margin-top:20px;"><h4 style="margin-bottom:14px;">🎯 Knowledge Check</h4>
+    ${qs.map((q,qi)=>`<div class="quiz-q"><div class="q-txt">${qi+1}. ${q.q}</div>
+      ${q.opts.map((o,oi)=>`<div class="q-opt ${answered[qi]===oi?(oi===q.a?'correct':'incorrect'):''}" onclick="answerQuiz('${missionId}',${qi},${oi})">${o}</div>`).join('')}
+      <div class="q-explain ${answered[qi]!==undefined?'show':''}">${q.ex}</div></div>`).join('')}
+  </div>`;
+}
+function answerQuiz(missionId, qi, oi){
+  if(!STATE.quizAnswered[missionId]) STATE.quizAnswered[missionId] = {};
+  if(STATE.quizAnswered[missionId][qi] !== undefined) return;
+  STATE.quizAnswered[missionId][qi] = oi;
+  const q = QUIZZES[missionId][qi];
+  if(oi===q.a){ STATE.quizScores[missionId] = (STATE.quizScores[missionId]||0)+1; addXP(10,'Correct answer'); }
+  else toast('err','Not quite','Review the explanation.');
+  renderMain();
+}
+
+/* ================= INIT ================= */
+function toggleTheme(){
+  const theme = document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', theme);
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+renderSidebar();
+renderMain();
+window.STATE = STATE; // debug/introspection hook
+Object.assign(window, {QUIZZES, MISSIONS, MISSION_ORDER, NET_COMMANDS, LOG_FILES, CLI_STEPS_M10,
+  CLI_TROUBLESHOOT, INCIDENTS, CRON_JOBS, PACKAGES, SDK_RESPONSES, SDK_LANGS, M3_TARGETS, ACHIEVEMENTS});
+
+</script>
+</body>
+</html>

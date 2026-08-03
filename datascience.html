@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCI Certification MCQ Visualizer</title>
+<style>
+:root{
+  --bg:#0B1220;
+  --bg-elev:#101a2e;
+  --bg-elev-2:#152140;
+  --line: rgba(148,178,255,0.14);
+  --primary:#E53935;
+  --secondary:#FF9800;
+  --success:#4CAF50;
+  --warning:#FFC107;
+  --accent:#00C2FF;
+  --purple:#8E44AD;
+  --text:#E9EEFC;
+  --text-dim:#8C9BC4;
+  --text-faint:#5A6890;
+  --radius:16px;
+  --radius-sm:10px;
+  --font-display: -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-body: -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono: ui-monospace,"SF Mono","Cascadia Code","Consolas",monospace;
+  --anim-speed: 1;
+  --font-scale: 1;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{font-size:16px;}
+body{
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(229,57,53,0.14), transparent 60%),
+    radial-gradient(1000px 600px at 100% 0%, rgba(0,194,255,0.10), transparent 55%),
+    radial-gradient(900px 700px at 50% 120%, rgba(142,68,173,0.12), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:calc(16px * var(--font-scale));
+  min-height:100vh;
+  overflow-x:hidden;
+}
+::selection{background:var(--primary); color:#fff;}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(148,178,255,0.25); border-radius:10px;}
+button{font-family:inherit; cursor:pointer;}
+a{color:inherit;}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;}
+.hidden{display:none !important;}
+
+/* ============ PARTICLE / MESH BACKDROP ============ */
+#particleCanvas{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.55;}
+
+/* ============ HOME SCREEN ============ */
+#homeScreen{
+  position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; padding:40px 20px;
+}
+.home-kicker{
+  font-family:var(--font-mono); letter-spacing:0.35em; text-transform:uppercase;
+  font-size:0.72rem; color:var(--accent); margin-bottom:22px; opacity:0;
+  animation: fadeUp calc(0.6s * var(--anim-speed)) ease forwards;
+}
+.home-title{
+  font-size:clamp(2.4rem, 6vw, 4.6rem); font-weight:800; letter-spacing:-0.03em; line-height:1.04;
+  background:linear-gradient(120deg,#fff 10%,var(--accent) 45%,var(--primary) 80%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  opacity:0; animation: fadeUp calc(0.7s * var(--anim-speed)) ease 0.08s forwards;
+}
+.home-sub{
+  margin-top:18px; max-width:640px; color:var(--text-dim); font-size:1.05rem; line-height:1.6;
+  opacity:0; animation: fadeUp calc(0.7s * var(--anim-speed)) ease 0.18s forwards;
+}
+.readiness-ring-wrap{
+  margin:44px 0 34px; opacity:0; animation: fadeUp calc(0.7s * var(--anim-speed)) ease 0.28s forwards;
+  position:relative; width:190px; height:190px;
+}
+.readiness-ring-wrap svg{transform:rotate(-90deg); filter:drop-shadow(0 0 18px rgba(0,194,255,0.25));}
+.readiness-ring-bg{fill:none; stroke:rgba(148,178,255,0.12); stroke-width:10;}
+.readiness-ring-fg{fill:none; stroke:url(#ringGrad); stroke-width:10; stroke-linecap:round;
+  stroke-dasharray:565.48; stroke-dashoffset:565.48; transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1);}
+.readiness-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.readiness-num{font-size:2.4rem; font-weight:800; font-family:var(--font-mono);}
+.readiness-label{font-size:0.65rem; letter-spacing:0.15em; color:var(--text-dim); text-transform:uppercase; margin-top:2px;}
+.home-cta{
+  opacity:0; animation: fadeUp calc(0.7s * var(--anim-speed)) ease 0.38s forwards;
+  display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+}
+.btn{
+  border:none; border-radius:12px; padding:14px 28px; font-weight:700; font-size:0.95rem;
+  letter-spacing:0.01em; transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  position:relative; overflow:hidden;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{
+  background:linear-gradient(120deg,var(--primary),#ff6b5e); color:#fff;
+  box-shadow:0 10px 30px -8px rgba(229,57,53,0.6);
+}
+.btn-primary:hover{box-shadow:0 14px 36px -6px rgba(229,57,53,0.75); transform:translateY(-2px);}
+.btn-ghost{
+  background:rgba(255,255,255,0.05); color:var(--text); border:1px solid var(--line);
+}
+.btn-ghost:hover{background:rgba(255,255,255,0.09); transform:translateY(-2px);}
+.home-stats{
+  margin-top:54px; display:flex; gap:36px; flex-wrap:wrap; justify-content:center;
+  opacity:0; animation: fadeUp calc(0.7s * var(--anim-speed)) ease 0.48s forwards;
+}
+.home-stat b{display:block; font-family:var(--font-mono); font-size:1.5rem; font-weight:800;}
+.home-stat span{font-size:0.72rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.1em;}
+@keyframes fadeUp{from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:translateY(0);}}
+
+/* ============ APP SHELL ============ */
+#appShell{position:relative; z-index:1; display:flex; min-height:100vh;}
+.sidebar{
+  width:250px; flex-shrink:0; background:rgba(16,26,46,0.75); backdrop-filter:blur(18px);
+  border-right:1px solid var(--line); padding:22px 14px; display:flex; flex-direction:column;
+  gap:4px; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:6px 10px 22px;}
+.brand-mark{
+  width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,var(--primary),var(--secondary));
+  display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem; color:#fff;
+  flex-shrink:0;
+}
+.brand-text{font-weight:800; font-size:0.95rem; letter-spacing:-0.01em; line-height:1.15;}
+.brand-text span{display:block; font-size:0.65rem; color:var(--text-faint); font-weight:600; letter-spacing:0.08em; text-transform:uppercase;}
+.nav-item{
+  display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px;
+  color:var(--text-dim); font-size:0.86rem; font-weight:600; background:none; border:none; text-align:left; width:100%;
+  transition:background .15s, color .15s;
+}
+.nav-item .ic{width:18px; text-align:center; font-size:0.95rem;}
+.nav-item:hover{background:rgba(255,255,255,0.05); color:var(--text);}
+.nav-item.active{background:linear-gradient(90deg, rgba(229,57,53,0.18), rgba(229,57,53,0.02)); color:#fff; box-shadow:inset 3px 0 0 var(--primary);}
+.nav-section-label{font-size:0.62rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-faint); margin:14px 10px 6px;}
+.sidebar-footer{margin-top:auto; padding:10px; font-size:0.7rem; color:var(--text-faint); border-top:1px solid var(--line); padding-top:14px;}
+
+.main{flex:1; min-width:0; padding:26px 34px 60px; max-width:1200px;}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap;}
+.topbar h1{font-size:1.5rem; font-weight:800; letter-spacing:-0.02em;}
+.topbar-sub{color:var(--text-dim); font-size:0.85rem; margin-top:2px;}
+.search-wrap{position:relative; min-width:260px;}
+.search-wrap input{
+  width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--line); border-radius:10px;
+  padding:10px 14px 10px 36px; color:var(--text); font-size:0.85rem;
+}
+.search-wrap::before{content:"🔍"; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:0.8rem; opacity:0.6;}
+.streak-pill{
+  display:flex; align-items:center; gap:6px; background:rgba(255,152,0,0.12); border:1px solid rgba(255,152,0,0.3);
+  padding:8px 14px; border-radius:999px; font-size:0.82rem; font-weight:700; color:var(--secondary);
+}
+.card{
+  background:rgba(21,33,64,0.55); backdrop-filter:blur(14px); border:1px solid var(--line);
+  border-radius:var(--radius); padding:22px;
+}
+.grid{display:grid; gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:1050px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:720px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;} .sidebar{position:fixed; left:-260px; z-index:50; transition:left .2s;} .sidebar.open{left:0;} .main{padding:20px 16px 60px;}}
+
+.stat-card{padding:18px;}
+.stat-card .ic{font-size:1.1rem; opacity:0.8;}
+.stat-card b{display:block; font-family:var(--font-mono); font-size:1.7rem; font-weight:800; margin-top:8px;}
+.stat-card span{font-size:0.74rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em;}
+.stat-card.accent-primary b{color:var(--primary);}
+.stat-card.accent-success b{color:var(--success);}
+.stat-card.accent-warning b{color:var(--warning);}
+.stat-card.accent-accent b{color:var(--accent);}
+
+.section-title{font-size:1rem; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px;}
+.section-title .tag{font-size:0.62rem; background:rgba(0,194,255,0.15); color:var(--accent); padding:3px 8px; border-radius:6px; font-weight:700; letter-spacing:0.06em;}
+
+/* progress bars */
+.pbar{height:8px; border-radius:6px; background:rgba(255,255,255,0.07); overflow:hidden;}
+.pbar > div{height:100%; border-radius:6px; transition:width 1s ease;}
+.topic-row{display:flex; align-items:center; gap:12px; padding:9px 0;}
+.topic-row .name{width:150px; font-size:0.8rem; color:var(--text-dim); flex-shrink:0;}
+.topic-row .pbar{flex:1;}
+.topic-row .pct{width:42px; text-align:right; font-family:var(--font-mono); font-size:0.78rem; font-weight:700;}
+
+/* heatmap */
+.heatmap{display:grid; grid-template-columns:repeat(10,1fr); gap:5px;}
+.heat-cell{aspect-ratio:1; border-radius:5px; background:rgba(255,255,255,0.06);}
+
+/* ============ QUESTION CARD ============ */
+.q-meta{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+.badge{font-size:0.68rem; font-weight:700; padding:5px 10px; border-radius:7px; letter-spacing:0.03em; text-transform:uppercase;}
+.badge-easy{background:rgba(76,175,80,0.15); color:var(--success);}
+.badge-medium{background:rgba(255,193,7,0.15); color:var(--warning);}
+.badge-hard{background:rgba(229,57,53,0.15); color:var(--primary);}
+.badge-topic{background:rgba(0,194,255,0.12); color:var(--accent);}
+.badge-bloom{background:rgba(142,68,173,0.18); color:#c48fe0;}
+.badge-time{background:rgba(255,255,255,0.06); color:var(--text-dim);}
+.q-number{font-family:var(--font-mono); color:var(--text-faint); font-size:0.8rem; margin-bottom:10px;}
+.q-text{font-size:1.18rem; font-weight:700; line-height:1.5; margin-bottom:18px;}
+.q-code{background:#060b16; border:1px solid var(--line); border-radius:10px; padding:14px 16px; font-family:var(--font-mono); font-size:0.82rem; color:#a9e5ff; margin-bottom:18px; overflow-x:auto; white-space:pre;}
+.options{display:flex; flex-direction:column; gap:10px; margin-bottom:18px;}
+.option{
+  display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:12px;
+  background:rgba(255,255,255,0.03); border:1px solid var(--line); text-align:left; color:var(--text);
+  transition:all .15s ease; width:100%; font-size:0.92rem;
+}
+.option:hover:not(.locked){background:rgba(0,194,255,0.06); border-color:rgba(0,194,255,0.35); transform:translateX(3px);}
+.option .letter{width:26px; height:26px; border-radius:7px; background:rgba(255,255,255,0.07); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.78rem; flex-shrink:0; font-family:var(--font-mono);}
+.option.selected{border-color:var(--accent); background:rgba(0,194,255,0.1);}
+.option.selected .letter{background:var(--accent); color:#04202c;}
+.option.correct{border-color:var(--success); background:rgba(76,175,80,0.14); animation:pulseGood calc(0.5s*var(--anim-speed)) ease;}
+.option.correct .letter{background:var(--success); color:#062b08;}
+.option.incorrect{border-color:var(--primary); background:rgba(229,57,53,0.14); animation:shake calc(0.4s*var(--anim-speed)) ease;}
+.option.incorrect .letter{background:var(--primary); color:#fff;}
+.option.locked{cursor:default;}
+@keyframes pulseGood{0%{transform:scale(1);}40%{transform:scale(1.015);}100%{transform:scale(1);}}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+.qc-actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px;}
+.btn-sm{border:1px solid var(--line); background:rgba(255,255,255,0.04); color:var(--text-dim); padding:9px 15px; border-radius:9px; font-size:0.78rem; font-weight:700; transition:all .15s;}
+.btn-sm:hover{background:rgba(255,255,255,0.08); color:var(--text);}
+.btn-sm.active{background:rgba(255,193,7,0.16); color:var(--warning); border-color:rgba(255,193,7,0.4);}
+
+.explain-panel{margin-top:18px; border-top:1px solid var(--line); padding-top:18px; display:none;}
+.explain-panel.show{display:block; animation:fadeUp calc(0.4s*var(--anim-speed)) ease;}
+.explain-block{margin-bottom:14px; padding:14px 16px; border-radius:10px; background:rgba(255,255,255,0.03); border-left:3px solid var(--accent);}
+.explain-block h4{font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent); margin-bottom:6px;}
+.explain-block p{font-size:0.87rem; line-height:1.6; color:var(--text-dim);}
+.explain-block.tip{border-left-color:var(--secondary);} .explain-block.tip h4{color:var(--secondary);}
+.explain-block.trick{border-left-color:var(--purple);} .explain-block.trick h4{color:#c48fe0;}
+.explain-block.trap{border-left-color:var(--primary);} .explain-block.trap h4{color:var(--primary);}
+
+.qc-nav{display:flex; justify-content:space-between; align-items:center; margin-top:22px; gap:12px; flex-wrap:wrap;}
+
+/* palette */
+.palette{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:16px;}
+.pcell{aspect-ratio:1; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,0.03); font-family:var(--font-mono); font-size:0.75rem; font-weight:700; color:var(--text-dim); display:flex; align-items:center; justify-content:center;}
+.pcell.current{outline:2px solid var(--accent);}
+.pcell.answered{background:rgba(76,175,80,0.18); color:var(--success); border-color:rgba(76,175,80,0.4);}
+.pcell.wrong{background:rgba(229,57,53,0.18); color:var(--primary); border-color:rgba(229,57,53,0.4);}
+.pcell.review{background:rgba(255,193,7,0.18); color:var(--warning); border-color:rgba(255,193,7,0.4);}
+.legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:0.72rem; color:var(--text-dim);}
+.legend span{display:inline-flex; align-items:center; gap:6px;}
+.legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+
+/* filters */
+.filter-bar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;}
+.filter-bar select, .filter-bar input[type=text]{
+  background:rgba(255,255,255,0.05); border:1px solid var(--line); color:var(--text);
+  padding:9px 12px; border-radius:9px; font-size:0.8rem;
+}
+.chip{padding:6px 13px; border-radius:999px; font-size:0.76rem; font-weight:700; background:rgba(255,255,255,0.05); border:1px solid var(--line); color:var(--text-dim);}
+.chip.on{background:rgba(229,57,53,0.16); color:var(--primary); border-color:rgba(229,57,53,0.4);}
+
+/* exam timer */
+.timer-box{font-family:var(--font-mono); font-weight:800; font-size:1.15rem; padding:9px 16px; border-radius:10px; background:rgba(229,57,53,0.14); color:var(--primary); border:1px solid rgba(229,57,53,0.35);}
+.timer-box.low{animation:pulseWarn 1s infinite;}
+@keyframes pulseWarn{0%,100%{opacity:1;}50%{opacity:0.55;}}
+
+/* achievements */
+.badge-card{padding:18px; text-align:center; opacity:0.35; filter:grayscale(1);}
+.badge-card.unlocked{opacity:1; filter:none;}
+.badge-card .emoji{font-size:2.2rem; margin-bottom:8px;}
+.badge-card h4{font-size:0.85rem; font-weight:800; margin-bottom:4px;}
+.badge-card p{font-size:0.72rem; color:var(--text-dim);}
+
+/* settings */
+.setting-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--line); gap:20px;}
+.setting-row:last-child{border-bottom:none;}
+.setting-row div h4{font-size:0.88rem; font-weight:700;}
+.setting-row div p{font-size:0.76rem; color:var(--text-dim); margin-top:2px;}
+.switch{position:relative; width:44px; height:24px; background:rgba(255,255,255,0.1); border-radius:999px; border:none; flex-shrink:0;}
+.switch::after{content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .18s;}
+.switch.on{background:var(--success);}
+.switch.on::after{transform:translateX(20px);}
+.range-input{width:140px;}
+
+/* rapid fire */
+.rapid-hero{text-align:center; padding:50px 20px;}
+.rapid-count{font-family:var(--font-mono); font-size:5rem; font-weight:800; color:var(--secondary);}
+.combo{font-size:1.1rem; color:var(--warning); font-weight:800; margin-top:8px;}
+
+/* result screen */
+.result-hero{text-align:center; padding:20px 0 30px;}
+.result-grade{font-size:4rem; font-weight:800; font-family:var(--font-mono);}
+.result-grade.pass{color:var(--success);}
+.result-grade.fail{color:var(--primary);}
+
+/* toast */
+#toast{position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); background:#101a2e; border:1px solid var(--line); padding:12px 22px; border-radius:10px; font-size:0.85rem; font-weight:600; z-index:200; opacity:0; transition:all .25s; box-shadow:0 10px 30px rgba(0,0,0,0.4);}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* canvas charts */
+canvas.chart{width:100%; height:220px; display:block;}
+
+.notes-box{width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--line); border-radius:10px; padding:12px; color:var(--text); font-size:0.82rem; resize:vertical; min-height:70px; font-family:var(--font-body);}
+
+.menu-toggle{display:none; background:none; border:1px solid var(--line); border-radius:8px; padding:8px 11px; color:var(--text);}
+@media(max-width:720px){.menu-toggle{display:block;}}
+
+.empty-state{text-align:center; padding:50px 20px; color:var(--text-dim);}
+.empty-state .emoji{font-size:2.4rem; margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+
+<!-- ============ HOME SCREEN ============ -->
+<section id="homeScreen">
+  <div class="home-kicker">Oracle Cloud Infrastructure &middot; Certification Track</div>
+  <h1 class="home-title">OCI Certification<br>MCQ Visualizer</h1>
+  <p class="home-sub">Practice, revise and simulate the real exam across Networking, Security, Compute, IAM, Data Science and GenAI &mdash; with instant feedback, weak-topic analytics and a certification readiness score.</p>
+
+  <div class="readiness-ring-wrap">
+    <svg width="190" height="190" viewBox="0 0 190 190">
+      <defs>
+        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#00C2FF"/>
+          <stop offset="100%" stop-color="#E53935"/>
+        </linearGradient>
+      </defs>
+      <circle class="readiness-ring-bg" cx="95" cy="95" r="90"/>
+      <circle class="readiness-ring-fg" id="homeRing" cx="95" cy="95" r="90"/>
+    </svg>
+    <div class="readiness-center">
+      <div class="readiness-num" id="homeReadinessNum">0%</div>
+      <div class="readiness-label">Exam Ready</div>
+    </div>
+  </div>
+
+  <div class="home-cta">
+    <button class="btn btn-primary" onclick="enterApp('practice')">▶ Start Practice</button>
+    <button class="btn btn-ghost" onclick="enterApp('exam')">📝 Exam Mode</button>
+    <button class="btn btn-ghost" onclick="enterApp('dashboard')">📊 Dashboard</button>
+  </div>
+
+  <div class="home-stats">
+    <div class="home-stat"><b id="homeStatTotal">0</b><span>Questions</span></div>
+    <div class="home-stat"><b id="homeStatTopics">0</b><span>Topics</span></div>
+    <div class="home-stat"><b id="homeStatSolved">0</b><span>Solved</span></div>
+    <div class="home-stat"><b id="homeStatStreak">0</b><span>Day Streak</span></div>
+  </div>
+</section>
+
+<!-- ============ APP SHELL ============ -->
+<div id="appShell" class="hidden">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">OCI</div>
+      <div class="brand-text">MCQ Visualizer<span>Certification Prep</span></div>
+    </div>
+
+    <div class="nav-section-label">Overview</div>
+    <button class="nav-item" data-view="dashboard"><span class="ic">🏠</span>Dashboard</button>
+
+    <div class="nav-section-label">Practice</div>
+    <button class="nav-item" data-view="practice"><span class="ic">📘</span>Practice Mode</button>
+    <button class="nav-item" data-view="exam"><span class="ic">📝</span>Exam Mode</button>
+    <button class="nav-item" data-view="rapid"><span class="ic">⚡</span>Rapid Fire</button>
+
+    <div class="nav-section-label">Review</div>
+    <button class="nav-item" data-view="bookmarks"><span class="ic">🔖</span>Bookmarks</button>
+    <button class="nav-item" data-view="wrong"><span class="ic">❌</span>Wrong Questions</button>
+    <button class="nav-item" data-view="topicwise"><span class="ic">🗂️</span>Topic Wise</button>
+    <button class="nav-item" data-view="difficulty"><span class="ic">🎚️</span>Difficulty Wise</button>
+
+    <div class="nav-section-label">Insights</div>
+    <button class="nav-item" data-view="statistics"><span class="ic">📊</span>Statistics</button>
+    <button class="nav-item" data-view="achievements"><span class="ic">🏆</span>Achievements</button>
+    <button class="nav-item" data-view="settings"><span class="ic">⚙️</span>Settings</button>
+
+    <div class="sidebar-footer">OCI MCQ Visualizer<br>Offline &middot; No backend &middot; v1.0</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <div>
+        <h1 id="viewTitle">Dashboard</h1>
+        <div class="topbar-sub" id="viewSub">Your certification readiness at a glance</div>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <div class="search-wrap"><input id="globalSearch" type="text" placeholder="Search question, topic or ID…" oninput="onGlobalSearch(this.value)"></div>
+        <div class="streak-pill">🔥 <span id="streakVal">0</span> streak</div>
+      </div>
+    </div>
+
+    <div id="viewRoot"></div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ==========================================================================
+   OCI CERTIFICATION MCQ VISUALIZER — SINGLE FILE APPLICATION
+   ========================================================================== */
+
+/* ---------------------------- QUESTION BANK ---------------------------- */
+const QUESTION_BANK = [
+{id:"OCI-001", day:3, topic:"Networking", subtopic:"VCN Fundamentals", difficulty:"Easy", bloom:"Remember", type:"single", estTime:40,
+ question:"What is the maximum number of VCNs that can be peered locally using Local Peering Gateways (LPG) to a single VCN, by default?",
+ options:["1","5","10","Unlimited, subject to service limits"], correct:3,
+ explanation:"A VCN can have multiple Local Peering Gateways, and the number is governed by Oracle's service limits for the tenancy (default is typically 10, but it is a raisable service limit, not a hard architectural cap).",
+ certTip:"Always check the current service limits page for LPG/DRG attachment counts before designing multi-VCN topologies.",
+ memoryTrick:"LPG = Local, Limits = Liftable (raisable via service limit request).",
+ tags:["VCN","LPG","Peering"], reference:"OCI Networking Service Guide"},
+
+{id:"OCI-002", day:3, topic:"Networking", subtopic:"Security Lists vs NSGs", difficulty:"Medium", bloom:"Understand", type:"single", estTime:60,
+ question:"An architect needs to apply different security rules to two web servers that sit in the same subnet. Which OCI construct should be used?",
+ options:["Security Lists, since they are subnet-wide","Network Security Groups (NSGs), since they attach to the VNIC","Route Tables","Dynamic Routing Gateway"], correct:1,
+ explanation:"Security Lists apply to every VNIC in a subnet, so all instances share the same rules. NSGs attach directly to a VNIC (or set of VNICs), allowing per-instance rule sets even within one subnet.",
+ certTip:"When a question mentions 'different rules for instances in the same subnet', the answer is almost always NSG.",
+ memoryTrick:"Security List = Subnet-wide. NSG = Nic-specific Group.",
+ tags:["NSG","Security List","VNIC"], reference:"OCI Networking Security Guide"},
+
+{id:"OCI-003", day:3, topic:"Networking", subtopic:"VPN Connect", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"Which OCI component terminates a Site-to-Site VPN (IPSec) connection on the Oracle Cloud side?",
+ options:["FastConnect","Dynamic Routing Gateway (DRG)","Service Gateway","Internet Gateway"], correct:1,
+ explanation:"IPSec VPN Connect tunnels terminate on the Dynamic Routing Gateway (DRG), which is the central routing point attached to the VCN for on-premises connectivity (both VPN and FastConnect).",
+ certTip:"DRG is the universal hub for hybrid connectivity — both VPN Connect and FastConnect virtual circuits attach to it.",
+ memoryTrick:"DRG = 'Doorway to the on-premises Real-world Gateway.'",
+ tags:["VPN","DRG","IPSec"], reference:"OCI Hybrid Connectivity Guide"},
+
+{id:"OCI-004", day:3, topic:"Networking", subtopic:"FastConnect", difficulty:"Hard", bloom:"Analyze", type:"single", estTime:70,
+ question:"A customer wants a private, dedicated, low-latency connection to OCI without traversing the public internet, and is willing to work with an Oracle partner for a shared physical circuit. Which FastConnect model fits?",
+ options:["Colocation with Oracle","Partner-provided (via FastConnect Partner)","Third-party provider connection through the public internet","Site-to-Site VPN"], correct:1,
+ explanation:"When a direct colocation isn't feasible, Oracle's FastConnect Partner model lets customers connect via a network service provider or partner that already has a presence at an Oracle FastConnect location, sharing infrastructure while keeping traffic off the public internet.",
+ certTip:"FastConnect has three connectivity models: colocation with Oracle, via a FastConnect partner, or via a third-party provider — know when each applies.",
+ memoryTrick:"No physical presence at Oracle? Use a Partner.",
+ tags:["FastConnect","Hybrid Connectivity"], reference:"OCI FastConnect Guide"},
+
+{id:"OCI-005", day:3, topic:"Networking", subtopic:"VCN Peering", difficulty:"Hard", bloom:"Analyze", type:"single", estTime:75,
+ question:"Two VCNs in different OCI regions need to communicate privately without traversing the internet. Which peering approach is correct?",
+ options:["Local Peering Gateway (LPG)","Remote Peering Gateway (RPG) via DRG","Service Gateway","NAT Gateway"], correct:1,
+ explanation:"Local Peering Gateways only work within the same region. Cross-region private connectivity requires Remote Peering Gateways attached to each VCN's DRG.",
+ certTip:"Same region → LPG. Different region → RPG (always via DRG).",
+ memoryTrick:"'R' in RPG = Regional-crossing, Remote.",
+ tags:["VCN Peering","RPG","DRG"], reference:"OCI Networking Service Guide"},
+
+{id:"OCI-006", day:4, topic:"Identity and Access Management", subtopic:"Policies", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"Which IAM policy statement grants a group full control over compute instances in a specific compartment named 'Production'?",
+ options:["Allow group Admins to manage instances in tenancy","Allow group Admins to manage instance-family in compartment Production","Allow group Admins to read instances in compartment Production","Allow group Admins to use instances in tenancy"], correct:1,
+ explanation:"'manage instance-family' grants full lifecycle control (create, read, update, delete, attach) over compute-related resources, scoped correctly to the Production compartment.",
+ certTip:"'instance-family' is broader than 'instances' alone — it includes instances, images, boot volumes attachments etc.",
+ memoryTrick:"manage > use > read — remember the verb hierarchy.",
+ tags:["IAM","Policy","Compartment"], reference:"OCI IAM Policy Guide"},
+
+{id:"OCI-007", day:4, topic:"Identity and Access Management", subtopic:"Dynamic Groups", difficulty:"Hard", bloom:"Analyze", type:"single", estTime:65,
+ question:"An OCI Function needs permission to read objects from Object Storage. What is the correct IAM approach?",
+ options:["Create a regular user and share its API key with the function","Add the function to a Dynamic Group matched by its resource OCID, then write a policy for that group","Grant the tenancy Administrators group access","Embed the Object Storage credentials in the function code"], correct:1,
+ explanation:"Resources like Functions, Compute instances, or OKE nodes authenticate using Dynamic Groups matched via rules (e.g., resource.type or compartment), avoiding hard-coded credentials entirely.",
+ certTip:"Whenever a question involves a 'resource' (not a human) needing OCI API access, think Dynamic Group + Instance/Resource Principal.",
+ memoryTrick:"Dynamic Group = Devices/resources Group, not people.",
+ tags:["IAM","Dynamic Group","Functions"], reference:"OCI IAM Guide"},
+
+{id:"OCI-008", day:5, topic:"Compute", subtopic:"Instance Types", difficulty:"Easy", bloom:"Remember", type:"single", estTime:35,
+ question:"Which OCI compute shape type allows you to independently customize the number of OCPUs and amount of memory?",
+ options:["Fixed shape","Flexible (Flex) shape","Bare Metal shape only","Dedicated Virtual Machine Host shape"], correct:1,
+ explanation:"Flexible shapes (e.g., VM.Standard.E4.Flex) let customers choose OCPU count and memory independently within defined bounds, unlike fixed shapes with a preset ratio.",
+ certTip:"Flex shapes are the default recommendation in most cost-optimization scenario questions.",
+ memoryTrick:"Flex = Flexible ratio of CPU:Memory.",
+ tags:["Compute","Shapes"], reference:"OCI Compute Guide"},
+
+{id:"OCI-009", day:5, topic:"Compute", subtopic:"Autoscaling", difficulty:"Medium", bloom:"Understand", type:"single", estTime:50,
+ question:"Which OCI service automatically adjusts the number of instances in an instance pool based on a defined metric threshold?",
+ options:["Load Balancer","Autoscaling Configuration","Resource Manager","Health Check Service"], correct:1,
+ explanation:"An Autoscaling Configuration attached to an Instance Pool scales the pool out or in based on performance metrics (CPU, memory) or a schedule.",
+ certTip:"Autoscaling requires an Instance Pool + Instance Configuration to already exist.",
+ memoryTrick:"Pool = the water, Autoscaling = the tap controlling flow.",
+ tags:["Compute","Autoscaling"], reference:"OCI Compute Guide"},
+
+{id:"OCI-010", day:6, topic:"Storage", subtopic:"Block vs Object", difficulty:"Easy", bloom:"Understand", type:"single", estTime:40,
+ question:"Which OCI storage service is best suited for storing unstructured data such as backups, images and log archives, accessible via a REST API?",
+ options:["Block Volume","Object Storage","File Storage","Local NVMe"], correct:1,
+ explanation:"Object Storage is designed for unstructured data at scale, accessed via HTTPS REST APIs, with tiers (Standard, Infrequent Access, Archive) for cost optimization.",
+ certTip:"If the scenario mentions 'REST API access' or 'unlimited scale', think Object Storage.",
+ memoryTrick:"Object Storage = 'Objects on the internet, not attached to a VM.'",
+ tags:["Storage","Object Storage"], reference:"OCI Storage Guide"},
+
+{id:"OCI-011", day:6, topic:"Storage", subtopic:"Storage Tiers", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"A company must retain compliance logs for 7 years but will almost never access them. Which Object Storage tier minimizes cost?",
+ options:["Standard","Infrequent Access","Archive","Auto-Tiering only"], correct:2,
+ explanation:"Archive tier offers the lowest per-GB storage cost, intended for data accessed rarely (e.g., yearly), with a retrieval time trade-off — ideal for long-term compliance retention.",
+ certTip:"Retrieval time increases as storage cost decreases: Standard < Infrequent Access < Archive.",
+ memoryTrick:"Archive = Almost never touched, cheapest to keep.",
+ tags:["Object Storage","Archive Tier","Cost Optimization"], reference:"OCI Storage Guide"},
+
+{id:"OCI-012", day:7, topic:"Database", subtopic:"Autonomous Database", difficulty:"Medium", bloom:"Understand", type:"single", estTime:50,
+ question:"What is a key differentiator of Oracle Autonomous Database compared to a traditional DB System?",
+ options:["It requires manual patching","It self-patches, self-tunes and self-secures using machine learning-driven automation","It only supports NoSQL workloads","It cannot scale OCPUs without downtime"], correct:1,
+ explanation:"Autonomous Database automates provisioning, tuning, patching, backups and scaling using built-in machine learning, minimizing manual DBA operations.",
+ certTip:"Autonomous Database questions often test the four 'self-' pillars: self-driving, self-securing, self-repairing, self-scaling.",
+ memoryTrick:"Autonomous = 'Auto everything.'",
+ tags:["Database","Autonomous Database"], reference:"OCI Database Guide"},
+
+{id:"OCI-013", day:8, topic:"Security", subtopic:"OCI Vault", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"Where should an application team store an encryption key used to protect sensitive data in an OCI database, following best practice?",
+ options:["Hard-coded in application source code","In a plaintext configuration file","In OCI Vault, referenced by OCID at runtime","In an Object Storage bucket with public access"], correct:2,
+ explanation:"OCI Vault provides centralized, hardware security module (HSM) backed key and secret management. Applications reference secrets/keys by OCID and retrieve them securely at runtime.",
+ certTip:"Any question about 'where to store keys/secrets securely' in OCI points to Vault.",
+ memoryTrick:"Vault = Very Auditable Ultra-Locked Trove.",
+ tags:["Security","Vault","Encryption"], reference:"OCI Security Guide"},
+
+{id:"OCI-014", day:8, topic:"Security", subtopic:"Cloud Guard", difficulty:"Hard", bloom:"Analyze", type:"single", estTime:65,
+ question:"Which OCI native service continuously monitors resources for misconfigurations and insecure activity, and can automatically remediate certain issues?",
+ options:["OCI Logging","Cloud Guard","Web Application Firewall","OCI Bastion"], correct:1,
+ explanation:"Cloud Guard uses detector recipes to identify security-related problems across a tenancy (e.g., public buckets, wide-open security lists) and can trigger responder recipes for automatic or user-approved remediation.",
+ certTip:"Cloud Guard = Detect + Responder recipes. Security Advisor and Security Zones are related but distinct.",
+ memoryTrick:"Cloud Guard = 'Guards the Cloud continuously.'",
+ tags:["Security","Cloud Guard"], reference:"OCI Security Guide"},
+
+{id:"OCI-015", day:9, topic:"Monitoring", subtopic:"OCI Monitoring Service", difficulty:"Easy", bloom:"Remember", type:"single", estTime:35,
+ question:"Which OCI service allows you to create alarms that trigger notifications when a metric such as CPU utilization crosses a threshold?",
+ options:["OCI Monitoring","OCI Events","OCI Notifications only","OCI Logging Analytics"], correct:0,
+ explanation:"OCI Monitoring collects metrics from resources and lets you configure Alarms with thresholds; alarms then integrate with the Notifications service to alert via email, SMS, Slack, etc.",
+ certTip:"Monitoring = metrics + alarms. Notifications = the delivery channel. They work together, not interchangeably.",
+ memoryTrick:"Monitoring watches, Notifications talk.",
+ tags:["Monitoring","Alarms"], reference:"OCI Observability Guide"},
+
+{id:"OCI-016", day:9, topic:"Cost Optimization", subtopic:"Budgets", difficulty:"Easy", bloom:"Understand", type:"single", estTime:40,
+ question:"Which OCI feature allows a finance team to set a monthly spending threshold and receive alerts as actual or forecasted spend approaches it?",
+ options:["Cost Analysis","Budgets","Usage Reports","Compartment Quotas"], correct:1,
+ explanation:"Budgets let you define spending thresholds at the tenancy or compartment level and configure alert rules based on actual or forecasted spend percentages.",
+ certTip:"Budgets = proactive alerting. Cost Analysis = retrospective visualization. Know the distinction.",
+ memoryTrick:"Budgets = Before you overspend.",
+ tags:["Cost Optimization","Budgets"], reference:"OCI Cost Management Guide"},
+
+{id:"OCI-017", day:10, topic:"Data Science", subtopic:"OCI Data Science Service", difficulty:"Medium", bloom:"Understand", type:"single", estTime:50,
+ question:"What is the primary purpose of OCI Data Science notebook sessions?",
+ options:["Hosting production web applications","Providing managed, scalable JupyterLab environments for model development","Running relational database queries only","Managing IAM policies"], correct:1,
+ explanation:"Notebook Sessions provide managed JupyterLab compute environments pre-configured with data science libraries, letting teams build, train and evaluate ML models without managing infrastructure.",
+ certTip:"Model Catalog, Model Deployment, and Notebook Sessions are the three core Data Science service building blocks.",
+ memoryTrick:"Notebook = where you write; Model Catalog = where you store; Deployment = where you serve.",
+ tags:["Data Science","Notebook Sessions"], reference:"OCI Data Science Guide"},
+
+{id:"OCI-018", day:10, topic:"GenAI", subtopic:"OCI Generative AI Service", difficulty:"Medium", bloom:"Understand", type:"single", estTime:55,
+ question:"What does the OCI Generative AI service primarily provide?",
+ options:["A managed relational database","Access to pretrained and custom large language models for text generation, summarization and embeddings via API","A container orchestration platform","A VPN gateway"], correct:1,
+ explanation:"OCI Generative AI is a fully managed service offering access to foundation models (including from Cohere and Meta) for tasks like generation, summarization, and semantic search via embeddings, with options to fine-tune on private data.",
+ certTip:"Know that OCI Generative AI supports both on-demand pretrained models and dedicated fine-tuned clusters.",
+ memoryTrick:"GenAI = 'Generate answers, embeddings and insights via API.'",
+ tags:["GenAI","LLM"], reference:"OCI Generative AI Guide"},
+
+{id:"OCI-019", day:11, topic:"MLOps", subtopic:"Model Deployment", difficulty:"Hard", bloom:"Analyze", type:"single", estTime:65,
+ question:"After training a fraud-detection model in OCI Data Science, what is the correct next step to serve real-time predictions via an HTTPS endpoint?",
+ options:["Save the model directly to Object Storage and call it from a Function","Register the model in the Model Catalog, then create a Model Deployment","Attach the model to a Compute instance manually with no versioning","Use Cloud Guard to deploy the model"], correct:1,
+ explanation:"Best practice is to register trained models in the Model Catalog (versioned, governed), then use Model Deployment to expose a managed, autoscaling HTTPS prediction endpoint.",
+ certTip:"Model Catalog = governance & versioning. Model Deployment = real-time serving endpoint. Exam favorites.",
+ memoryTrick:"Catalog stores, Deployment serves.",
+ tags:["MLOps","Model Deployment","Model Catalog"], reference:"OCI Data Science Guide"},
+
+{id:"OCI-020", day:11, topic:"Deployment", subtopic:"Resource Manager", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"Which OCI service enables Infrastructure as Code deployment using Terraform, executed directly within OCI without local tooling?",
+ options:["OCI DevOps","Resource Manager","OCI Functions","Container Engine for Kubernetes"], correct:1,
+ explanation:"Resource Manager is Oracle's managed Terraform service — it stores state, runs plan/apply jobs, and supports Terraform configurations packaged as Stacks, without requiring local Terraform installs.",
+ certTip:"Resource Manager = managed Terraform-as-a-Service. Remember 'Stack' as the core object.",
+ memoryTrick:"Resource Manager 'manages the resources described in code.'",
+ tags:["Deployment","Resource Manager","Terraform"], reference:"OCI DevOps Guide"},
+
+{id:"OCI-021", day:4, topic:"Identity and Access Management", subtopic:"Compartments", difficulty:"Easy", bloom:"Remember", type:"single", estTime:35,
+ question:"What is the primary purpose of an OCI Compartment?",
+ options:["A physical data center location","A logical container to organize and isolate cloud resources for access control and billing","A type of virtual machine","A network routing construct"], correct:1,
+ explanation:"Compartments are logical groupings of resources used to organize, isolate and control access to resources, and to track costs — independent of the physical region/AD.",
+ certTip:"Compartments are logical, not physical — don't confuse with Availability Domains or Regions.",
+ memoryTrick:"Compartment = folder for resources + policy boundary.",
+ tags:["IAM","Compartments"], reference:"OCI IAM Guide"},
+
+{id:"OCI-022", day:3, topic:"Networking", subtopic:"Gateways", difficulty:"Medium", bloom:"Understand", type:"single", estTime:50,
+ question:"Which gateway allows a private subnet to access Oracle services (like Object Storage) without using public IP addresses or the internet?",
+ options:["Internet Gateway","NAT Gateway","Service Gateway","Dynamic Routing Gateway"], correct:2,
+ explanation:"A Service Gateway provides a private path from the VCN to Oracle services (Object Storage, Autonomous Database backups, etc.) without traversing the public internet or requiring a NAT/Internet Gateway.",
+ certTip:"Service Gateway = private route to 'Oracle Services Network' (OSN) only, not general internet access.",
+ memoryTrick:"Service Gateway = Straight line to Oracle Services, nothing else.",
+ tags:["Networking","Service Gateway"], reference:"OCI Networking Service Guide"},
+
+{id:"OCI-023", day:3, topic:"Networking", subtopic:"Load Balancing", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"A stateless application needs Layer 4 (TCP/UDP) load balancing with extremely high throughput and low latency. Which OCI service is the best fit?",
+ options:["OCI Load Balancer (Layer 7)","Network Load Balancer (Layer 4)","API Gateway","Web Application Firewall"], correct:1,
+ explanation:"Network Load Balancer operates at Layer 4, preserving the source IP and providing very high throughput/low latency for TCP/UDP traffic, whereas the standard Load Balancer operates at Layer 7 for HTTP/HTTPS.",
+ certTip:"Layer 7, SSL termination, URL routing → Load Balancer. Layer 4, raw throughput, source IP preservation → Network Load Balancer.",
+ memoryTrick:"NLB = 'No-frills, Lightning-fast, Bare TCP/UDP.'",
+ tags:["Networking","Load Balancer","NLB"], reference:"OCI Networking Service Guide"},
+
+{id:"OCI-024", day:8, topic:"Security", subtopic:"Security Zones", difficulty:"Hard", bloom:"Evaluate", type:"single", estTime:65,
+ question:"A company wants to guarantee that a compartment can never contain a publicly accessible Object Storage bucket, enforced at creation time rather than detected afterward. Which OCI feature should they use?",
+ options:["Cloud Guard detector recipes","Security Zones with a maximum-security recipe","Budgets","Compartment Quotas"], correct:1,
+ explanation:"Security Zones attach security policies to a compartment that block non-compliant actions (like creating a public bucket) at the time of the API call, providing preventive rather than reactive control.",
+ certTip:"Cloud Guard = detect and optionally remediate after the fact. Security Zones = block the action before it happens.",
+ memoryTrick:"Zones = Zero tolerance, blocks upfront.",
+ tags:["Security","Security Zones"], reference:"OCI Security Guide"},
+
+{id:"OCI-025", day:9, topic:"Monitoring", subtopic:"Logging", difficulty:"Medium", bloom:"Understand", type:"single", estTime:50,
+ question:"Which OCI service aggregates and lets you search audit logs, service logs and custom logs in near real time?",
+ options:["OCI Logging","OCI Streaming","OCI Events","OCI Bastion"], correct:0,
+ explanation:"OCI Logging collects Audit logs, service logs (e.g., Load Balancer, Object Storage access logs) and custom logs from applications, making them searchable and exportable, often paired with Logging Analytics for deeper analysis.",
+ certTip:"Audit logging is enabled by default and retained per tenancy policy — a common exam fact.",
+ memoryTrick:"Logging = the diary; Events = the alarm clock; Streaming = the pipe.",
+ tags:["Monitoring","Logging"], reference:"OCI Observability Guide"},
+
+{id:"OCI-026", day:10, topic:"Data Science", subtopic:"Model Catalog", difficulty:"Easy", bloom:"Remember", type:"single", estTime:35,
+ question:"What is stored in the OCI Data Science Model Catalog?",
+ options:["Raw training datasets only","Versioned trained model artifacts along with metadata, provenance and tags","IAM policies","Compute instance images"], correct:1,
+ explanation:"The Model Catalog stores model artifacts with metadata such as hyperparameters, metrics, provenance and taxonomy, enabling governance, versioning and reuse before deployment.",
+ certTip:"Model Catalog entries are prerequisite objects for creating a Model Deployment.",
+ memoryTrick:"Catalog = the shelf of finished models, tagged and versioned.",
+ tags:["Data Science","Model Catalog"], reference:"OCI Data Science Guide"},
+
+{id:"OCI-027", day:6, topic:"Storage", subtopic:"File Storage", difficulty:"Medium", bloom:"Understand", type:"single", estTime:50,
+ question:"Which OCI storage service provides a scalable, network-attached file system supporting the NFS protocol, mountable by multiple compute instances simultaneously?",
+ options:["Block Volume","File Storage Service (FSS)","Object Storage","Local NVMe SSD"], correct:1,
+ explanation:"File Storage Service provides shared, POSIX-compliant NFS file systems that can be mounted concurrently by many instances — unlike Block Volumes, which typically attach to a single instance (unless using multipath/shared for clustered use).",
+ certTip:"Multiple instances needing simultaneous read/write to the same filesystem → File Storage Service.",
+ memoryTrick:"File Storage = Family-Shared System (multiple mounts).",
+ tags:["Storage","File Storage"], reference:"OCI Storage Guide"},
+
+{id:"OCI-028", day:7, topic:"Database", subtopic:"Backup and Recovery", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"An Autonomous Database needs point-in-time recovery to any second within the retention window. Which OCI capability supports this?",
+ options:["Manual export/import only","Automatic backups with point-in-time recovery built into Autonomous Database","Object Storage lifecycle policies","Data Safe masking"], correct:1,
+ explanation:"Autonomous Database automatically performs backups and supports point-in-time recovery within the retention period without requiring manual backup configuration.",
+ certTip:"Autonomous Database backup/recovery is automated by default — no manual RMAN scripting required, a frequent exam distinction from traditional DB Systems.",
+ memoryTrick:"Autonomous = 'Auto-backup, Auto-recover.'",
+ tags:["Database","Backup","Autonomous Database"], reference:"OCI Database Guide"},
+
+{id:"OCI-029", day:11, topic:"Deployment", subtopic:"Container Engine for Kubernetes", difficulty:"Hard", bloom:"Analyze", type:"single", estTime:65,
+ question:"A team wants a fully managed Kubernetes control plane on OCI with no cost for the control plane itself (Basic Cluster). Which service should they use?",
+ options:["Container Engine for Kubernetes (OKE)","OCI Functions","Compute Instance Pools","API Gateway"], correct:0,
+ explanation:"OKE (Container Engine for Kubernetes) is Oracle's managed Kubernetes service; the Basic Cluster tier has no charge for the control plane, while Enhanced Clusters add SLA and extra features for a fee.",
+ certTip:"Know the Basic vs Enhanced OKE cluster distinction, especially around control plane cost and SLA/feature differences.",
+ memoryTrick:"OKE = 'Oracle Kubernetes Engine, control plane managed for you.'",
+ tags:["Deployment","OKE","Kubernetes"], reference:"OCI Container Engine Guide"},
+
+{id:"OCI-030", day:9, topic:"Cost Optimization", subtopic:"Compartment Quotas", difficulty:"Medium", bloom:"Apply", type:"single", estTime:55,
+ question:"A platform team wants to hard-cap the number of VM.Standard2.4 instances that can be launched in the 'Dev' compartment, regardless of budget alerts. What should they configure?",
+ options:["A Budget with a 100% threshold alert","Compartment Quotas policy statements","Cloud Guard detector recipe","A Service Limit increase request"], correct:1,
+ explanation:"Compartment Quotas let administrators write quota policy statements that hard-limit resource counts or shapes within a compartment, enforced at the API level — unlike Budgets, which only alert but don't block.",
+ certTip:"Budgets alert; Quotas enforce. If the scenario needs a hard stop, it's Quotas.",
+ memoryTrick:"Quota = Quit exceeding, enforced.",
+ tags:["Cost Optimization","Quotas"], reference:"OCI Governance Guide"},
+
+{id:"OCI-031", day:8, topic:"Security", subtopic:"WAF", difficulty:"Medium", bloom:"Understand", type:"single", estTime:50,
+ question:"Which OCI service protects internet-facing applications from common web exploits such as SQL injection and cross-site scripting?",
+ options:["Network Security Groups","Web Application Firewall (WAF)","Bastion Service","Vault"], correct:1,
+ explanation:"OCI Web Application Firewall inspects HTTP/HTTPS traffic against OWASP-based rule sets and custom protection rules to block common web application attacks before they reach the origin.",
+ certTip:"WAF operates at the application layer (L7); NSGs/Security Lists operate at the network layer (L3/L4).",
+ memoryTrick:"WAF = Watches Application Frontend traffic.",
+ tags:["Security","WAF"], reference:"OCI Security Guide"},
+
+{id:"OCI-032", day:4, topic:"Identity and Access Management", subtopic:"Federation", difficulty:"Hard", bloom:"Analyze", type:"single", estTime:65,
+ question:"An enterprise wants employees to log in to the OCI Console using their existing Microsoft Entra ID (Azure AD) credentials via single sign-on. What should be configured?",
+ options:["Local IAM users with matching passwords","Identity Federation between OCI IAM and the external identity provider (IdP)","Dynamic Groups","Compartment Quotas"], correct:1,
+ explanation:"Identity Federation lets OCI trust an external Identity Provider (like Microsoft Entra ID/Azure AD, Okta, or any SAML 2.0 IdP) for authentication, enabling SSO without duplicating user credentials in OCI IAM.",
+ certTip:"Federation is SAML 2.0 based; group mappings translate IdP groups into OCI IAM groups for policy assignment.",
+ memoryTrick:"Federation = 'Trusting a Foreign identity provider.'",
+ tags:["IAM","Federation","SSO"], reference:"OCI IAM Guide"},
+];
+
+/* ------------------------------- STATE ---------------------------------- */
+const state = {
+  view: "dashboard",
+  currentSetIds: [],
+  currentIndex: 0,
+  mode: "practice", // practice | exam | rapid
+  answers: {},        // qid -> {selected, correct, timeTaken}
+  bookmarks: new Set(),
+  wrong: new Set(),
+  mastered: new Set(),
+  reviewFlags: new Set(),
+  visited: new Set(),
+  notes: {},
+  history: [],         // solved attempts log for stats/heatmap
+  xp: 0,
+  streak: 3,
+  achievements: new Set(),
+  filters: {topic:"all", difficulty:"all", bloom:"all", search:""},
+  exam: {active:false, duration: 20*60, remaining:0, timerId:null, negativeMarking:false, locked:false},
+  rapid: {active:false, remaining:30, score:0, combo:0, timerId:null, qIndex:0},
+  settings: {fontSize:1, animSpeed:1, sound:false, autoNext:false, shuffle:false, examDuration:20},
+};
+
+const byId = id => QUESTION_BANK.find(q=>q.id===id);
+const allTopics = () => [...new Set(QUESTION_BANK.map(q=>q.topic))];
+const allDifficulties = () => ["Easy","Medium","Hard"];
+
+/* ------------------------------ UTILITIES -------------------------------- */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function shuffleArr(arr){const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;}
+function pct(n,d){ return d===0? 0 : Math.round((n/d)*100); }
+function beep(freq=440, dur=0.08){
+  if(!state.settings.sound) return;
+  try{
+    const ctx = beep._ctx || (beep._ctx = new (window.AudioContext||window.webkitAudioContext)());
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = freq; o.type = "sine";
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.06, ctx.currentTime);
+    o.start(); o.stop(ctx.currentTime + dur);
+  }catch(e){}
+}
+
+/* ------------------------------ ANALYTICS --------------------------------- */
+function computeStats(){
+  const total = QUESTION_BANK.length;
+  const solvedIds = Object.keys(state.answers);
+  const solved = solvedIds.length;
+  const correct = solvedIds.filter(id=>state.answers[id].correct).length;
+  const wrongCount = solved - correct;
+  const avgTime = solved ? Math.round(solvedIds.reduce((s,id)=>s+(state.answers[id].timeTaken||0),0)/solved) : 0;
+
+  const topicStats = {};
+  allTopics().forEach(t=>{
+    const qs = QUESTION_BANK.filter(q=>q.topic===t);
+    const done = qs.filter(q=>state.answers[q.id]);
+    const corr = done.filter(q=>state.answers[q.id].correct);
+    topicStats[t] = {total:qs.length, done:done.length, correct:corr.length, acc: pct(corr.length, done.length||1)};
+  });
+  const weak = Object.entries(topicStats).filter(([,v])=>v.done>0).sort((a,b)=>a[1].acc-b[1].acc).slice(0,3).map(x=>x[0]);
+  const strong = Object.entries(topicStats).filter(([,v])=>v.done>0).sort((a,b)=>b[1].acc-a[1].acc).slice(0,3).map(x=>x[0]);
+  const readiness = solved ? Math.round((correct/solved)*Math.min(1, solved/total*1.6)*100) : 0;
+
+  return {total, solved, correct, wrongCount, avgTime, topicStats, weak, strong, readiness: Math.min(100,readiness)};
+}
+
+function checkAchievements(){
+  const s = computeStats();
+  const unlocked = [];
+  const grant = (key)=>{ if(!state.achievements.has(key)){state.achievements.add(key); unlocked.push(key);} };
+  if(s.solved>=1) grant('first_step');
+  if(s.solved>=100) grant('century');
+  if(s.correct>0 && s.correct===s.solved && s.solved>=10) grant('perfect_score');
+  if(state.bookmarks.size>=5) grant('revision_master');
+  if(s.readiness>=80) grant('cert_ready');
+  if(state.rapid.combo>=8) grant('fast_learner');
+  const hr = new Date().getHours();
+  if(hr>=23 || hr<5) grant('night_owl');
+  unlocked.forEach(key=>toast('🏆 Achievement unlocked: '+ACHIEVEMENT_DEFS[key].name));
+}
+
+const ACHIEVEMENT_DEFS = {
+  first_step:{name:"First Step", desc:"Answer your first question", emoji:"🚀"},
+  century:{name:"100 Questions Solved", desc:"Solve 100 questions", emoji:"💯"},
+  perfect_score:{name:"Perfect Score", desc:"10+ correct with zero mistakes", emoji:"⭐"},
+  fast_learner:{name:"Fast Learner", desc:"Hit an 8x combo in Rapid Fire", emoji:"⚡"},
+  night_owl:{name:"Night Owl", desc:"Practice between 11pm–5am", emoji:"🦉"},
+  revision_master:{name:"Revision Master", desc:"Bookmark 5+ questions", emoji:"📌"},
+  cert_ready:{name:"Certification Ready", desc:"Reach 80% readiness score", emoji:"🎓"},
+};
+
+/* ------------------------------ ROUTER ------------------------------------ */
+const VIEW_META = {
+  dashboard:{title:"Dashboard", sub:"Your certification readiness at a glance"},
+  practice:{title:"Practice Mode", sub:"Unlimited time, hints and instant explanations"},
+  exam:{title:"Exam Mode", sub:"Timed simulation with certification-style scoring"},
+  rapid:{title:"Rapid Fire", sub:"Beat the clock, build your combo streak"},
+  bookmarks:{title:"Bookmarks", sub:"Your saved revision folder"},
+  wrong:{title:"Wrong Questions", sub:"Auto-collected mistakes for targeted retry"},
+  topicwise:{title:"Topic Wise", sub:"Browse and drill by OCI domain"},
+  difficulty:{title:"Difficulty Wise", sub:"Browse and drill by difficulty tier"},
+  statistics:{title:"Statistics", sub:"Deep analytics on your preparation"},
+  achievements:{title:"Achievements", sub:"Badges earned on your revision journey"},
+  settings:{title:"Settings", sub:"Personalize the platform"},
+};
+
+function enterApp(view){
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('appShell').classList.remove('hidden');
+  goTo(view || 'dashboard');
+}
+
+function goTo(view){
+  state.view = view;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.view===view));
+  document.getElementById('viewTitle').textContent = VIEW_META[view].title;
+  document.getElementById('viewSub').textContent = VIEW_META[view].sub;
+  document.getElementById('sidebar').classList.remove('open');
+  const renderers = {
+    dashboard: renderDashboard, practice: ()=>renderPracticeLauncher(), exam: ()=>renderExamLauncher(),
+    rapid: ()=>renderRapidLauncher(), bookmarks: renderBookmarks, wrong: renderWrong,
+    topicwise: renderTopicWise, difficulty: renderDifficultyWise, statistics: renderStatistics,
+    achievements: renderAchievements, settings: renderSettings,
+  };
+  (renderers[view]||renderDashboard)();
+}
+document.querySelectorAll('.nav-item').forEach(el=> el.addEventListener('click', ()=>goTo(el.dataset.view)));
+
+function onGlobalSearch(val){
+  state.filters.search = val.trim().toLowerCase();
+  if(!val){ return; }
+  goTo('topicwise');
+}
+
+/* ------------------------------ DASHBOARD ---------------------------------- */
+function renderDashboard(){
+  const s = computeStats();
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `
+    <div class="grid grid-4" style="margin-bottom:20px;">
+      <div class="card stat-card accent-accent"><div class="ic">📚</div><b>${s.total}</b><span>Total Questions</span></div>
+      <div class="card stat-card accent-success"><div class="ic">✅</div><b>${s.solved}</b><span>Solved</span></div>
+      <div class="card stat-card accent-primary"><div class="ic">🎯</div><b>${pct(s.correct,s.solved||1)}%</b><span>Accuracy</span></div>
+      <div class="card stat-card accent-warning"><div class="ic">⏱️</div><b>${s.avgTime}s</b><span>Avg Time / Q</span></div>
+    </div>
+    <div class="grid grid-3" style="align-items:start;">
+      <div class="card" style="grid-column:span 2;">
+        <div class="section-title">Topic Accuracy <span class="tag">${allTopics().length} domains</span></div>
+        ${allTopics().map(t=>{
+          const d = s.topicStats[t];
+          const color = d.acc>=75?'var(--success)': d.acc>=50?'var(--warning)':'var(--primary)';
+          return `<div class="topic-row"><div class="name">${t}</div><div class="pbar"><div style="width:${d.done? d.acc:0}%; background:${color};"></div></div><div class="pct">${d.done? d.acc+'%':'—'}</div></div>`;
+        }).join('')}
+      </div>
+      <div class="card">
+        <div class="section-title">Readiness</div>
+        <div style="display:flex; flex-direction:column; align-items:center; padding:10px 0;">
+          <svg width="140" height="140" viewBox="0 0 140 140" style="transform:rotate(-90deg);">
+            <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(148,178,255,0.12)" stroke-width="10"/>
+            <circle cx="70" cy="70" r="60" fill="none" stroke="url(#ringGrad)" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="${2*Math.PI*60}" stroke-dashoffset="${2*Math.PI*60*(1-s.readiness/100)}" style="transition:stroke-dashoffset 1s ease;"/>
+          </svg>
+          <div style="margin-top:-92px; font-family:var(--font-mono); font-size:1.8rem; font-weight:800;">${s.readiness}%</div>
+          <div style="margin-top:60px; font-size:0.75rem; color:var(--text-dim); text-align:center;">${s.readiness>=80?'You are certification ready 🎓':'Keep practicing weak topics to raise readiness'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="section-title">Weak Topics</div>
+        ${s.weak.length? s.weak.map(t=>`<div class="topic-row"><div class="name">${t}</div><div class="pbar"><div style="width:${s.topicStats[t].acc}%; background:var(--primary);"></div></div><div class="pct">${s.topicStats[t].acc}%</div></div>`).join('') : '<div class="empty-state"><div class="emoji">🙂</div>Solve a few questions to see weak areas.</div>'}
+      </div>
+      <div class="card">
+        <div class="section-title">Strong Topics</div>
+        ${s.strong.length? s.strong.map(t=>`<div class="topic-row"><div class="name">${t}</div><div class="pbar"><div style="width:${s.topicStats[t].acc}%; background:var(--success);"></div></div><div class="pct">${s.topicStats[t].acc}%</div></div>`).join('') : '<div class="empty-state"><div class="emoji">📈</div>No data yet.</div>'}
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="section-title">Revision Heatmap <span class="tag">last ${Math.min(60,QUESTION_BANK.length*2)} activity slots</span></div>
+      <div class="heatmap" id="heatmapGrid"></div>
+    </div>`;
+  const hm = document.getElementById('heatmapGrid');
+  const cells = 60;
+  const hist = state.history.slice(-cells);
+  for(let i=0;i<cells;i++){
+    const h = hist[i];
+    const div = document.createElement('div'); div.className='heat-cell';
+    if(h) div.style.background = h.correct ? 'rgba(76,175,80,0.55)' : 'rgba(229,57,53,0.5)';
+    hm.appendChild(div);
+  }
+}
+
+/* ------------------------------ FILTER BAR --------------------------------- */
+function filterBarHTML(withDifficulty=true, withBloom=true){
+  return `<div class="filter-bar">
+    <select id="fTopic" onchange="applyFilter('topic', this.value)">
+      <option value="all">All Topics</option>
+      ${allTopics().map(t=>`<option value="${t}" ${state.filters.topic===t?'selected':''}>${t}</option>`).join('')}
+    </select>
+    ${withDifficulty?`<select id="fDiff" onchange="applyFilter('difficulty', this.value)">
+      <option value="all">All Difficulty</option>
+      ${allDifficulties().map(d=>`<option value="${d}" ${state.filters.difficulty===d?'selected':''}>${d}</option>`).join('')}
+    </select>`:''}
+    ${withBloom?`<select id="fBloom" onchange="applyFilter('bloom', this.value)">
+      <option value="all">All Bloom Levels</option>
+      ${[...new Set(QUESTION_BANK.map(q=>q.bloom))].map(b=>`<option value="${b}" ${state.filters.bloom===b?'selected':''}>${b}</option>`).join('')}
+    </select>`:''}
+    <input type="text" id="fSearch" placeholder="Search…" value="${state.filters.search||''}" oninput="applyFilter('search', this.value)">
+  </div>`;
+}
+function applyFilter(key,val){ state.filters[key] = key==='search'? val.trim().toLowerCase() : val; renderFilteredList(); }
+function filteredQuestions(){
+  return QUESTION_BANK.filter(q=>{
+    if(state.filters.topic!=='all' && q.topic!==state.filters.topic) return false;
+    if(state.filters.difficulty!=='all' && q.difficulty!==state.filters.difficulty) return false;
+    if(state.filters.bloom!=='all' && q.bloom!==state.filters.bloom) return false;
+    if(state.filters.search){
+      const hay = (q.question+' '+q.topic+' '+q.subtopic+' '+q.id+' '+q.tags.join(' ')).toLowerCase();
+      if(!hay.includes(state.filters.search)) return false;
+    }
+    return true;
+  });
+}
+
+function questionListRow(q){
+  const a = state.answers[q.id];
+  const statusBadge = a ? (a.correct?'<span class="badge badge-easy">Correct</span>':'<span class="badge badge-hard">Wrong</span>') : '<span class="badge badge-time">Unattempted</span>';
+  return `<div class="card" style="padding:16px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:220px;">
+      <div class="q-meta" style="margin-bottom:8px;">
+        <span class="badge badge-${q.difficulty.toLowerCase()}">${q.difficulty}</span>
+        <span class="badge badge-topic">${q.topic}</span>
+        <span class="badge badge-bloom">${q.bloom}</span>
+        ${statusBadge}
+      </div>
+      <div style="font-size:0.92rem; font-weight:600;">${q.question}</div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-sm" onclick="startCustomSet(['${q.id}'])">Practice</button>
+      <button class="btn-sm ${state.bookmarks.has(q.id)?'active':''}" onclick="toggleBookmarkId('${q.id}'); renderFilteredList();">🔖</button>
+    </div>
+  </div>`;
+}
+
+function renderTopicWise(){
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `${filterBarHTML(true,true)}<div id="filteredList"></div>`;
+  renderFilteredList();
+}
+function renderDifficultyWise(){
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `<div class="grid grid-3" style="margin-bottom:18px;">
+    ${allDifficulties().map(d=>{
+      const qs = QUESTION_BANK.filter(q=>q.difficulty===d);
+      const done = qs.filter(q=>state.answers[q.id]);
+      const corr = done.filter(q=>state.answers[q.id].correct);
+      return `<div class="card">
+        <div class="section-title"><span class="badge badge-${d.toLowerCase()}">${d}</span></div>
+        <div style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800;">${qs.length}</div>
+        <div style="font-size:0.76rem; color:var(--text-dim); margin-bottom:12px;">questions &middot; ${done.length} attempted &middot; ${pct(corr.length,done.length||1)}% accuracy</div>
+        <button class="btn-sm" onclick="startCustomSet(${JSON.stringify(qs.map(q=>q.id))})">Practice ${d}</button>
+      </div>`;
+    }).join('')}
+  </div>
+  ${filterBarHTML(true,true)}<div id="filteredList"></div>`;
+  renderFilteredList();
+}
+function renderFilteredList(){
+  const el = document.getElementById('filteredList');
+  if(!el) return;
+  const qs = filteredQuestions();
+  el.innerHTML = qs.length? qs.map(questionListRow).join('') : '<div class="empty-state"><div class="emoji">🔍</div>No questions match these filters.</div>';
+  if(qs.length){
+    el.insertAdjacentHTML('afterbegin', `<div style="margin-bottom:14px;"><button class="btn-sm" onclick="startCustomSet(${JSON.stringify(qs.map(q=>q.id))})">▶ Practice these ${qs.length} questions</button></div>`);
+  }
+}
+
+/* ------------------------------ LAUNCHERS ---------------------------------- */
+function renderPracticeLauncher(){
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `<div class="card" style="margin-bottom:18px;">
+    <div class="section-title">Practice Mode <span class="tag">Unlimited time · Hints · Explanations</span></div>
+    <p style="color:var(--text-dim); font-size:0.86rem; margin-bottom:16px;">Select a scope, then work through questions at your own pace with instant feedback, hints and full explanations after every answer.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="startCustomSet(${JSON.stringify(QUESTION_BANK.map(q=>q.id))})">▶ All Questions (${QUESTION_BANK.length})</button>
+      <button class="btn btn-ghost" onclick="startCustomSet(${JSON.stringify(shuffleArr(QUESTION_BANK.map(q=>q.id)))})">🔀 Shuffled Mix</button>
+      <button class="btn btn-ghost" onclick="goTo('topicwise')">🗂️ Choose by Topic</button>
+    </div>
+  </div>
+  <div id="qContainer"></div>`;
+}
+function renderExamLauncher(){
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `<div class="card">
+    <div class="section-title">Exam Simulator <span class="tag">Timed · No hints · Locked after submit</span></div>
+    <p style="color:var(--text-dim); font-size:0.86rem; margin-bottom:18px;">Simulates real certification conditions: a countdown timer, an optional negative-marking scheme, a question palette for navigation, and a full score report with pass/fail and readiness estimate at the end.</p>
+    <div class="grid grid-3" style="margin-bottom:18px;">
+      <div>
+        <label style="font-size:0.76rem; color:var(--text-dim);">Duration (minutes)</label><br>
+        <select id="examDurSel" style="margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--line); color:var(--text); padding:9px 12px; border-radius:9px; width:100%;">
+          <option value="10">10</option><option value="20" selected>20</option><option value="30">30</option><option value="45">45</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.76rem; color:var(--text-dim);">Question Count</label><br>
+        <select id="examCountSel" style="margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--line); color:var(--text); padding:9px 12px; border-radius:9px; width:100%;">
+          <option value="10">10</option><option value="20" selected>20</option><option value="${QUESTION_BANK.length}">All (${QUESTION_BANK.length})</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.76rem; color:var(--text-dim);">Negative Marking</label><br>
+        <button class="switch" id="negMarkSwitch" style="margin-top:10px;" onclick="this.classList.toggle('on')"></button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="startExam()">📝 Begin Exam</button>
+  </div>
+  <div id="qContainer"></div>`;
+}
+function renderRapidLauncher(){
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `<div class="card rapid-hero">
+    <div style="font-size:2.4rem; margin-bottom:10px;">⚡</div>
+    <h2 style="font-size:1.3rem; font-weight:800; margin-bottom:8px;">Rapid Fire — 30 Seconds</h2>
+    <p style="color:var(--text-dim); font-size:0.86rem; max-width:420px; margin:0 auto 20px;">Answer as many random questions correctly as you can before the clock runs out. Build a combo streak for bonus points.</p>
+    <button class="btn btn-primary" onclick="startRapidFire()">🔥 Start Rapid Fire</button>
+  </div>
+  <div id="qContainer"></div>`;
+}
+
+function startCustomSet(ids){
+  state.mode = 'practice';
+  state.currentSetIds = ids;
+  state.currentIndex = 0;
+  renderQuestionInContainer();
+}
+function startExam(){
+  const dur = parseInt(document.getElementById('examDurSel').value)*60;
+  const count = parseInt(document.getElementById('examCountSel').value);
+  const neg = document.getElementById('negMarkSwitch').classList.contains('on');
+  state.mode = 'exam';
+  state.currentSetIds = shuffleArr(QUESTION_BANK.map(q=>q.id)).slice(0,count);
+  state.currentIndex = 0;
+  state.exam = {active:true, duration:dur, remaining:dur, negativeMarking:neg, locked:false};
+  state.answers = {}; state.visited = new Set(); state.reviewFlags = new Set();
+  clearInterval(state.exam.timerId);
+  state.exam.timerId = setInterval(examTick, 1000);
+  renderQuestionInContainer();
+}
+function examTick(){
+  state.exam.remaining--;
+  const tb = document.getElementById('examTimerBox');
+  if(tb){
+    const m = Math.floor(state.exam.remaining/60), s = state.exam.remaining%60;
+    tb.textContent = `⏳ ${m}:${s.toString().padStart(2,'0')}`;
+    tb.classList.toggle('low', state.exam.remaining<=60);
+  }
+  if(state.exam.remaining<=0){ clearInterval(state.exam.timerId); finishExam(); }
+}
+function startRapidFire(){
+  state.mode = 'rapid';
+  state.currentSetIds = shuffleArr(QUESTION_BANK.map(q=>q.id));
+  state.currentIndex = 0;
+  state.rapid = {active:true, remaining:30, score:0, combo:0, qIndex:0};
+  clearInterval(state.rapid.timerId);
+  state.rapid.timerId = setInterval(rapidTick, 1000);
+  renderQuestionInContainer();
+}
+function rapidTick(){
+  state.rapid.remaining--;
+  const el = document.getElementById('rapidTimeLeft');
+  if(el) el.textContent = state.rapid.remaining;
+  if(state.rapid.remaining<=0){ clearInterval(state.rapid.timerId); finishRapid(); }
+}
+
+/* ------------------------------ QUESTION RENDER ----------------------------- */
+let questionStartTs = 0;
+function renderQuestionInContainer(){
+  questionStartTs = Date.now();
+  const qc = document.getElementById('qContainer');
+  if(!qc) return;
+  const qid = state.currentSetIds[state.currentIndex];
+  if(!qid){ qc.innerHTML = '<div class="empty-state"><div class="emoji">🎉</div>No more questions in this set.</div>'; return; }
+  const q = byId(qid);
+  state.visited.add(qid);
+  const already = state.answers[qid];
+  const isExam = state.mode==='exam';
+  const isRapid = state.mode==='rapid';
+
+  qc.innerHTML = `
+    ${isExam? `<div class="card" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div style="font-size:0.82rem; color:var(--text-dim);">Question ${state.currentIndex+1} of ${state.currentSetIds.length} ${state.exam.negativeMarking? ' &middot; Negative marking ON':''}</div>
+      <div class="timer-box" id="examTimerBox">⏳ ${Math.floor(state.exam.remaining/60)}:${(state.exam.remaining%60).toString().padStart(2,'0')}</div>
+    </div>` : ''}
+    ${isRapid? `<div class="card" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+      <div class="combo">🔥 Combo x${state.rapid.combo} &middot; Score ${state.rapid.score}</div>
+      <div class="timer-box" id="rapidTimerBox">⏱️ <span id="rapidTimeLeft">${state.rapid.remaining}</span>s</div>
+    </div>` : ''}
+    <div class="card">
+      <div class="q-number">${q.id} &middot; Day ${q.day}</div>
+      <div class="q-meta">
+        <span class="badge badge-${q.difficulty.toLowerCase()}">${q.difficulty}</span>
+        <span class="badge badge-topic">${q.topic}</span>
+        <span class="badge badge-bloom">${q.bloom}</span>
+        <span class="badge badge-time">⏱ ~${q.estTime}s</span>
+        <span class="badge badge-time">${q.subtopic}</span>
+      </div>
+      <div class="q-text">${q.question}</div>
+      <div class="options" id="optionsWrap">
+        ${q.options.map((opt,i)=>{
+          const letter = String.fromCharCode(65+i);
+          let cls='option';
+          if(already){
+            cls += ' locked';
+            if(i===already.selected) cls += already.correct? ' selected correct':' selected incorrect';
+            else if(i===q.correct) cls += ' correct';
+          }
+          return `<button class="${cls}" ${already?'':`onclick="selectOption(${i})"`} data-i="${i}"><span class="letter">${letter}</span><span>${opt}</span></button>`;
+        }).join('')}
+      </div>
+      ${!isExam? `<div class="qc-actions">
+        ${!already? `<button class="btn-sm" onclick="showHint()">💡 Hint</button>
+        <button class="btn-sm" onclick="revealAnswer()">👁️ Show Answer</button>`:''}
+        <button class="btn-sm ${state.bookmarks.has(q.id)?'active':''}" onclick="toggleBookmarkId('${q.id}'); renderQuestionInContainer();">🔖 Bookmark</button>
+        <button class="btn-sm ${state.reviewFlags.has(q.id)?'active':''}" onclick="toggleReview('${q.id}')">🚩 Mark for Review</button>
+      </div>
+      <div id="hintBox"></div>` : `<div class="qc-actions">
+        <button class="btn-sm ${state.reviewFlags.has(q.id)?'active':''}" onclick="toggleReview('${q.id}')">🚩 Mark for Review</button>
+      </div>`}
+      <div class="explain-panel ${already?'show':''}" id="explainPanel">
+        ${already? explainHTML(q, already):''}
+      </div>
+      ${!isExam?`<div>
+        <label style="font-size:0.76rem; color:var(--text-dim);">Notes</label>
+        <textarea class="notes-box" placeholder="Jot a personal note about this question…" oninput="state.notes['${q.id}']=this.value">${state.notes[q.id]||''}</textarea>
+      </div>`:''}
+      <div class="qc-nav">
+        <button class="btn-sm" onclick="prevQuestion()" ${state.currentIndex===0?'disabled style=\"opacity:.4\"':''}>← Previous</button>
+        <div style="font-size:0.78rem; color:var(--text-faint); font-family:var(--font-mono);">${state.currentIndex+1} / ${state.currentSetIds.length}</div>
+        ${isExam && state.currentIndex===state.currentSetIds.length-1
+          ? `<button class="btn btn-primary" onclick="finishExam()">✅ Submit Exam</button>`
+          : `<button class="btn-sm" onclick="nextQuestion()">Next →</button>`}
+      </div>
+    </div>
+    ${!isRapid? `<div class="card" style="margin-top:16px;">
+      <div class="section-title">Question Palette</div>
+      <div class="palette" id="palette"></div>
+      <div class="legend">
+        <span><i style="background:rgba(76,175,80,0.6)"></i>Answered</span>
+        <span><i style="background:rgba(229,57,53,0.6)"></i>Wrong</span>
+        <span><i style="background:rgba(255,193,7,0.6)"></i>Marked</span>
+        <span><i style="background:rgba(255,255,255,0.08)"></i>Not Visited</span>
+      </div>
+    </div>`:''}
+  `;
+  if(!isRapid) renderPalette();
+  document.addEventListener('keydown', keyHandler);
+}
+
+function explainHTML(q, ans){
+  return `
+    <div class="explain-block"><h4>Explanation</h4><p>${q.explanation}</p></div>
+    <div class="explain-block tip"><h4>🎯 Certification Tip</h4><p>${q.certTip}</p></div>
+    <div class="explain-block trick"><h4>🧠 Memory Trick</h4><p>${q.memoryTrick}</p></div>
+    ${!ans.correct? `<div class="explain-block trap"><h4>⚠️ Why your choice was wrong</h4><p>Option ${String.fromCharCode(65+ans.selected)} doesn't satisfy the requirement in the scenario — re-read the question stem for the qualifying constraint before eliminating options next time.</p></div>`:''}
+    <div class="explain-block"><h4>📌 Reference</h4><p>${q.reference} &middot; Tags: ${q.tags.join(', ')}</p></div>
+  `;
+}
+
+function keyHandler(e){
+  if(['1','2','3','4','5'].includes(e.key)){
+    const i = parseInt(e.key)-1;
+    const opt = document.querySelector(`.option[data-i="${i}"]`);
+    if(opt && !opt.classList.contains('locked')) selectOption(i);
+  } else if(e.key==='ArrowRight'){ nextQuestion(); }
+  else if(e.key==='ArrowLeft'){ prevQuestion(); }
+}
+
+function selectOption(i){
+  const qid = state.currentSetIds[state.currentIndex];
+  const q = byId(qid);
+  if(state.answers[qid]) return;
+  const correct = i===q.correct;
+  const timeTaken = Math.round((Date.now()-questionStartTs)/1000);
+  state.answers[qid] = {selected:i, correct, timeTaken};
+  state.history.push({qid, correct, ts:Date.now()});
+  if(!correct) state.wrong.add(qid); else state.wrong.delete(qid) && state.mastered.add(qid);
+  beep(correct?880:220, 0.1);
+
+  document.querySelectorAll('.option').forEach((el,idx)=>{
+    el.classList.add('locked');
+    el.removeAttribute('onclick');
+    if(idx===i) el.classList.add('selected', correct?'correct':'incorrect');
+    else if(idx===q.correct) el.classList.add('correct');
+  });
+  const ep = document.getElementById('explainPanel');
+  if(state.mode!=='rapid'){
+    ep.innerHTML = explainHTML(q, state.answers[qid]);
+    ep.classList.add('show');
+  }
+  renderPalette();
+  checkAchievements();
+
+  if(state.mode==='rapid'){
+    if(correct){ state.rapid.score += 10 + state.rapid.combo*2; state.rapid.combo++; toast('✅ +'+(10+ (state.rapid.combo-1)*2)+' pts'); }
+    else { state.rapid.combo = 0; toast('❌ Combo reset'); }
+    setTimeout(()=>{ rapidNext(); }, 450);
+  } else if(state.settings.autoNext){
+    setTimeout(()=>nextQuestion(), 900);
+  }
+}
+
+function showHint(){
+  const qid = state.currentSetIds[state.currentIndex]; const q = byId(qid);
+  document.getElementById('hintBox').innerHTML = `<div class="explain-block tip" style="margin-top:10px;"><h4>💡 Hint</h4><p>Focus on: <strong>${q.subtopic}</strong>. Eliminate any option that ignores the scenario's key constraint before picking.</p></div>`;
+}
+function revealAnswer(){
+  const qid = state.currentSetIds[state.currentIndex]; const q = byId(qid);
+  toast('Correct answer: '+String.fromCharCode(65+q.correct));
+}
+function toggleBookmarkId(qid){
+  if(state.bookmarks.has(qid)){state.bookmarks.delete(qid); toast('Removed bookmark');}
+  else {state.bookmarks.add(qid); toast('Bookmarked'); checkAchievements();}
+}
+function toggleReview(qid){
+  if(state.reviewFlags.has(qid)) state.reviewFlags.delete(qid); else state.reviewFlags.add(qid);
+  renderQuestionInContainer();
+}
+function nextQuestion(){
+  if(state.currentIndex < state.currentSetIds.length-1){ state.currentIndex++; renderQuestionInContainer(); }
+  else toast('This is the last question in the set');
+}
+function prevQuestion(){
+  if(state.currentIndex>0){ state.currentIndex--; renderQuestionInContainer(); }
+}
+function jumpTo(i){ state.currentIndex = i; renderQuestionInContainer(); }
+function renderPalette(){
+  const p = document.getElementById('palette');
+  if(!p) return;
+  p.innerHTML = state.currentSetIds.map((qid,i)=>{
+    let cls='pcell';
+    if(i===state.currentIndex) cls+=' current';
+    const a = state.answers[qid];
+    if(a) cls += a.correct? ' answered':' wrong';
+    else if(state.reviewFlags.has(qid)) cls += ' review';
+    return `<button class="${cls}" onclick="jumpTo(${i})">${i+1}</button>`;
+  }).join('');
+}
+function rapidNext(){
+  if(state.currentIndex < state.currentSetIds.length-1){ state.currentIndex++; renderQuestionInContainer(); }
+  else { state.currentIndex=0; renderQuestionInContainer(); }
+}
+
+function finishExam(){
+  clearInterval(state.exam.timerId);
+  state.exam.active=false;
+  const qc = document.getElementById('qContainer');
+  const ids = state.currentSetIds;
+  const correct = ids.filter(id=>state.answers[id]&&state.answers[id].correct).length;
+  const attempted = ids.filter(id=>state.answers[id]).length;
+  const wrongN = attempted-correct;
+  let score = correct;
+  if(state.exam.negativeMarking) score = correct - wrongN*0.25;
+  const pctScore = Math.max(0, Math.round((score/ids.length)*100));
+  const pass = pctScore>=65;
+  const grade = pctScore>=90?'A+':pctScore>=80?'A':pctScore>=70?'B':pctScore>=65?'C':'D';
+
+  const topicBreak = {};
+  ids.forEach(id=>{ const q=byId(id); topicBreak[q.topic]=topicBreak[q.topic]||{c:0,t:0}; topicBreak[q.topic].t++; if(state.answers[id]&&state.answers[id].correct) topicBreak[q.topic].c++; });
+
+  document.getElementById('viewRoot').innerHTML = `
+    <div class="card">
+      <div class="result-hero">
+        <div class="result-grade ${pass?'pass':'fail'}">${grade}</div>
+        <div style="font-size:1.4rem; font-weight:800; margin-top:6px;">${pctScore}% &middot; ${pass?'PASS':'NOT YET PASSING'}</div>
+        <div style="color:var(--text-dim); margin-top:6px; font-size:0.86rem;">${correct} correct &middot; ${wrongN} wrong &middot; ${ids.length-attempted} unattempted ${state.exam.negativeMarking?' &middot; negative marking applied':''}</div>
+      </div>
+      <div class="grid grid-2" style="margin-top:10px;">
+        <div>
+          <div class="section-title">Topic-wise Performance</div>
+          ${Object.entries(topicBreak).map(([t,v])=>`<div class="topic-row"><div class="name">${t}</div><div class="pbar"><div style="width:${pct(v.c,v.t)}%; background:${pct(v.c,v.t)>=70?'var(--success)':'var(--primary)'};"></div></div><div class="pct">${pct(v.c,v.t)}%</div></div>`).join('')}
+        </div>
+        <div>
+          <div class="section-title">Recommendations</div>
+          <div class="explain-block tip"><p>${pass? 'Strong performance — take a full-length timed exam next to confirm consistency.' : 'Review the topics below 65% accuracy, then retry a fresh exam set focused on those domains.'}</p></div>
+          <div class="explain-block"><p>Estimated exam success at current pace: <strong>${Math.min(97, pctScore+ (state.streak*2))}%</strong></p></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="goTo('exam')">🔁 Restart Exam</button>
+        <button class="btn btn-ghost" onclick="goTo('wrong')">Review Wrong Answers</button>
+        <button class="btn btn-ghost" onclick="downloadReport(${JSON.stringify({pctScore,grade,pass,correct,wrongN,ids}).replace(/"/g,'&quot;')})">⬇️ Download Report</button>
+      </div>
+    </div>`;
+  checkAchievements();
+}
+function downloadReport(dataStr){
+  const data = JSON.parse(dataStr.replace(/&quot;/g,'"'));
+  const lines = ["OCI Certification MCQ Visualizer — Exam Report","",
+    `Score: ${data.pctScore}% (Grade ${data.grade}) — ${data.pass?'PASS':'NOT YET PASSING'}`,
+    `Correct: ${data.correct}  Wrong: ${data.wrongN}`, "", "Question Breakdown:"];
+  data.ids.forEach(id=>{ const q=byId(id); const a=state.answers[id]; lines.push(`${id} [${q.topic}] — ${a? (a.correct?'Correct':'Wrong'):'Unattempted'}`); });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='oci-exam-report.txt'; a.click();
+}
+
+function finishRapid(){
+  state.rapid.active=false;
+  document.getElementById('viewRoot').innerHTML = `
+    <div class="card rapid-hero">
+      <div class="rapid-count">${state.rapid.score}</div>
+      <div style="color:var(--text-dim); margin-top:6px;">points scored</div>
+      <div class="combo" style="margin-top:14px;">Best combo this round: x${state.rapid.combo}</div>
+      <div style="display:flex; gap:10px; justify-content:center; margin-top:24px;">
+        <button class="btn btn-primary" onclick="startRapidFire()">🔁 Play Again</button>
+        <button class="btn btn-ghost" onclick="goTo('dashboard')">Back to Dashboard</button>
+      </div>
+    </div>`;
+  checkAchievements();
+}
+
+/* ------------------------------ BOOKMARKS / WRONG --------------------------- */
+function renderBookmarks(){
+  const root = document.getElementById('viewRoot');
+  const ids = [...state.bookmarks];
+  root.innerHTML = ids.length? `
+    <div style="margin-bottom:14px; display:flex; gap:10px;">
+      <button class="btn-sm" onclick="startCustomSet(${JSON.stringify(ids)})">▶ Practice Bookmarks</button>
+      <button class="btn-sm" onclick="exportBookmarks()">⬇️ Export</button>
+    </div>
+    ${ids.map(id=>questionListRow(byId(id))).join('')}
+  ` : `<div class="empty-state"><div class="emoji">🔖</div>No bookmarks yet. Save tough questions while practicing to build your revision folder.</div>`;
+}
+function exportBookmarks(){
+  const data = [...state.bookmarks].map(id=>{const q=byId(id); return {id:q.id, topic:q.topic, question:q.question, note:state.notes[id]||''};});
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='bookmarks.json'; a.click();
+}
+function renderWrong(){
+  const root = document.getElementById('viewRoot');
+  const ids = [...state.wrong];
+  root.innerHTML = ids.length? `
+    <div style="margin-bottom:14px;"><button class="btn-sm" onclick="startCustomSet(${JSON.stringify(ids)})">🔁 Retry All Wrong Questions</button></div>
+    ${ids.map(id=>questionListRow(byId(id))).join('')}
+  ` : `<div class="empty-state"><div class="emoji">✅</div>No mistakes on record. Wrong answers are collected automatically as you practice.</div>`;
+}
+
+/* ------------------------------ STATISTICS / CHARTS -------------------------- */
+function renderStatistics(){
+  const s = computeStats();
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `
+    <div class="grid grid-2" style="margin-bottom:16px;">
+      <div class="card"><div class="section-title">Correct vs Wrong</div><canvas class="chart" id="pieChart"></canvas></div>
+      <div class="card"><div class="section-title">Difficulty Distribution</div><canvas class="chart" id="barChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Score Trend (last attempts)</div>
+      <canvas class="chart" id="trendChart"></canvas>
+    </div>
+    <div class="grid grid-2" style="margin-top:16px;">
+      <div class="card"><div class="section-title">Weak Areas</div>${s.weak.map(t=>`<div class="topic-row"><div class="name">${t}</div><div class="pbar"><div style="width:${s.topicStats[t].acc}%; background:var(--primary);"></div></div><div class="pct">${s.topicStats[t].acc}%</div></div>`).join('')||'<div class="empty-state">No data yet.</div>'}</div>
+      <div class="card"><div class="section-title">Strong Areas</div>${s.strong.map(t=>`<div class="topic-row"><div class="name">${t}</div><div class="pbar"><div style="width:${s.topicStats[t].acc}%; background:var(--success);"></div></div><div class="pct">${s.topicStats[t].acc}%</div></div>`).join('')||'<div class="empty-state">No data yet.</div>'}</div>
+    </div>`;
+  drawPie(document.getElementById('pieChart'), [{label:'Correct',val:s.correct,color:'#4CAF50'},{label:'Wrong',val:s.wrongCount,color:'#E53935'},{label:'Unattempted',val:s.total-s.solved,color:'rgba(255,255,255,0.12)'}]);
+  drawBar(document.getElementById('barChart'), allDifficulties().map(d=>{
+    const qs = QUESTION_BANK.filter(q=>q.difficulty===d);
+    const done = qs.filter(q=>state.answers[q.id]);
+    return {label:d, val:done.length, color: d==='Easy'?'#4CAF50':d==='Medium'?'#FFC107':'#E53935'};
+  }));
+  drawTrend(document.getElementById('trendChart'), state.history.slice(-30));
+}
+function fitCanvas(cv){ const dpr=window.devicePixelRatio||1; const r=cv.getBoundingClientRect(); cv.width=r.width*dpr; cv.height= (r.height||220)*dpr; const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); return ctx; }
+function drawPie(cv, data){
+  if(!cv) return; const ctx=fitCanvas(cv); const w=cv.getBoundingClientRect().width, h=220;
+  const total = data.reduce((s,d)=>s+d.val,0)||1;
+  const cx=w*0.32, cy=h/2, r=80; let start=-Math.PI/2;
+  data.forEach(d=>{
+    const angle = (d.val/total)*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+angle); ctx.closePath();
+    ctx.fillStyle=d.color; ctx.fill(); start+=angle;
+  });
+  let ly = 40;
+  data.forEach(d=>{
+    ctx.fillStyle=d.color; ctx.fillRect(w*0.62, ly, 12,12);
+    ctx.fillStyle='#E9EEFC'; ctx.font='13px sans-serif'; ctx.fillText(`${d.label}: ${d.val}`, w*0.62+20, ly+11);
+    ly += 28;
+  });
+}
+function drawBar(cv, data){
+  if(!cv) return; const ctx=fitCanvas(cv); const w=cv.getBoundingClientRect().width, h=220;
+  const max = Math.max(1,...data.map(d=>d.val));
+  const bw = w/(data.length*2);
+  data.forEach((d,i)=>{
+    const bh = (d.val/max)*(h-50);
+    const x = i*(w/data.length)+ (w/data.length-bw)/2;
+    ctx.fillStyle=d.color; ctx.fillRect(x, h-40-bh, bw, bh);
+    ctx.fillStyle='#8C9BC4'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(d.label, x+bw/2, h-18);
+    ctx.fillStyle='#E9EEFC'; ctx.fillText(d.val, x+bw/2, h-46-bh<10?14:h-46-bh);
+  });
+}
+function drawTrend(cv, hist){
+  if(!cv) return; const ctx=fitCanvas(cv); const w=cv.getBoundingClientRect().width, h=220;
+  ctx.clearRect(0,0,w,h);
+  if(!hist.length){ ctx.fillStyle='#5A6890'; ctx.font='13px sans-serif'; ctx.fillText('No attempts yet — start practicing to see your trend.', 16, h/2); return; }
+  let running=0; const pts = hist.map((a,i)=>{ running += a.correct?1:0; return running/(i+1); });
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const x = 20 + (i/(pts.length-1||1))*(w-40); const y = h-30 - p*(h-60); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle='#00C2FF'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.lineTo(w-20, h-30); ctx.lineTo(20,h-30); ctx.closePath();
+  ctx.fillStyle='rgba(0,194,255,0.12)'; ctx.fill();
+}
+window.addEventListener('resize', ()=>{ if(state.view==='statistics') renderStatistics(); });
+
+/* ------------------------------ ACHIEVEMENTS -------------------------------- */
+function renderAchievements(){
+  const root = document.getElementById('viewRoot');
+  root.innerHTML = `<div class="grid grid-4">
+    ${Object.entries(ACHIEVEMENT_DEFS).map(([key,a])=>`
+      <div class="card badge-card ${state.achievements.has(key)?'unlocked':''}">
+        <div class="emoji">${a.emoji}</div>
+        <h4>${a.name}</h4>
+        <p>${a.desc}</p>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ------------------------------ SETTINGS ------------------------------------ */
+function renderSettings(){
+  const root = document.getElementById('viewRoot');
+  const s = state.settings;
+  root.innerHTML = `<div class="card">
+    <div class="setting-row"><div><h4>Font Size</h4><p>Adjust reading size across the platform</p></div>
+      <input class="range-input" type="range" min="0.85" max="1.3" step="0.05" value="${s.fontSize}" oninput="state.settings.fontSize=this.value; document.documentElement.style.setProperty('--font-scale', this.value);"></div>
+    <div class="setting-row"><div><h4>Animation Speed</h4><p>Slow down or speed up transitions</p></div>
+      <input class="range-input" type="range" min="0.5" max="1.5" step="0.1" value="${s.animSpeed}" oninput="state.settings.animSpeed=this.value; document.documentElement.style.setProperty('--anim-speed', this.value);"></div>
+    <div class="setting-row"><div><h4>Sound Effects</h4><p>Play a chime on correct/incorrect answers</p></div>
+      <button class="switch ${s.sound?'on':''}" onclick="this.classList.toggle('on'); state.settings.sound=this.classList.contains('on');"></button></div>
+    <div class="setting-row"><div><h4>Auto Next</h4><p>Automatically move to the next question after answering (Practice Mode)</p></div>
+      <button class="switch ${s.autoNext?'on':''}" onclick="this.classList.toggle('on'); state.settings.autoNext=this.classList.contains('on');"></button></div>
+    <div class="setting-row"><div><h4>Shuffle Questions</h4><p>Randomize question order for new practice sets</p></div>
+      <button class="switch ${s.shuffle?'on':''}" onclick="this.classList.toggle('on'); state.settings.shuffle=this.classList.contains('on');"></button></div>
+    <div class="setting-row"><div><h4>Reset Progress</h4><p>Clear all answers, bookmarks and stats (this session only)</p></div>
+      <button class="btn-sm" onclick="resetProgress()">Reset</button></div>
+  </div>`;
+}
+function resetProgress(){
+  if(!confirm('Reset all progress for this session?')) return;
+  state.answers={}; state.bookmarks=new Set(); state.wrong=new Set(); state.mastered=new Set();
+  state.reviewFlags=new Set(); state.visited=new Set(); state.notes={}; state.history=[]; state.achievements=new Set();
+  toast('Progress reset'); goTo('dashboard');
+}
+
+/* ------------------------------ TOP-LEVEL INIT ------------------------------- */
+function refreshHome(){
+  const s = computeStats();
+  document.getElementById('homeStatTotal').textContent = s.total;
+  document.getElementById('homeStatTopics').textContent = allTopics().length;
+  document.getElementById('homeStatSolved').textContent = s.solved;
+  document.getElementById('homeStatStreak').textContent = state.streak;
+  document.getElementById('homeReadinessNum').textContent = s.readiness+'%';
+  const ring = document.getElementById('homeRing');
+  const circumference = 2*Math.PI*90;
+  ring.style.strokeDashoffset = circumference*(1-s.readiness/100);
+  document.getElementById('streakVal').textContent = state.streak;
+}
+refreshHome();
+
+/* ------------------------------ PARTICLE BACKDROP ---------------------------- */
+(function(){
+  const cv = document.getElementById('particleCanvas');
+  const ctx = cv.getContext('2d');
+  let particles = [];
+  function resize(){ cv.width=window.innerWidth; cv.height=window.innerHeight; }
+  function init(){
+    resize();
+    particles = Array.from({length:60}, ()=>({
+      x:Math.random()*cv.width, y:Math.random()*cv.height,
+      r:Math.random()*1.6+0.4, vx:(Math.random()-0.5)*0.15, vy:(Math.random()-0.5)*0.15,
+      c: Math.random()>0.6?'0,194,255': Math.random()>0.5?'229,57,53':'142,68,173'
+    }));
+  }
+  function tick(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    particles.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>cv.width) p.vx*=-1;
+      if(p.y<0||p.y>cv.height) p.vy*=-1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${p.c},0.5)`; ctx.fill();
+    });
+    requestAnimationFrame(tick);
+  }
+  window.addEventListener('resize', resize);
+  init(); tick();
+})();
+</script>
+</body>
+</html>

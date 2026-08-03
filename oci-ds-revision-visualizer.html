@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCI Data Science Certification — Revision Visualizer</title>
+<style>
+/* ============================================================
+   OCI DATA SCIENCE CERTIFICATION REVISION VISUALIZER
+   Pure HTML / CSS / JS — no external dependencies
+   ============================================================ */
+:root{
+  --bg:#0b1220;
+  --bg2:#0d1626;
+  --card:rgba(255,255,255,.05);
+  --card-hover:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.09);
+  --primary:#E53935;
+  --secondary:#FF9800;
+  --accent:#00C2FF;
+  --success:#4CAF50;
+  --warning:#FFC107;
+  --purple:#8E44AD;
+  --text:#EAF0FF;
+  --muted:#8fa1c7;
+  --radius:16px;
+  --font-display:'Segoe UI',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --font-mono:'Consolas','SFMono-Regular',Menlo,monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-display);
+  overflow-x:hidden;
+  min-height:100vh;
+  line-height:1.5;
+}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--primary),var(--secondary));border-radius:10px;}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+.hidden{display:none !important;}
+
+/* ============== GLASS CARD BASE ============== */
+.glass{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:0 8px 32px rgba(0,0,0,.35);
+  transition:transform .35s ease, box-shadow .35s ease, background .35s ease;
+}
+.glass:hover{ background:var(--card-hover); }
+.lift:hover{ transform:translateY(-6px); box-shadow:0 20px 44px rgba(0,0,0,.5); }
+
+/* ============== LANDING PAGE ============== */
+#landing{
+  position:relative;
+  height:100vh;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 15%, rgba(229,57,53,.20), transparent 60%),
+    radial-gradient(ellipse 70% 60% at 85% 80%, rgba(0,194,255,.18), transparent 60%),
+    radial-gradient(ellipse 60% 60% at 60% 40%, rgba(142,68,173,.14), transparent 60%),
+    var(--bg);
+}
+#meshCanvas, #neuralCanvas, #particleCanvas{
+  position:absolute; inset:0; width:100%; height:100%;
+}
+.landing-content{
+  position:relative; z-index:5;
+  text-align:center;
+  max-width:900px;
+  padding:40px 20px;
+}
+.landing-badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 18px; border-radius:30px;
+  background:rgba(229,57,53,.12);
+  border:1px solid rgba(229,57,53,.4);
+  font-size:12.5px; letter-spacing:2px; text-transform:uppercase;
+  color:var(--secondary); margin-bottom:26px;
+  animation:fadeDown .9s ease both;
+}
+.landing-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--primary);box-shadow:0 0 12px var(--primary);animation:pulseDot 1.6s infinite;}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.5);}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:translateY(0);}}
+
+.landing-title{
+  font-size:clamp(2.1rem, 6vw, 4.6rem);
+  font-weight:800;
+  line-height:1.08;
+  letter-spacing:-1px;
+  background:linear-gradient(120deg,#fff 10%, var(--secondary) 45%, var(--primary) 75%, var(--accent) 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:shine 6s linear infinite, fadeUp 1s ease both .15s;
+}
+@keyframes shine{ to{ background-position:200% center; } }
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.landing-sub{
+  margin-top:22px; font-size:clamp(1rem,2.4vw,1.35rem); color:var(--muted); font-weight:500;
+  animation:fadeUp 1s ease both .35s;
+}
+.typewrap{
+  margin-top:14px; font-family:var(--font-mono); font-size:1.05rem; color:var(--accent); min-height:28px;
+  animation:fadeUp 1s ease both .5s;
+}
+.typewrap .cursor{ display:inline-block; width:2px; background:var(--accent); margin-left:2px; animation:blink 1s steps(1) infinite; }
+@keyframes blink{50%{opacity:0;}}
+
+.ring-wrap{ margin:34px auto 10px; width:150px; height:150px; position:relative; animation:fadeUp 1s ease both .6s;}
+.ring-wrap svg{ transform:rotate(-90deg); }
+.ring-bg{ fill:none; stroke:rgba(255,255,255,.08); stroke-width:8; }
+.ring-fg{ fill:none; stroke:url(#ringGrad); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1); }
+.ring-label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column;}
+.ring-label b{ font-size:1.5rem; }
+.ring-label span{ font-size:.68rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase;}
+
+.start-btn{
+  margin-top:28px; padding:16px 44px; font-size:1.05rem; font-weight:700; letter-spacing:.5px;
+  border-radius:50px; color:#fff; position:relative; overflow:hidden;
+  background:linear-gradient(120deg,var(--primary),var(--secondary));
+  box-shadow:0 10px 30px rgba(229,57,53,.35);
+  animation:fadeUp 1s ease both .75s, floaty 3.5s ease-in-out infinite 1.8s;
+}
+.start-btn:hover{ transform:translateY(-4px) scale(1.03); box-shadow:0 16px 40px rgba(255,152,0,.45); }
+@keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+.landing-foot{ margin-top:20px; font-size:.8rem; color:var(--muted); opacity:.7; animation:fadeUp 1s ease both .9s;}
+
+.cloud-particle{
+  position:absolute; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.5), rgba(255,255,255,0) 70%);
+  filter:blur(1px);
+  animation:floatUp linear infinite;
+}
+@keyframes floatUp{
+  0%{ transform:translateY(0) translateX(0); opacity:0;}
+  10%{opacity:.55;}
+  90%{opacity:.4;}
+  100%{ transform:translateY(-110vh) translateX(30px); opacity:0;}
+}
+
+/* ============== APP SHELL ============== */
+#app{ display:none; min-height:100vh; }
+#app.active{ display:flex; }
+
+.sidebar{
+  width:290px; min-width:290px; height:100vh; position:sticky; top:0;
+  background:linear-gradient(180deg,#0d1626,#0a1120);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  padding:20px 14px; z-index:50;
+  overflow-y:auto;
+}
+.brand{ display:flex; align-items:center; gap:10px; padding:6px 10px 18px; border-bottom:1px solid var(--border); margin-bottom:14px;}
+.brand .logo{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  display:flex;align-items:center;justify-content:center;font-weight:800;box-shadow:0 4px 16px rgba(229,57,53,.4);
+}
+.brand b{ font-size:.92rem; display:block; }
+.brand span{ font-size:.68rem; color:var(--muted); }
+
+.search-box{
+  display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.04);
+  border:1px solid var(--border); border-radius:10px; padding:9px 12px; margin-bottom:16px;
+}
+.search-box input{ background:none; border:none; color:var(--text); outline:none; font-size:.85rem; width:100%;}
+.search-box svg{ flex-shrink:0; opacity:.6;}
+
+.nav-section-title{ font-size:.68rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin:10px 8px 8px;}
+.day-item{
+  display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px; margin-bottom:5px;
+  cursor:pointer; transition:.25s; border:1px solid transparent; position:relative;
+}
+.day-item:hover{ background:rgba(255,255,255,.05); }
+.day-item.active{ background:linear-gradient(90deg, rgba(229,57,53,.18), rgba(255,152,0,.08)); border-color:rgba(229,57,53,.3); }
+.day-num{
+  width:32px;height:32px;border-radius:9px; display:flex;align-items:center;justify-content:center;
+  font-weight:700; font-size:.78rem; background:rgba(255,255,255,.06); flex-shrink:0;
+}
+.day-item.active .day-num{ background:linear-gradient(135deg,var(--primary),var(--secondary)); }
+.day-info{ flex:1; min-width:0; }
+.day-info b{ font-size:.8rem; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.day-progress-bar{ height:4px; background:rgba(255,255,255,.08); border-radius:3px; margin-top:5px; overflow:hidden;}
+.day-progress-fill{ height:100%; background:linear-gradient(90deg,var(--accent),var(--success)); border-radius:3px; transition:width .6s ease;}
+.bookmark-btn{ font-size:.9rem; opacity:.4; transition:.2s; flex-shrink:0;}
+.bookmark-btn.on{ opacity:1; color:var(--warning);}
+.bookmark-btn:hover{ opacity:1;}
+
+.sidebar-foot{ margin-top:auto; padding-top:14px; border-top:1px solid var(--border);}
+.mode-toggle{ display:flex; gap:6px; margin-bottom:10px;}
+.mode-toggle button{ flex:1; padding:8px 6px; font-size:.68rem; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid var(--border);}
+.mode-toggle button.on{ background:linear-gradient(120deg,var(--purple),var(--accent)); color:#fff; border-color:transparent;}
+.overall-ring{ display:flex; align-items:center; gap:10px; font-size:.72rem; color:var(--muted);}
+
+/* ============== MAIN CONTENT ============== */
+.main{ flex:1; min-width:0; padding:26px 34px 90px; max-width:1400px; }
+.topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:14px;}
+.crumbs{ font-size:.78rem; color:var(--muted);}
+.crumbs b{ color:var(--secondary);}
+.topbar-actions{ display:flex; gap:10px; }
+.pill-btn{ padding:9px 16px; border-radius:30px; font-size:.78rem; font-weight:600; background:rgba(255,255,255,.05); border:1px solid var(--border); transition:.2s;}
+.pill-btn:hover{ background:rgba(255,255,255,.1); transform:translateY(-2px);}
+.pill-btn.primary{ background:linear-gradient(120deg,var(--primary),var(--secondary)); border:none;}
+
+.day-hero{
+  padding:34px; margin-bottom:26px; position:relative; overflow:hidden;
+}
+.day-hero::before{
+  content:''; position:absolute; top:-60%; right:-10%; width:400px; height:400px; border-radius:50%;
+  background:radial-gradient(circle, rgba(229,57,53,.25), transparent 70%); pointer-events:none;
+}
+.day-hero h1{ font-size:1.9rem; font-weight:800; margin-bottom:8px;}
+.day-hero p{ color:var(--muted); max-width:700px; font-size:.94rem;}
+.hero-stats{ display:flex; gap:26px; margin-top:20px; flex-wrap:wrap;}
+.hero-stat b{ font-size:1.4rem; display:block; background:linear-gradient(120deg,var(--accent),var(--success)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+.hero-stat span{ font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+
+.section-title{
+  display:flex; align-items:center; gap:10px; font-size:1.1rem; font-weight:700; margin:34px 0 16px;
+}
+.section-title .num{
+  width:28px;height:28px;border-radius:8px; background:rgba(255,255,255,.06); display:flex;align-items:center;justify-content:center;
+  font-size:.72rem; color:var(--secondary); font-weight:800;
+}
+.section-title small{ font-weight:400; font-size:.72rem; color:var(--muted); margin-left:auto;}
+
+/* Learning Path */
+.path-track{ display:flex; gap:0; overflow-x:auto; padding:24px 6px 14px; }
+.path-node{ display:flex; flex-direction:column; align-items:center; min-width:150px; position:relative; }
+.path-node .circle{
+  width:52px;height:52px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:1.2rem;
+  background:rgba(255,255,255,.06); border:2px solid var(--border); z-index:2; transition:.3s;
+}
+.path-node.done .circle{ background:linear-gradient(135deg,var(--success),var(--accent)); border-color:transparent; box-shadow:0 0 20px rgba(76,175,80,.5); animation:pop .4s ease;}
+@keyframes pop{ 0%{transform:scale(.6);} 60%{transform:scale(1.15);} 100%{transform:scale(1);} }
+.path-node .line{ position:absolute; top:26px; left:50%; width:100%; height:2px; background:var(--border); z-index:1;}
+.path-node.done .line{ background:linear-gradient(90deg,var(--success),var(--accent)); }
+.path-node:last-child .line{ display:none;}
+.path-node span{ margin-top:10px; font-size:.72rem; text-align:center; color:var(--muted); max-width:130px;}
+.path-node.done span{ color:var(--text);}
+
+/* Mind map */
+.mindmap-box{ position:relative; height:420px; overflow:hidden; border-radius:var(--radius); background:radial-gradient(circle at center, rgba(0,194,255,.06), transparent 70%);}
+.mindmap-controls{ position:absolute; top:12px; right:12px; z-index:5; display:flex; gap:6px;}
+.mindmap-controls button{ width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08); border:1px solid var(--border); font-size:.85rem;}
+.mindmap-svg{ width:100%; height:100%; cursor:grab; }
+.mindmap-svg:active{ cursor:grabbing;}
+.mm-link{ stroke:rgba(255,255,255,.25); stroke-width:1.6; fill:none; stroke-dasharray:400; stroke-dashoffset:400; animation:drawLine 1.4s ease forwards;}
+@keyframes drawLine{ to{ stroke-dashoffset:0;} }
+.mm-center{ fill:url(#nodeGradCenter); }
+.mm-node-circle{ transition:.25s; }
+.mm-node text{ fill:var(--text); font-size:11px; font-weight:600; pointer-events:none;}
+.mm-node:hover .mm-node-circle{ filter:brightness(1.3); transform:scale(1.08); transform-origin:center;}
+
+/* Flow diagram */
+.flow-row{ display:flex; align-items:stretch; gap:0; overflow-x:auto; padding:10px 4px 20px;}
+.flow-step{
+  min-width:170px; padding:16px; border-radius:14px; background:rgba(255,255,255,.045); border:1px solid var(--border);
+  position:relative; margin-right:34px; flex-shrink:0;
+}
+.flow-step .fico{ font-size:1.4rem; margin-bottom:8px;}
+.flow-step b{ font-size:.82rem; display:block; margin-bottom:4px;}
+.flow-step p{ font-size:.7rem; color:var(--muted); }
+.flow-arrow{
+  position:absolute; right:-30px; top:50%; transform:translateY(-50%); width:28px; height:14px;
+}
+.flow-arrow svg{ width:100%; height:100%; }
+.flow-arrow path{ stroke:var(--accent); stroke-width:2; fill:none; stroke-dasharray:30; stroke-dashoffset:30; animation:drawLine 1s ease forwards; animation-delay:.3s;}
+.flow-step:nth-child(1){animation:fadeUp .6s ease both;}
+.flow-step:nth-child(2){animation:fadeUp .6s ease both .1s;}
+.flow-step:nth-child(3){animation:fadeUp .6s ease both .2s;}
+.flow-step:nth-child(4){animation:fadeUp .6s ease both .3s;}
+.flow-step:nth-child(5){animation:fadeUp .6s ease both .4s;}
+
+/* Architecture visualizer (generic CSS diagram) */
+.arch-box{ padding:30px; border-radius:var(--radius); background:
+  linear-gradient(rgba(255,255,255,.02), rgba(255,255,255,.02)),
+  repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(255,255,255,.03) 30px),
+  repeating-linear-gradient(90deg, transparent, transparent 29px, rgba(255,255,255,.03) 30px);
+  min-height:260px; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:26px; position:relative;
+}
+.arch-node{
+  padding:14px 18px; border-radius:12px; background:rgba(255,255,255,.06); border:1.5px solid var(--border);
+  text-align:center; min-width:120px; position:relative; animation:archPulse 3.4s ease-in-out infinite;
+}
+.arch-node .ic{font-size:1.5rem; display:block; margin-bottom:6px;}
+.arch-node b{ font-size:.72rem; display:block;}
+.arch-node span{ font-size:.62rem; color:var(--muted);}
+@keyframes archPulse{ 0%,100%{ box-shadow:0 0 0 rgba(0,194,255,0);} 50%{ box-shadow:0 0 24px rgba(0,194,255,.25);} }
+.arch-vcn{ border:2px dashed rgba(0,194,255,.4); border-radius:16px; padding:22px; display:flex; gap:18px; flex-wrap:wrap; position:relative;}
+.arch-vcn::before{ content:'VCN'; position:absolute; top:-10px; left:14px; background:var(--bg2); padding:0 8px; font-size:.62rem; color:var(--accent); letter-spacing:1px;}
+
+/* Console mock */
+.console-mock{ border-radius:14px; overflow:hidden; border:1px solid var(--border); background:#0a0f1c;}
+.console-topbar{ background:#161f33; padding:10px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border);}
+.console-topbar .dot{ width:10px;height:10px;border-radius:50%;}
+.console-body{ padding:20px; }
+.console-breadcrumb{ font-size:.68rem; color:var(--muted); margin-bottom:14px;}
+.console-breadcrumb b{ color:var(--accent);}
+.console-panel{ background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:10px;}
+.console-row{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.06); font-size:.76rem;}
+.console-row:last-child{ border:none;}
+.status-chip{ padding:3px 10px; border-radius:20px; font-size:.62rem; font-weight:700;}
+.status-active{ background:rgba(76,175,80,.18); color:var(--success);}
+.status-creating{ background:rgba(255,193,7,.18); color:var(--warning); animation:pulse2 1.5s infinite;}
+@keyframes pulse2{ 50%{ opacity:.5;} }
+
+/* concept cards */
+.concept-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px;}
+.concept-card{ padding:20px; cursor:pointer;}
+.concept-card h4{ font-size:.96rem; margin-bottom:6px; color:#fff; display:flex; align-items:center; gap:8px;}
+.concept-card h4 .tag{ font-size:.6rem; padding:2px 8px; border-radius:20px; background:rgba(0,194,255,.15); color:var(--accent); font-weight:700;}
+.concept-card p{ font-size:.8rem; color:var(--muted); margin-bottom:8px;}
+.concept-detail{ display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-size:.78rem;}
+.concept-detail.open{ display:block; animation:fadeUp .35s ease both;}
+.concept-detail .row{ margin-bottom:8px;}
+.concept-detail .row b{ color:var(--secondary); display:block; margin-bottom:2px; font-size:.7rem; text-transform:uppercase; letter-spacing:.5px;}
+.concept-detail .row p{ color:var(--text); font-size:.79rem;}
+.expand-hint{ font-size:.68rem; color:var(--accent);}
+
+/* memory tricks */
+.memory-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px;}
+.memory-card{ padding:16px; border-left:3px solid var(--purple);}
+.memory-card b{ font-size:.68rem; text-transform:uppercase; letter-spacing:1px; color:var(--purple); display:block; margin-bottom:6px;}
+.memory-card p{ font-size:.8rem;}
+.memory-card.trap{ border-color:var(--primary);} .memory-card.trap b{ color:var(--primary);}
+.memory-card.golden{ border-color:var(--warning);} .memory-card.golden b{ color:var(--warning);}
+.memory-card.remember{ border-color:var(--success);} .memory-card.remember b{ color:var(--success);}
+.memory-card.think{ border-color:var(--accent);} .memory-card.think b{ color:var(--accent);}
+.memory-card.interview{ border-color:var(--secondary);} .memory-card.interview b{ color:var(--secondary);}
+
+/* exam notes / mistakes */
+.note-list{ display:flex; flex-direction:column; gap:10px;}
+.note-item{ padding:14px 16px; display:flex; gap:12px; align-items:flex-start;}
+.note-item .ic{ flex-shrink:0; font-size:1.05rem;}
+.note-item p{ font-size:.82rem;}
+.mistake-item{ border-left:3px solid var(--primary);}
+.tip-item{ border-left:3px solid var(--success);}
+
+/* scenario Q */
+.scenario-card{ padding:18px;}
+.scenario-card .q{ font-size:.85rem; margin-bottom:10px;}
+.scenario-card .reveal-btn{ font-size:.72rem; padding:6px 14px; border-radius:20px; background:rgba(0,194,255,.15); color:var(--accent);}
+.scenario-answer{ display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); font-size:.8rem; color:var(--success);}
+.scenario-answer.show{ display:block; animation:fadeUp .3s ease both;}
+
+/* Flashcards */
+.flash-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:18px;}
+.flash-card{ perspective:1200px; height:150px;}
+.flash-inner{ position:relative; width:100%; height:100%; transition:transform .6s cubic-bezier(.4,.2,.2,1); transform-style:preserve-3d; cursor:pointer;}
+.flash-card.flipped .flash-inner{ transform:rotateY(180deg);}
+.flash-face{
+  position:absolute; inset:0; backface-visibility:hidden; border-radius:14px; padding:16px;
+  display:flex; align-items:center; justify-content:center; text-align:center; font-size:.83rem;
+  border:1px solid var(--border);
+}
+.flash-front{ background:linear-gradient(135deg, rgba(229,57,53,.16), rgba(255,152,0,.08));}
+.flash-back{ background:linear-gradient(135deg, rgba(0,194,255,.16), rgba(76,175,80,.1)); transform:rotateY(180deg);}
+.flash-tag{ position:absolute; top:8px; left:10px; font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+
+/* drag and drop */
+.dnd-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:30px;}
+.dnd-col b{ font-size:.72rem; text-transform:uppercase; color:var(--muted); letter-spacing:1px; display:block; margin-bottom:10px;}
+.dnd-item{ padding:12px 14px; margin-bottom:9px; border-radius:10px; background:rgba(255,255,255,.06); border:1px solid var(--border); font-size:.8rem; cursor:grab; transition:.2s;}
+.dnd-item.dragging{ opacity:.4;}
+.dnd-target{ padding:12px 14px; margin-bottom:9px; border-radius:10px; border:1.5px dashed var(--border); font-size:.8rem; min-height:44px; display:flex; align-items:center; justify-content:space-between; transition:.2s;}
+.dnd-target.over{ border-color:var(--accent); background:rgba(0,194,255,.08);}
+.dnd-target.correct{ border-style:solid; border-color:var(--success); background:rgba(76,175,80,.12);}
+.dnd-target.wrong{ border-style:solid; border-color:var(--primary); background:rgba(229,57,53,.12);}
+.dnd-check{ text-align:center; margin-top:16px;}
+
+/* MCQ + rapid fire */
+.quiz-box{ padding:22px;}
+.quiz-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+.quiz-progress{ font-size:.75rem; color:var(--muted);}
+.quiz-timer{ font-family:var(--font-mono); font-size:.85rem; padding:5px 12px; border-radius:20px; background:rgba(255,193,7,.12); color:var(--warning);}
+.quiz-q{ font-size:.95rem; margin-bottom:16px; font-weight:600;}
+.quiz-opts{ display:flex; flex-direction:column; gap:10px;}
+.quiz-opt{ padding:12px 16px; border-radius:10px; border:1.5px solid var(--border); background:rgba(255,255,255,.03); font-size:.83rem; text-align:left; transition:.2s;}
+.quiz-opt:hover{ background:rgba(255,255,255,.07);}
+.quiz-opt.correct{ border-color:var(--success); background:rgba(76,175,80,.15); animation:pop .35s ease;}
+.quiz-opt.wrong{ border-color:var(--primary); background:rgba(229,57,53,.15);}
+.quiz-explain{ margin-top:14px; padding:12px 14px; border-radius:10px; background:rgba(0,194,255,.08); font-size:.78rem; display:none;}
+.quiz-explain.show{ display:block; animation:fadeUp .3s ease both;}
+.quiz-footer{ display:flex; justify-content:space-between; margin-top:16px;}
+.score-badge{ font-size:.78rem; padding:6px 14px; border-radius:20px; background:rgba(76,175,80,.15); color:var(--success); font-weight:700;}
+
+/* cheat sheet */
+.cheat-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;}
+.cheat-item{ padding:14px; border-radius:12px; border-left:4px solid var(--accent);}
+.cheat-item b{ font-size:.8rem; display:block; margin-bottom:4px;}
+.cheat-item span{ font-size:.74rem; color:var(--muted);}
+
+/* cert tips */
+.tips-strip{ display:flex; gap:14px; overflow-x:auto; padding:6px 4px 14px;}
+.tip-card{ min-width:220px; padding:16px; border-radius:14px; background:linear-gradient(160deg, rgba(142,68,173,.14), rgba(0,194,255,.06)); flex-shrink:0;}
+.tip-card .ic{ font-size:1.3rem; margin-bottom:8px;}
+.tip-card p{ font-size:.78rem;}
+
+/* Animated sequence */
+.seq-row{ display:flex; gap:14px; flex-wrap:wrap;}
+.seq-item{ padding:12px 16px; border-radius:10px; background:rgba(255,255,255,.04); border:1px solid var(--border); font-size:.78rem; opacity:0; animation:seqIn .5s ease forwards;}
+@keyframes seqIn{ from{opacity:0; transform:translateX(-14px);} to{opacity:1; transform:translateX(0);} }
+
+/* revision mode */
+body.revision-mode .hide-in-revision{ display:none !important; }
+body.revision-mode .reveal-only{ display:block !important; }
+
+/* search highlight */
+mark{ background:rgba(255,193,7,.5); color:#fff; padding:0 2px; border-radius:3px;}
+
+/* special panels */
+.special-panels{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin:26px 0;}
+.special-panel{ padding:18px;}
+.special-panel .ptitle{ font-size:.78rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
+.special-panel ul{ padding-left:18px; font-size:.79rem; color:var(--muted); display:flex; flex-direction:column; gap:6px;}
+.panel-most .ptitle{ color:var(--primary);}
+.panel-confused .ptitle{ color:var(--warning);}
+.panel-practice .ptitle{ color:var(--success);}
+.panel-interview .ptitle{ color:var(--accent);}
+.panel-oneminute .ptitle{ color:var(--purple);}
+.panel-lastnight .ptitle{ color:var(--secondary);}
+
+/* bottom readiness panel */
+.readiness-bar{
+  position:sticky; bottom:0; margin-top:40px; padding:20px 26px; z-index:20;
+  display:flex; gap:30px; align-items:center; flex-wrap:wrap;
+}
+.readiness-meter{ flex:1; min-width:220px;}
+.readiness-meter .track{ height:10px; border-radius:6px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:6px;}
+.readiness-meter .fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--primary),var(--secondary),var(--success)); transition:width .8s ease;}
+.readiness-cols{ display:flex; gap:24px; flex-wrap:wrap;}
+.readiness-col b{ font-size:.68rem; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:4px;}
+.readiness-col span{ font-size:.78rem;}
+
+/* toast */
+#toast{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(30px); padding:12px 22px; border-radius:30px; background:rgba(20,26,40,.95); border:1px solid var(--border); font-size:.82rem; opacity:0; transition:.35s; z-index:999; box-shadow:0 10px 30px rgba(0,0,0,.5);}
+#toast.show{ opacity:1; transform:translateX(-50%) translateY(0);}
+
+/* final page */
+.final-hero{ text-align:center; padding:50px 20px;}
+.final-hero h1{ font-size:2.4rem; background:linear-gradient(120deg,var(--primary),var(--secondary),var(--accent)); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:12px;}
+.confetti{ position:fixed; inset:0; pointer-events:none; z-index:998;}
+.confetti span{ position:absolute; width:8px; height:14px; opacity:0; animation:confettiFall 3s ease-in forwards;}
+@keyframes confettiFall{ 0%{ opacity:1; transform:translateY(-10vh) rotate(0deg);} 100%{ opacity:0; transform:translateY(110vh) rotate(720deg);} }
+.checklist{ display:flex; flex-direction:column; gap:10px;}
+.checklist label{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:10px; background:rgba(255,255,255,.03); font-size:.83rem; cursor:pointer;}
+.checklist input{ width:18px; height:18px; accent-color:var(--success);}
+.big-list{ columns:2; gap:24px; font-size:.82rem; color:var(--muted);}
+.big-list li{ margin-bottom:8px; break-inside:avoid;}
+.big-list li b{ color:var(--text);}
+
+@media(max-width:980px){
+  .sidebar{ position:fixed; left:-300px; height:100vh; transition:left .3s ease;}
+  .sidebar.open{ left:0;}
+  .main{ padding:20px 16px 90px;}
+  .dnd-wrap{ grid-template-columns:1fr;}
+  .big-list{ columns:1;}
+}
+.menu-toggle{ display:none; }
+@media(max-width:980px){ .menu-toggle{ display:flex;} }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ LANDING PAGE ============================================================ -->
+<div id="landing">
+  <canvas id="meshCanvas"></canvas>
+  <canvas id="neuralCanvas"></canvas>
+  <div id="cloudLayer"></div>
+  <div class="landing-content">
+    <div class="landing-badge"><span class="dot"></span> ORACLE CLOUD INFRASTRUCTURE · CERTIFICATION PREP</div>
+    <h1 class="landing-title">OCI DATA SCIENCE<br>CERTIFICATION<br>REVISION VISUALIZER</h1>
+    <p class="landing-sub">10 Days · Complete Interactive Revision</p>
+    <div class="typewrap"><span id="typeTarget"></span><span class="cursor">&nbsp;</span></div>
+    <div class="ring-wrap">
+      <svg viewBox="0 0 150 150" width="150" height="150">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E53935"/>
+            <stop offset="50%" stop-color="#FF9800"/>
+            <stop offset="100%" stop-color="#00C2FF"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="75" cy="75" r="64"/>
+        <circle class="ring-fg" id="landingRing" cx="75" cy="75" r="64" stroke-dasharray="402" stroke-dashoffset="402"/>
+      </svg>
+      <div class="ring-label"><b id="landingRingPct">0%</b><span>Ready</span></div>
+    </div>
+    <div><button class="start-btn" onclick="startRevision()">🚀 Start Revision</button></div>
+    <div class="landing-foot">Covers all 10 days · 40+ core topics · 400+ practice questions · Offline, single-file, zero dependency</div>
+  </div>
+</div>
+
+<!-- ============================================================ APP SHELL ============================================================ -->
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">OC</div>
+      <div><b>OCI Data Science</b><span>Certification Revision</span></div>
+    </div>
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="globalSearch" placeholder="Search any topic…" oninput="doGlobalSearch(this.value)">
+    </div>
+    <div id="searchResults"></div>
+    <div id="navList">
+      <div class="nav-section-title">Revision Days</div>
+      <!-- day items injected by JS -->
+    </div>
+    <div class="nav-section-title">Program</div>
+    <div class="day-item" onclick="renderMindMapPage()"><div class="day-num">∞</div><div class="day-info"><b>Full Syllabus Mind Map</b></div></div>
+    <div class="day-item" onclick="renderTimelinePage()"><div class="day-num">⏱</div><div class="day-info"><b>ML Lifecycle Timeline</b></div></div>
+    <div class="day-item" onclick="renderFinalPage()"><div class="day-num">🏁</div><div class="day-info"><b>Final Revision & Exam Day</b></div></div>
+
+    <div class="sidebar-foot">
+      <div class="mode-toggle">
+        <button id="revModeBtn" onclick="toggleRevisionMode()">Revision Mode</button>
+        <button onclick="location.reload()">Reset View</button>
+      </div>
+      <div class="overall-ring">
+        <svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="14" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/><circle id="sidebarRing" cx="17" cy="17" r="14" fill="none" stroke="url(#ringGrad)" stroke-width="4" stroke-linecap="round" transform="rotate(-90 17 17)" stroke-dasharray="88" stroke-dashoffset="88"/></svg>
+        <div>Overall Progress<br><b id="sidebarPct" style="color:var(--text)">0%</b> · Streak: <b id="streakCount" style="color:var(--text)">0</b>🔥</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main" id="mainContent"></main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================================================================
+   DATA LAYER — Complete OCI Data Science Certification Syllabus
+   ================================================================ */
+const DAYS = [
+{
+  id:1, icon:"🚀", title:"Foundations, IAM & Networking",
+  blurb:"Core OCI Data Science service concepts, identity & access management, compartments, and the networking backbone (VCN) that every notebook, job and deployment relies on.",
+  arch:"vcn",
+  topics:[
+    {name:"OCI Data Science Service Overview",
+      definition:"A fully managed, serverless platform on OCI for building, training, deploying and managing machine learning models using Python, Jupyter notebooks, and the ADS SDK.",
+      purpose:"Removes infrastructure burden from data scientists so they can focus on the ML lifecycle: exploration, training, evaluation, deployment and monitoring.",
+      working:"You create a Project → launch Notebook Sessions inside it → develop/train models using conda environments → save models to the Model Catalog → deploy as HTTP endpoints → monitor via Logging/Monitoring.",
+      example:"A retail company creates a 'Demand-Forecasting' project, spins up a notebook session with the 'General Machine Learning for CPU' conda pack, trains a forecasting model with ADS, and deploys it for real-time prediction.",
+      certTip:"Know the exact order of the lifecycle: Project → Notebook Session → Model → Model Catalog → Model Deployment.",
+      mistake:"Confusing 'Project' (a logical container) with 'Compartment' (an IAM/billing boundary) — a project always lives inside a compartment.",
+      bestPractice:"Group related notebook sessions, models and jobs under one Project per business use case for easier governance."},
+    {name:"IAM Policies for Data Science",
+      definition:"Authorization statements written in OCI policy language that grant groups permission to manage data-science resources (projects, notebook-sessions, models, model-deployments, jobs, pipelines).",
+      purpose:"Enforces least-privilege access so only authorized users/groups can create, read, or manage ML resources in a compartment.",
+      working:"A policy statement such as 'Allow group DataScienceUsers to manage data-science-family in compartment ds-compartment' grants full lifecycle rights; you can narrow to manage notebook-sessions, manage models, etc.",
+      example:"'Allow group ML-Engineers to manage data-science-family in compartment analytics' lets the ML-Engineers group create notebooks, train, and deploy models only inside the analytics compartment.",
+      certTip:"Remember the resource-type keyword 'data-science-family' groups ALL data science resources — projects, notebook-sessions, models, model-deployments, jobs, pipelines.",
+      mistake:"Forgetting that Notebook Sessions also need policies to use other OCI services (Object Storage, Data Flow) via the notebook's resource principal.",
+      bestPractice:"Use resource principals instead of API keys inside notebook sessions/jobs — no credentials to manage or leak."},
+    {name:"VCN, Subnets & Service Gateway",
+      definition:"The Virtual Cloud Network (VCN) is the private, software-defined network in which notebook sessions, jobs and model deployments run, communicating with other OCI services through gateways.",
+      purpose:"Provides network isolation, security-list/NSG control, and controlled egress/ingress for data science compute resources.",
+      working:"Notebook sessions and deployments get a VNIC in a chosen subnet; a Service Gateway lets them reach Object Storage/other OCI services privately, while a NAT Gateway allows outbound internet (e.g. pip installs).",
+      example:"A notebook session in a private subnet uses the Service Gateway to pull training data from Object Storage without traversing the public internet.",
+      certTip:"Data Science needs egress to OCI Object Storage (via Service Gateway) and often internet access (via NAT Gateway) for package installs — know which gateway does what.",
+      mistake:"Placing a notebook session in a subnet with no route to the Service Gateway, causing failures pulling conda packs or writing to Object Storage.",
+      bestPractice:"Use private subnets + Service Gateway + NAT Gateway combo for secure, functional data-science networking."},
+    {name:"Dynamic Groups & Resource Principals",
+      definition:"A Dynamic Group is a rule-based collection of OCI resources (e.g., all notebook sessions in a compartment); a Resource Principal is the identity a resource uses to call other OCI APIs without stored credentials.",
+      purpose:"Lets notebook sessions, jobs, and model deployments securely call OCI APIs (Object Storage, Vault, Streaming) as themselves, not as a user.",
+      working:"Define a dynamic group matching rule like 'ALL {resource.type='datasciencenotebooksession', resource.compartment.id='...'}', then write an IAM policy granting that dynamic group access to target resources.",
+      example:"'Allow dynamic-group ds-notebooks to read objects in compartment analytics' lets any notebook session in that compartment read Object Storage buckets using its resource principal.",
+      certTip:"Dynamic Group matching rules commonly target resource.type in {'datasciencenotebooksession','datasciencemodeldeployment','datasciencejobrun'}.",
+      mistake:"Trying to use dynamic groups for entities outside a compartment/tenancy boundary the rule doesn't cover.",
+      bestPractice:"Always prefer resource principal authentication (ads.set_auth('resource_principal')) over config-file API keys for anything running inside OCI."}
+  ],
+  flashcards:[
+    {q:"What OCI resource groups Projects, Notebook Sessions, Models and Deployments for IAM?",a:"data-science-family"},
+    {q:"What authenticates a notebook session to call other OCI services without stored keys?",a:"Resource Principal (via a Dynamic Group policy)"},
+    {q:"Which gateway lets a private-subnet notebook reach Object Storage without public internet?",a:"Service Gateway"},
+    {q:"What is the logical container that groups related ML resources for one use case?",a:"Project"},
+    {q:"What lets outbound internet access (e.g., pip install) from a private subnet?",a:"NAT Gateway"}
+  ],
+  mcq:[
+    {q:"A data scientist needs a notebook session to read from an Object Storage bucket without embedding API keys. What should be configured?",
+      options:["A dynamic group + IAM policy for resource principal access","A pre-authenticated request only","Hardcoded API key in the notebook","IAM federation with SAML"],
+      answer:0, explain:"Dynamic groups match the notebook session resource, and a policy grants it access — this uses the resource principal, avoiding stored credentials."},
+    {q:"Which statement best describes 'data-science-family' in an IAM policy?",
+      options:["A single conda environment","An aggregate resource-type covering projects, notebook sessions, models, deployments, jobs and pipelines","A billing family for compute shapes","A model versioning scheme"],
+      answer:1, explain:"'data-science-family' is a convenience aggregate resource-type for writing simpler IAM policies covering all data science resources."},
+    {q:"A notebook session in a private subnet cannot install a pip package requiring internet access. What is most likely missing?",
+      options:["Service Gateway","NAT Gateway route","Model Catalog permission","Dynamic group rule for jobs"],
+      answer:1, explain:"Public internet access from a private subnet requires a NAT Gateway (Service Gateway only reaches OCI public services)."}
+  ],
+  dragdrop:[
+    {term:"Project", match:"Logical container for related ML resources"},
+    {term:"Dynamic Group", match:"Rule-based grouping of OCI resources for identity"},
+    {term:"Service Gateway", match:"Private route to OCI public services like Object Storage"},
+    {term:"Resource Principal", match:"Identity used by a resource to call OCI APIs"}
+  ],
+  cheatsheet:[
+    {label:"IAM aggregate resource", value:"data-science-family", c:"accent"},
+    {label:"Private OCI-service route", value:"Service Gateway", c:"success"},
+    {label:"Internet route from private subnet", value:"NAT Gateway", c:"warning"},
+    {label:"Keyless auth for notebooks/jobs", value:"Resource Principal", c:"purple"}
+  ],
+  mistakes:["Using API keys in notebooks instead of resource principals","Forgetting dynamic group rules must match resource.type exactly","Assuming Service Gateway grants internet access (it does not)"],
+  examNotes:["Policy verbs: inspect < read < use < manage (lowest to highest access)","Compartments are the billing + isolation boundary; Projects are logical grouping only","Every notebook session and job run is a resource that CAN be targeted by a dynamic group"],
+  scenario:[{q:"Your notebook session can list Object Storage buckets but cannot download objects. What's the likely fix?", a:"Upgrade the IAM policy verb for the dynamic group from 'read' to 'manage' or at least ensure 'read objects' is granted, not just 'read buckets'."}]
+},
+{
+  id:2, icon:"📓", title:"Projects, Notebooks & Conda Environments",
+  blurb:"Deep dive into Notebook Sessions, the conda environment ecosystem, the ADS SDK, and Object Storage integration for data access.",
+  arch:"notebook",
+  topics:[
+    {name:"Projects & Notebook Sessions",
+      definition:"A Notebook Session is a managed JupyterLab environment with configurable compute shape, block storage, and networking, used for interactive development.",
+      purpose:"Gives data scientists an on-demand, scalable interactive compute environment without managing servers.",
+      working:"Create session → choose shape (VM.Standard, VM.GPU, flex) & block storage size → session provisions in minutes → attach conda environments → auto-saves to block storage; stop when idle to save cost.",
+      example:"A data scientist launches a VM.Standard.E4.Flex notebook session with 4 OCPUs and 50GB block storage to explore a 5GB CSV dataset.",
+      certTip:"Notebook sessions bill only while ACTIVE; stopping (not deleting) preserves the environment and block storage.",
+      mistake:"Leaving GPU notebook sessions running idle overnight — a top cost mistake.",
+      bestPractice:"Right-size the shape to the workload; use flexible shapes to tune OCPU/memory precisely."},
+    {name:"Conda Environments (Data Science Conda Packs)",
+      definition:"Pre-built, Oracle-curated Python environments (e.g., 'General Machine Learning', 'TensorFlow', 'PyTorch', 'Data Exploration') installable inside notebook sessions via the odsc CLI.",
+      purpose:"Provides consistent, versioned, reproducible package sets across notebooks, jobs, and deployments — avoiding 'works on my machine' issues.",
+      working:"Run 'odsc conda install' to fetch a Data Science conda environment from Oracle's Object Storage service bucket; you can also publish CUSTOM conda environments to your own Object Storage bucket for team reuse.",
+      example:"A team publishes a custom 'fraud-detection-env' conda pack with XGBoost + custom feature libraries to a shared Object Storage bucket so all notebooks and jobs use identical dependencies.",
+      certTip:"Custom (published) conda environments require an Object Storage bucket configured as the 'conda environment' bucket at the project/tenancy level.",
+      mistake:"Modifying a Data Science–provided conda environment directly instead of cloning it first — Oracle environments are read-only by design pattern.",
+      bestPractice:"Always clone a base conda env before adding packages, then publish the clone for reuse in jobs and deployments."},
+    {name:"ADS SDK (Oracle Accelerated Data Science)",
+      definition:"Oracle's open-source Python SDK that simplifies the OCI Data Science ML lifecycle — data loading, AutoML, model evaluation, explainability, and one-line model deployment.",
+      purpose:"Reduces boilerplate: connecting to OCI resources, registering models, deploying, and monitoring — all through a consistent Pythonic API.",
+      working:"'import ads; ads.set_auth(\"resource_principal\")' then use ADSDataset, AutoML, ADSModel, and 'model.save()' / 'model.deploy()' to move through the lifecycle in a notebook, job, or pipeline.",
+      example:"'from ads.automl.driver import AutoML' trains multiple candidate algorithms and returns the best-scoring pipeline automatically.",
+      certTip:"'ads.set_auth()' supports 'api_key' (local) and 'resource_principal' (inside OCI) — know when to use each.",
+      mistake:"Using 'api_key' auth inside a notebook session on OCI when 'resource_principal' is the intended, credential-free approach.",
+      bestPractice:"Always default to resource_principal auth for any code that will later run as a Job or Pipeline step."},
+    {name:"Object Storage Integration",
+      definition:"OCI's durable, scalable object store used as the primary data lake and artifact store (datasets, models, conda packs) for the Data Science service.",
+      purpose:"Central place to stage training data, store model artifacts, and host published conda environments, addressed via 'oci://bucket@namespace/path'.",
+      working:"ADS and ocifs let you read/write directly with pandas: 'pd.read_csv(\"oci://bucket@namespace/file.csv\")' using resource principal auth transparently.",
+      example:"A notebook reads 2M rows of sales data directly from an Object Storage bucket into a pandas DataFrame using ocifs without downloading locally first.",
+      certTip:"The URI scheme for OCI Object Storage in ADS/ocifs is 'oci://<bucket>@<namespace>/<path>'.",
+      mistake:"Forgetting the namespace segment in the oci:// URI, causing 'bucket not found' errors.",
+      bestPractice:"Use Object Storage lifecycle policies to auto-archive old training data and reduce storage cost."}
+  ],
+  flashcards:[
+    {q:"What CLI command installs a Data Science conda environment?",a:"odsc conda install"},
+    {q:"What Python line sets ADS to use resource principal authentication?",a:"ads.set_auth(\"resource_principal\")"},
+    {q:"What is the URI scheme to read Object Storage data in ADS?",a:"oci://<bucket>@<namespace>/<path>"},
+    {q:"When are notebook sessions NOT billed?",a:"When they are in the STOPPED state (block storage still billed)"},
+    {q:"What must you do before customizing an Oracle-provided conda env?",a:"Clone it first, then modify the clone"}
+  ],
+  mcq:[
+    {q:"A team wants every notebook, job and deployment to use the exact same custom Python dependencies. What should they do?",
+      options:["Publish a custom conda environment to Object Storage and reference it everywhere","Install packages manually in every notebook session","Use different conda envs per resource","Store dependencies in Vault"],
+      answer:0, explain:"Publishing a custom conda pack to Object Storage gives one reusable, versioned environment consumable by notebooks, jobs, and deployments alike."},
+    {q:"Which authentication mode should code use when it will run inside a Data Science Job (no user present)?",
+      options:["api_key","resource_principal","instance_principal only for compute","browser SSO"],
+      answer:1, explain:"resource_principal is the credential-free method designed for code executing as an OCI resource (notebook, job, deployment)."},
+    {q:"What happens to a Notebook Session's cost when it is STOPPED (not deleted)?",
+      options:["Full compute + storage billing continues","Only block storage is billed, compute billing stops","Nothing is billed at all","Billing doubles during restart"],
+      answer:1, explain:"Stopping a session halts compute billing while block storage (and thus your saved work) is retained and billed at storage rates."}
+  ],
+  dragdrop:[
+    {term:"odsc conda install", match:"Installs a Data Science conda environment"},
+    {term:"ocifs", match:"Filesystem interface for Object Storage in pandas/ADS"},
+    {term:"resource_principal", match:"Credential-free auth for code running inside OCI"},
+    {term:"Custom conda pack", match:"Published environment shared across notebooks/jobs/deployments"}
+  ],
+  cheatsheet:[
+    {label:"Conda install command", value:"odsc conda install", c:"accent"},
+    {label:"OS URI format", value:"oci://bucket@namespace/path", c:"success"},
+    {label:"Local auth mode", value:"api_key", c:"warning"},
+    {label:"In-OCI auth mode", value:"resource_principal", c:"purple"}
+  ],
+  mistakes:["Editing Oracle base conda envs directly","Forgetting namespace in Object Storage URIs","Leaving expensive GPU notebook sessions running idle"],
+  examNotes:["Notebook Session block storage ranges roughly 50GB–1024GB and is resizable","Conda environments are versioned by slug, e.g. 'mlcpuv1'","ADS supports pandas, Dask and Spark-backed DataFrames"],
+  scenario:[{q:"Your custom conda environment publish fails with a permission error to Object Storage. What's the likely root cause?", a:"The notebook session's dynamic group policy lacks 'manage objects' permission on the designated conda-environment bucket."}]
+},
+{
+  id:3, icon:"🧪", title:"Data Connections, AutoML & Model Training",
+  blurb:"Connecting to data sources, running Spark workloads with Data Flow, automated model selection with AutoML, and feature engineering pipelines.",
+  arch:"dataflow",
+  topics:[
+    {name:"Data Connections & Data Flow (Spark)",
+      definition:"OCI Data Flow is a fully managed Apache Spark service; the Data Science service integrates with it to run large-scale ETL and feature engineering from notebooks or jobs.",
+      purpose:"Handles datasets too large for a single notebook session by distributing compute across a managed Spark cluster.",
+      working:"Use the 'ads.jobs' Data Flow integration or the PySpark conda environment's magic '%%spark' cells inside a notebook session connected to a Data Flow cluster via Spark Session Magic.",
+      example:"A 200GB clickstream dataset is aggregated using a Data Flow Spark application launched directly from a Data Science notebook using session magic.",
+      certTip:"Notebook Sessions can attach directly to Data Flow via 'Spark Session Magic' — no separate cluster management needed.",
+      mistake:"Trying to process very large datasets purely in-memory in a notebook session instead of offloading to Data Flow.",
+      bestPractice:"Use Data Flow for heavy ETL/feature engineering, then bring only the reduced feature set into the notebook."},
+    {name:"AutoML with ADS",
+      definition:"An ADS module that automatically performs algorithm selection, adaptive sampling, and hyperparameter tuning to produce a high-performing candidate model with minimal code.",
+      purpose:"Speeds up baseline model creation and provides a defensible, explainable starting point before custom tuning.",
+      working:"AutoML runs stages: Algorithm Selection → Adaptive Sampling → Feature Selection → Hyperparameter Tuning, returning a leaderboard of models ranked by score.",
+      example:"AutoML tests Logistic Regression, Random Forest, XGBoost and LightGBM on a churn dataset and returns XGBoost as top performer with tuned hyperparameters.",
+      certTip:"Know the 4 AutoML stages in order: Algorithm Selection → Adaptive Sampling → Feature Selection → Hyperparameter Tuning.",
+      mistake:"Assuming AutoML output requires no further validation before production — always evaluate on a proper holdout set.",
+      bestPractice:"Use AutoML for rapid baselining, then refine the winning pipeline manually for production."},
+    {name:"Feature Engineering Pipeline",
+      definition:"The ADS 'ADSDataset'/'DatasetFactory' and transformer tools that clean, encode, impute, and engineer features before model training.",
+      purpose:"Improves model quality by transforming raw data into meaningful, well-scaled, well-encoded inputs.",
+      working:"'DatasetFactory.open()' loads data, auto-detects types and target, then '.auto_transform()' applies recommended imputations/encodings which can be visualized and customized.",
+      example:"A dataset with missing income values and categorical 'region' column is auto-transformed: imputed with median income, one-hot encoded region.",
+      certTip:"ADS auto-transform suggestions are visual and interactive in notebooks — you accept/reject each recommended transform.",
+      mistake:"Applying feature scaling to the full dataset before splitting into train/test, causing data leakage.",
+      bestPractice:"Always fit transformers/scalers on training data only, then apply (transform-only) to test/validation."},
+    {name:"Model Training & Experiment Tracking",
+      definition:"The process of fitting an ML algorithm's parameters on training data, with ADS enabling comparison across runs/experiments.",
+      purpose:"Produces a trained model artifact ready for evaluation, explainability analysis, and eventual cataloging/deployment.",
+      working:"Train with scikit-learn/XGBoost/TensorFlow/PyTorch inside a notebook or Job; use ADSModel wrappers so ADS can auto-generate score.py and runtime.yaml for deployment later.",
+      example:"An XGBoost classifier is trained with 5-fold cross-validation; ADS logs accuracy, F1, and AUC for each fold for comparison.",
+      certTip:"ADSModel.prepare() auto-generates the artifact files (score.py, runtime.yaml, model schema) needed for later deployment.",
+      mistake:"Training and evaluating on the same data split, producing an overly optimistic accuracy figure.",
+      bestPractice:"Use stratified k-fold cross-validation for classification tasks with imbalanced classes."}
+  ],
+  flashcards:[
+    {q:"What OCI service does Data Science integrate with for managed Spark ETL?",a:"OCI Data Flow"},
+    {q:"List the 4 AutoML stages in order.",a:"Algorithm Selection → Adaptive Sampling → Feature Selection → Hyperparameter Tuning"},
+    {q:"What ADS class auto-generates score.py and runtime.yaml for deployment?",a:"ADSModel (via .prepare())"},
+    {q:"What notebook feature lets you run Spark code inline connected to Data Flow?",a:"Spark Session Magic (%%spark)"},
+    {q:"What data leakage mistake happens when scaling before splitting?",a:"Test set statistics leak into training, inflating performance"}
+  ],
+  mcq:[
+    {q:"A dataset is 300GB and too large to process in a single notebook session. What is the recommended OCI approach?",
+      options:["Increase notebook block storage only","Use OCI Data Flow (managed Spark) for distributed processing","Download the dataset to local laptop","Split manually into 10 notebook sessions"],
+      answer:1, explain:"OCI Data Flow provides managed, distributed Spark compute purpose-built for large-scale ETL/feature engineering."},
+    {q:"What is the correct order of AutoML's pipeline stages in ADS?",
+      options:["Hyperparameter Tuning → Algorithm Selection → Sampling → Feature Selection","Algorithm Selection → Adaptive Sampling → Feature Selection → Hyperparameter Tuning","Feature Selection → Algorithm Selection → Tuning → Sampling","Sampling → Tuning → Selection → Features"],
+      answer:1, explain:"ADS AutoML proceeds Algorithm Selection, then Adaptive Sampling, then Feature Selection, then Hyperparameter Tuning."},
+    {q:"Why should scalers/encoders be fit only on training data?",
+      options:["It's faster","To prevent data leakage from test/validation sets","It reduces memory usage","It is required by OCI IAM policy"],
+      answer:1, explain:"Fitting on the full dataset lets test-set information leak into the transform, giving an unrealistically optimistic evaluation."}
+  ],
+  dragdrop:[
+    {term:"Data Flow", match:"Managed Spark for large-scale ETL"},
+    {term:"AutoML", match:"Automated algorithm selection and tuning"},
+    {term:"ADSModel.prepare()", match:"Generates score.py & runtime.yaml artifacts"},
+    {term:"Adaptive Sampling", match:"AutoML stage that reduces data size intelligently for speed"}
+  ],
+  cheatsheet:[
+    {label:"Spark service", value:"OCI Data Flow", c:"accent"},
+    {label:"AutoML order", value:"Select→Sample→Features→Tune", c:"success"},
+    {label:"Artifact generator", value:"ADSModel.prepare()", c:"warning"},
+    {label:"Leakage fix", value:"Fit transforms on train only", c:"purple"}
+  ],
+  mistakes:["Fitting scalers on full dataset before split","Treating AutoML output as production-ready without validation","Processing huge datasets purely in a notebook session"],
+  examNotes:["ADS integrates natively with scikit-learn, XGBoost, LightGBM, TensorFlow, PyTorch, Spark MLlib","DatasetFactory.open() auto-detects the likely target column","Cross-validation strategy matters more for imbalanced classification tasks"],
+  scenario:[{q:"AutoML returns a 99% accuracy model on an imbalanced fraud dataset (1% positive class). What should you check first?", a:"Check the confusion matrix / precision-recall / F1 — accuracy is misleading on imbalanced classes; the model may be predicting only the majority class."}]
+},
+{
+  id:4, icon:"📦", title:"Model Catalog & Model Deployment",
+  blurb:"Saving, versioning and governing trained models, understanding artifact structure (score.py), and deploying models as managed HTTP endpoints.",
+  arch:"deployment",
+  topics:[
+    {name:"Model Catalog",
+      definition:"A centralized, versioned registry in OCI Data Science for storing model artifacts, metadata, provenance, and taxonomy/tags for governance and reuse.",
+      purpose:"Enables discoverability, lineage tracking, and controlled promotion of models from experimentation to production.",
+      working:"'model.save(display_name=...)' uploads the artifact zip (score.py, runtime.yaml, model file, schema) to the catalog under the project; each save creates a new immutable Model OCID.",
+      example:"A 'churn-predictor-v3' model is saved to the catalog with tags {'stage':'staging'} and provenance linking it to the exact notebook session and git commit that produced it.",
+      certTip:"Model Catalog entries store PROVENANCE: git commit, repository URL, training resource — useful for audit and reproducibility questions.",
+      mistake:"Saving multiple experimental models without descriptive display names/tags, making the catalog unmanageable.",
+      bestPractice:"Tag models with lifecycle stage (dev/staging/prod) and link provenance metadata for auditability."},
+    {name:"Model Versioning & Provenance",
+      definition:"Each model catalog entry is immutable and versioned by its own OCID; provenance metadata captures the exact code/data lineage that produced it.",
+      purpose:"Supports reproducibility, rollback, and compliance requirements for regulated ML deployments.",
+      working:"ADS auto-captures provenance (git repo URL, commit hash, training conda environment) when you call '.save()' from a notebook session backed by a git repo.",
+      example:"If a deployed model underperforms, provenance metadata lets the team trace it back to the exact training script version.",
+      certTip:"Provenance capture works best when the notebook session's working directory is a git repository.",
+      mistake:"Not committing code before saving a model, so provenance points to an uncommitted (unreproducible) state.",
+      bestPractice:"Commit and push training code before saving a model artifact to the catalog."},
+    {name:"Model Artifacts & score.py",
+      definition:"A model artifact is a zip containing the serialized model file, runtime.yaml (conda env reference), score.py (load_model + predict functions), and optionally input_schema.json/output_schema.json.",
+      purpose:"score.py defines exactly how the deployment loads the model and serves predictions — the contract between your model and the deployment infrastructure.",
+      working:"'load_model()' deserializes the model file once at deployment startup; 'predict(data, model=load_model())' runs inference per request and returns JSON-serializable results.",
+      example:"A custom score.py adds pre-processing (feature scaling) inside predict() before calling model.predict(), so raw JSON payloads work directly against the endpoint.",
+      certTip:"score.py MUST define 'load_model()' and 'predict()' — these are the two required functions for every deployable artifact.",
+      mistake:"Returning non-JSON-serializable objects (e.g., numpy arrays directly) from predict() causing deployment errors.",
+      bestPractice:"Always cast predictions to native Python types/lists before returning from predict()."},
+    {name:"Model Deployment (Real-Time HTTP Endpoints)",
+      definition:"A managed, autoscaling HTTP inference endpoint created from a Model Catalog entry, exposing a REST /predict endpoint with built-in load balancing.",
+      purpose:"Serves real-time predictions to applications without managing servers, containers, or load balancers manually.",
+      working:"Choose a model → configure instance shape/count → deployment provisions a load balancer + compute instances → returns an HTTPS invoking URI you POST JSON payloads to.",
+      example:"A deployment named 'fraud-scoring-prod' running on 3 VM.Standard.E4.Flex instances serves real-time fraud scores at sub-100ms latency via its predict URL.",
+      certTip:"Model Deployment supports autoscaling based on CPU/memory utilization and multiple instances for high availability.",
+      mistake:"Deploying with a single instance in production — no redundancy if that instance fails.",
+      bestPractice:"Deploy with at least 2 instances across ADs for high availability in production workloads."}
+  ],
+  flashcards:[
+    {q:"What two functions must score.py define?",a:"load_model() and predict()"},
+    {q:"What metadata does the Model Catalog capture automatically about training lineage?",a:"Provenance (git repo, commit hash, training resource)"},
+    {q:"What file in the model artifact references the conda environment used?",a:"runtime.yaml"},
+    {q:"What does a Model Deployment expose to client applications?",a:"An HTTPS REST endpoint (predict URI)"},
+    {q:"Why avoid single-instance production deployments?",a:"No redundancy / high availability if the instance fails"}
+  ],
+  mcq:[
+    {q:"A deployed model returns a 500 error because predict() returns a raw numpy array. What is the fix?",
+      options:["Increase instance count","Cast the output to a JSON-serializable Python type (e.g., list) before returning","Change the conda environment","Re-save the model without a schema"],
+      answer:1, explain:"REST responses must be JSON-serializable; numpy arrays need conversion (e.g., .tolist()) inside predict()."},
+    {q:"What OCI Data Science feature lets you trace a deployed model back to the exact git commit that trained it?",
+      options:["Model Deployment autoscaling","Model Catalog provenance metadata","Conda environment versioning","Dynamic groups"],
+      answer:1, explain:"Provenance metadata in the Model Catalog captures git repository URL and commit hash at save time."},
+    {q:"Which two functions are mandatory in every score.py file?",
+      options:["train() and test()","load_model() and predict()","fit() and transform()","init() and deploy()"],
+      answer:1, explain:"score.py must implement load_model() to load the artifact and predict() to serve inference requests."}
+  ],
+  dragdrop:[
+    {term:"score.py", match:"Defines load_model() and predict() for serving"},
+    {term:"runtime.yaml", match:"References the conda environment for the artifact"},
+    {term:"Model Catalog", match:"Versioned, governed registry of trained models"},
+    {term:"Model Deployment", match:"Managed, autoscaling HTTPS inference endpoint"}
+  ],
+  cheatsheet:[
+    {label:"Required score.py functions", value:"load_model(), predict()", c:"accent"},
+    {label:"Env reference file", value:"runtime.yaml", c:"success"},
+    {label:"Lineage metadata", value:"Provenance", c:"warning"},
+    {label:"HA recommendation", value:"≥2 instances, multi-AD", c:"purple"}
+  ],
+  mistakes:["Single-instance production deployments","Returning non-serializable objects from predict()","Saving models without descriptive tags/versions"],
+  examNotes:["Model Deployment supports both public and private (VCN) endpoints","Instance shapes for deployment can differ from training shapes","Deployments can be updated with zero downtime via new model versions"],
+  scenario:[{q:"Your model deployment needs to serve traffic only from inside your corporate VCN, never the public internet. What deployment configuration achieves this?", a:"Configure the Model Deployment with a private endpoint inside your VCN/subnet, restricting access via security lists/NSGs instead of a public load balancer."}]
+},
+{
+  id:5, icon:"⚙️", title:"Jobs, ML Pipelines & Autoscaling",
+  blurb:"Running non-interactive workloads with Data Science Jobs, orchestrating multi-step DAGs with ML Pipelines, and autoscaling deployments.",
+  arch:"pipeline",
+  topics:[
+    {name:"OCI Data Science Jobs",
+      definition:"A managed way to run a Python/shell script as a one-off or scheduled batch task on OCI infrastructure, without an interactive notebook session.",
+      purpose:"Enables production-style batch training, scoring, or ETL runs that are reproducible, logged, and infrastructure-free to manage.",
+      working:"Define a Job with a source code artifact + conda environment + compute shape → each execution creates an immutable Job Run with its own logs, environment variables, and exit status.",
+      example:"A nightly Job re-trains a demand-forecast model using the latest day's sales data, triggered by a scheduler or CI/CD pipeline.",
+      certTip:"A Job is the reusable definition; a Job Run is one immutable execution instance of it — know this distinction.",
+      mistake:"Confusing Jobs (batch, non-interactive) with Notebook Sessions (interactive) — Jobs cannot be used for live exploration.",
+      bestPractice:"Parametrize Jobs via environment variables so the same Job definition can run for different datasets/configs."},
+    {name:"ML Pipelines (DAG Orchestration)",
+      definition:"OCI Data Science Pipelines let you chain multiple Job-like steps into a Directed Acyclic Graph (DAG) with dependencies, running data-prep, training, and evaluation as one orchestrated workflow.",
+      purpose:"Automates and standardizes multi-step ML workflows with visual monitoring, retries, and conditional branching.",
+      working:"Define Pipeline Steps (each with its own compute shape/conda env) → declare dependsOn relationships → Pipeline Run executes steps in DAG order, parallelizing independent branches.",
+      example:"A pipeline runs 'data-prep' → fans out to 'train-modelA' and 'train-modelB' in parallel → both feed into 'compare-and-register' step.",
+      certTip:"Each Pipeline Step can use a DIFFERENT compute shape and conda environment — heterogeneous resource allocation per step.",
+      mistake:"Creating circular dependencies between steps, which is invalid for a DAG and will fail validation.",
+      bestPractice:"Keep each pipeline step idempotent and independently testable as a standalone Job first."},
+    {name:"Pipeline Steps & Conditional Logic",
+      definition:"Individual units of work inside a Pipeline, each is essentially a Job-like task; step outcomes can gate whether downstream steps run.",
+      purpose:"Provides fine-grained control flow (e.g., skip deployment if evaluation metric is below threshold).",
+      working:"Steps expose exit codes/environment outputs; downstream steps can be configured to run only on upstream success, enabling gated promotion.",
+      example:"An 'evaluate' step writes an AUC score; a 'deploy' step is configured to run only if evaluate succeeded, effectively gating bad models from production.",
+      certTip:"Failed steps stop their downstream dependents by default, but independent DAG branches continue unaffected.",
+      mistake:"Assuming a failure anywhere halts the ENTIRE pipeline — only dependent downstream steps are blocked.",
+      bestPractice:"Design evaluation gates as explicit pipeline steps rather than manual post-hoc checks."},
+    {name:"Autoscaling for Model Deployments",
+      definition:"A Model Deployment feature that automatically adjusts the number of running instances based on CPU/memory utilization thresholds within a min/max bound.",
+      purpose:"Balances cost and performance — scale up under load, scale down when idle, without manual intervention.",
+      working:"Configure autoscaling policy with min instance count, max instance count, and a target CPU utilization percentage; OCI adds/removes instances automatically as load changes.",
+      example:"A deployment configured with min=2, max=10, target CPU=70% scales from 2 to 6 instances during a marketing campaign traffic spike, then back down afterward.",
+      certTip:"Autoscaling requires setting both a minimum AND maximum instance count plus a utilization target metric.",
+      mistake:"Setting min=max (a static count), which disables any real autoscaling behavior.",
+      bestPractice:"Set min instances to your baseline steady-state load and max to comfortably absorb peak traffic."}
+  ],
+  flashcards:[
+    {q:"What is the difference between a Job and a Job Run?",a:"Job = reusable definition; Job Run = one immutable execution instance"},
+    {q:"What structure do OCI ML Pipelines use to orchestrate steps?",a:"A Directed Acyclic Graph (DAG)"},
+    {q:"Can different Pipeline Steps use different conda environments/shapes?",a:"Yes — each step can have its own compute shape and conda environment"},
+    {q:"What two bounds must you configure for autoscaling a deployment?",a:"Minimum and maximum instance count (plus a target utilization metric)"},
+    {q:"What happens to independent DAG branches when one branch's step fails?",a:"They are unaffected and continue running; only dependents of the failed step are blocked"}
+  ],
+  mcq:[
+    {q:"A pipeline should skip the 'deploy' step if 'evaluate' shows AUC below 0.8. How is this typically implemented?",
+      options:["Manually check after the pipeline finishes","Configure a conditional dependency so 'deploy' only runs on 'evaluate' success/condition","Delete the deploy step","Run deploy and evaluate simultaneously"],
+      answer:1, explain:"Pipeline steps support conditional/dependency-based execution so downstream steps can be gated by upstream results."},
+    {q:"What must be set for a Model Deployment to autoscale?",
+      options:["Only a maximum instance count","Only a conda environment","Min instance count, max instance count, and a utilization target","A static single instance"],
+      answer:2, explain:"Autoscaling needs a min/max bound plus a target metric (e.g., CPU%) to decide when to add/remove instances."},
+    {q:"What best describes a Data Science Job Run?",
+      options:["A live interactive Jupyter session","An immutable execution instance of a Job definition","A conda environment snapshot","A Model Catalog entry"],
+      answer:1, explain:"Each time a Job executes, OCI creates a new immutable Job Run with its own logs and status."}
+  ],
+  dragdrop:[
+    {term:"Job", match:"Reusable definition for a non-interactive batch task"},
+    {term:"Job Run", match:"One immutable execution of a Job"},
+    {term:"Pipeline", match:"DAG orchestrating multiple dependent steps"},
+    {term:"Autoscaling policy", match:"Min/max instances + utilization target for a deployment"}
+  ],
+  cheatsheet:[
+    {label:"Orchestration structure", value:"DAG (Directed Acyclic Graph)", c:"accent"},
+    {label:"Batch execution unit", value:"Job Run", c:"success"},
+    {label:"Autoscaling needs", value:"min, max, target metric", c:"warning"},
+    {label:"Static scaling anti-pattern", value:"min = max", c:"purple"}
+  ],
+  mistakes:["Setting min=max disables autoscaling","Assuming one failed step halts the whole DAG","Using Jobs for interactive exploration"],
+  examNotes:["Pipeline steps can run in parallel if they have no interdependency","Jobs support custom container images in addition to conda environments","Job Runs retain logs even after the underlying compute is torn down"],
+  scenario:[{q:"Nightly retraining job occasionally fails due to a transient network blip pulling data from Object Storage. What operational feature reduces false failures?", a:"Configure retry logic / a retry policy on the Job or Pipeline step so transient failures are automatically retried before marking it failed."}]
+},
+{
+  id:6, icon:"🔍", title:"Model Evaluation & Explainability (SHAP, LIME, PDP)",
+  blurb:"Evaluating model quality with the right metrics and explaining predictions using SHAP, LIME, and Partial Dependence Plots via the ADS Explainability module.",
+  arch:"explainability",
+  topics:[
+    {name:"Model Evaluation Metrics",
+      definition:"ADS's ADSEvaluator computes and compares standard classification/regression metrics (accuracy, precision, recall, F1, AUC, RMSE, MAE) across one or more candidate models.",
+      purpose:"Provides an objective, standardized comparison to select the best model for a business objective, not just for raw accuracy.",
+      working:"'ADSEvaluator(test_data, models=[model1, model2])' generates a comparison report with ROC curves, confusion matrices, lift charts and metric tables.",
+      example:"For a fraud model, the team prioritizes RECALL (catching fraud) over precision, accepting more false positives to minimize missed fraud.",
+      certTip:"Know which metric fits which business goal: Recall = minimize false negatives; Precision = minimize false positives; F1 = balance of both.",
+      mistake:"Choosing accuracy as the primary metric on a highly imbalanced dataset — misleading result.",
+      bestPractice:"Select the evaluation metric based on the real-world cost of false positives vs false negatives."},
+    {name:"SHAP (SHapley Additive exPlanations)",
+      definition:"A game-theory-based explainability technique that attributes each feature's contribution to an individual prediction, supported natively in ADS's explainability module.",
+      purpose:"Provides both LOCAL (per-prediction) and GLOBAL (overall feature importance) explanations that are theoretically consistent and additive.",
+      working:"ADS's 'ADSExplainer' with a SHAP provider computes Shapley values per feature per instance; global importance is the mean absolute SHAP value across the dataset.",
+      example:"For a rejected loan application, SHAP shows 'credit_score' contributed -0.32 and 'debt_ratio' contributed -0.18 to the negative prediction.",
+      certTip:"SHAP values are ADDITIVE: they sum (plus base value) to exactly the model's output — a defining mathematical property.",
+      mistake:"Confusing SHAP's local per-instance explanation with a global feature importance ranking — both are computable but distinct.",
+      bestPractice:"Use SHAP force/summary plots for regulatory or customer-facing model explanations requiring rigor."},
+    {name:"LIME (Local Interpretable Model-agnostic Explanations)",
+      definition:"An explainability technique that approximates a complex model's behavior LOCALLY around a single prediction using an interpretable surrogate (e.g., linear) model.",
+      purpose:"Gives a fast, intuitive, model-agnostic explanation for individual predictions when a full SHAP computation is too costly.",
+      working:"LIME perturbs the input around the instance of interest, observes how predictions change, and fits a simple interpretable model to those local perturbations.",
+      example:"LIME explains a single image classification by highlighting which superpixels most influenced the 'cat' prediction.",
+      certTip:"LIME is LOCAL and approximate — it does not guarantee the additive consistency property that SHAP guarantees.",
+      mistake:"Using LIME explanations as if they represent global model behavior — they are only valid near the explained instance.",
+      bestPractice:"Use LIME for quick exploratory explanations; use SHAP when mathematical consistency/audit-grade explanations are required."},
+    {name:"Partial Dependence Plots (PDP) & ALE",
+      definition:"A GLOBAL explainability visualization showing how a model's average prediction changes as one (or two) features vary, holding others constant.",
+      purpose:"Reveals the overall relationship/shape (linear, monotonic, threshold) between a feature and the model's predictions across the whole dataset.",
+      working:"ADS computes PDP by systematically varying a feature's value across its range and averaging model predictions over the dataset for each value.",
+      example:"A PDP for 'age' on a loan-default model shows risk rising sharply below 25 and gradually declining after 40.",
+      certTip:"PDP shows GLOBAL average trends; it can mask heterogeneous/opposing effects hidden within subgroups (a known PDP limitation).",
+      mistake:"Interpreting a flat PDP curve as 'feature is unimportant' when strong opposing subgroup effects may cancel out on average.",
+      bestPractice:"Pair PDP with SHAP dependence plots to catch subgroup heterogeneity PDP alone would hide."}
+  ],
+  flashcards:[
+    {q:"Which metric minimizes false negatives — critical for fraud/disease detection?",a:"Recall"},
+    {q:"What mathematical property makes SHAP values sum exactly to the model output?",a:"Additivity (Shapley value property)"},
+    {q:"Is LIME a local or global explanation technique?",a:"Local (approximates behavior near one instance)"},
+    {q:"What does a PDP show?",a:"The global average change in prediction as one feature varies"},
+    {q:"What is a known limitation of PDP?",a:"It can mask opposing subgroup effects that cancel out on average"}
+  ],
+  mcq:[
+    {q:"A regulator requires mathematically consistent, auditable explanations for individual loan decisions. Which technique fits best?",
+      options:["PDP","LIME","SHAP","Accuracy score"],
+      answer:2, explain:"SHAP's additive, game-theoretic guarantees make it the preferred choice for rigorous, auditable per-instance explanations."},
+    {q:"A hospital wants to minimize missed disease diagnoses even if it means more false alarms. Which metric should be prioritized?",
+      options:["Precision","Recall","Specificity only","Training speed"],
+      answer:1, explain:"Recall (sensitivity) minimizes false negatives, which is exactly what avoids missing true disease cases."},
+    {q:"What does a flat/near-zero Partial Dependence Plot for a feature suggest you should double-check?",
+      options:["The feature is definitely useless — drop it","Whether opposing subgroup effects are cancelling out (check SHAP dependence too)","The model is overfit","The conda environment is wrong"],
+      answer:1, explain:"PDP averages effects across the whole population, so a flat curve can hide strong but opposite effects in different subgroups."}
+  ],
+  dragdrop:[
+    {term:"SHAP", match:"Additive, game-theory based local & global explanations"},
+    {term:"LIME", match:"Fast local surrogate-model explanation"},
+    {term:"PDP", match:"Global average feature-effect visualization"},
+    {term:"Recall", match:"Metric minimizing false negatives"}
+  ],
+  cheatsheet:[
+    {label:"Additive local+global", value:"SHAP", c:"accent"},
+    {label:"Fast local surrogate", value:"LIME", c:"success"},
+    {label:"Global feature trend", value:"PDP", c:"warning"},
+    {label:"Minimize false negatives", value:"Recall", c:"purple"}
+  ],
+  mistakes:["Choosing accuracy on imbalanced data","Treating LIME as globally representative","Ignoring subgroup heterogeneity in PDP"],
+  examNotes:["ADSExplainer wraps both SHAP and LIME providers under one API","AUC-ROC evaluates ranking quality across all thresholds","Confusion matrix underlies precision, recall, F1 computation"],
+  scenario:[{q:"Two models have identical accuracy but different confusion matrices on a rare-disease dataset. Which further metric should decide the winner and why?", a:"Recall (and F1) — for rare-disease detection, minimizing false negatives is critical, so the model with higher recall at an acceptable precision is preferable even with equal accuracy."}]
+},
+{
+  id:7, icon:"🤖", title:"OCI Generative AI, LangChain & RAG",
+  blurb:"OCI's managed Generative AI service, integrating LangChain for orchestration, and building Retrieval-Augmented Generation (RAG) pipelines with embeddings and vector search.",
+  arch:"genai",
+  topics:[
+    {name:"OCI Generative AI Service",
+      definition:"A fully managed OCI service providing access to pretrained large language models (chat, generation, embeddings, summarization) via API, plus the ability to fine-tune and host dedicated AI clusters.",
+      purpose:"Lets developers add generative AI capabilities (chat, summarization, embeddings) to applications without training or hosting foundation models themselves.",
+      working:"Call the GenerativeAiInferenceClient with a chosen pretrained/fine-tuned model OCID, prompt, and inference parameters (temperature, max tokens) to get completions; on-demand or dedicated AI cluster hosting available.",
+      example:"An app uses OCI GenAI's cohere/command family model to summarize customer support tickets automatically before routing.",
+      certTip:"OCI Generative AI supports both ON-DEMAND (pay-per-call, shared) and DEDICATED (private AI cluster) hosting modes — know the cost/isolation tradeoff.",
+      mistake:"Choosing dedicated AI clusters for low-volume, sporadic workloads — on-demand is far more cost-effective at low scale.",
+      bestPractice:"Start on-demand for prototyping; move to dedicated clusters only once throughput/isolation requirements justify the cost."},
+    {name:"LangChain + OCI GenAI Integration",
+      definition:"LangChain is an open-source orchestration framework; OCI provides native LangChain integrations (OCIGenAI LLM/embeddings classes) to chain prompts, tools, memory, and retrieval steps.",
+      purpose:"Simplifies building multi-step AI applications (chatbots, agents, RAG systems) on top of OCI Generative AI models.",
+      working:"'from langchain_community.llms import OCIGenAI' instantiate with compartment_id and model_id, then compose into LangChain Chains/Agents alongside retrievers and memory.",
+      example:"A LangChain 'RetrievalQA' chain uses OCIGenAIEmbeddings to embed documents and OCIGenAI's command model to answer questions grounded in those documents.",
+      certTip:"OCI's LangChain integration classes require a compartment_id — a common exam detail testers overlook.",
+      mistake:"Forgetting to set the compartment_id parameter when instantiating OCIGenAI/OCIGenAIEmbeddings, causing auth/scope errors.",
+      bestPractice:"Use resource principal auth for LangChain OCIGenAI calls when running inside OCI Data Science notebooks/jobs."},
+    {name:"RAG Pipeline Architecture",
+      definition:"Retrieval-Augmented Generation combines a retriever (vector search over embedded documents) with a generator (LLM) so responses are grounded in retrieved factual context rather than the LLM's parametric memory alone.",
+      purpose:"Reduces hallucination and enables LLMs to answer questions about private/current data without retraining the model.",
+      working:"Documents are chunked → embedded (OCI GenAI Embeddings) → stored in a vector database → at query time, the query is embedded, top-k similar chunks retrieved, and passed as context to the LLM prompt.",
+      example:"An internal HR chatbot retrieves the 3 most relevant policy-document chunks for a question, then the LLM answers using only that retrieved context.",
+      certTip:"RAG's two core stages are: INDEXING (chunk+embed+store) and RETRIEVAL+GENERATION (embed query, retrieve top-k, generate grounded answer).",
+      mistake:"Chunking documents too large, causing irrelevant content to dilute the retrieved context and reduce answer quality.",
+      bestPractice:"Tune chunk size and overlap empirically, and always cite/return retrieved sources alongside generated answers."},
+    {name:"Embeddings & Vector Search",
+      definition:"Embeddings are dense numeric vector representations of text capturing semantic meaning; vector search finds the nearest-neighbor embeddings to a query embedding using similarity metrics like cosine similarity.",
+      purpose:"Enables semantic (meaning-based) search instead of simple keyword matching — critical for RAG retrieval quality.",
+      working:"OCI GenAI Embeddings model converts text chunks to vectors; a vector store (e.g., OCI 23ai vector search, FAISS, or third-party DBs) indexes them for fast approximate nearest-neighbor lookup.",
+      example:"A search for 'cancel my subscription' retrieves a policy chunk titled 'Termination Procedure' even without exact keyword overlap, because their embeddings are semantically close.",
+      certTip:"Cosine similarity is the most common metric for comparing text embedding vectors in RAG retrieval.",
+      mistake:"Mixing embeddings from two different models in the same vector index — vector spaces are not directly comparable across models.",
+      bestPractice:"Always use the SAME embedding model for both indexing documents and embedding queries."}
+  ],
+  flashcards:[
+    {q:"What are the two OCI Generative AI hosting modes?",a:"On-demand (shared, pay-per-call) and Dedicated AI Cluster (private)"},
+    {q:"What parameter is required when instantiating OCIGenAI/OCIGenAIEmbeddings in LangChain?",a:"compartment_id"},
+    {q:"What are RAG's two core stages?",a:"Indexing (chunk+embed+store) and Retrieval+Generation"},
+    {q:"What similarity metric is most commonly used for embedding comparison?",a:"Cosine similarity"},
+    {q:"Why must you use the same embedding model for indexing and querying?",a:"Different models produce incompatible vector spaces"}
+  ],
+  mcq:[
+    {q:"A startup has low, unpredictable Generative AI usage and wants to minimize cost. Which hosting mode fits best?",
+      options:["Dedicated AI Cluster","On-demand pay-per-call hosting","Bare metal GPU cluster","Fine-tuned only mode"],
+      answer:1, explain:"On-demand hosting is billed per call with no idle cost, ideal for low or unpredictable usage volumes."},
+    {q:"A RAG chatbot gives irrelevant answers because retrieved chunks don't match the query intent well. What's a likely root cause?",
+      options:["Chunk size/overlap poorly tuned or wrong embedding model used at query time","The LLM temperature is too low","The compartment_id is missing","Model is using resource principal auth"],
+      answer:0, explain:"Retrieval quality is highly sensitive to chunking strategy and using a consistent embedding model for docs and queries."},
+    {q:"Why does RAG reduce hallucination compared to a standalone LLM?",
+      options:["It makes the LLM larger","It grounds generation in retrieved factual context rather than relying purely on parametric memory","It disables the LLM's creativity","It requires no embeddings"],
+      answer:1, explain:"By retrieving and injecting real source content into the prompt, RAG anchors the answer in verifiable text."}
+  ],
+  dragdrop:[
+    {term:"On-demand hosting", match:"Pay-per-call, shared GenAI infrastructure"},
+    {term:"Dedicated AI Cluster", match:"Private, isolated GenAI hosting for high throughput"},
+    {term:"Embeddings", match:"Dense vectors capturing semantic meaning"},
+    {term:"RAG", match:"Retrieval-Augmented Generation grounding LLM answers in retrieved context"}
+  ],
+  cheatsheet:[
+    {label:"Low-volume hosting", value:"On-demand", c:"accent"},
+    {label:"High-throughput hosting", value:"Dedicated AI Cluster", c:"success"},
+    {label:"Similarity metric", value:"Cosine similarity", c:"warning"},
+    {label:"RAG stages", value:"Index → Retrieve → Generate", c:"purple"}
+  ],
+  mistakes:["Missing compartment_id in LangChain OCIGenAI calls","Mixing embedding models between index and query","Over-large chunk sizes diluting retrieval relevance"],
+  examNotes:["OCI GenAI supports summarization, chat, text generation, and embeddings model families","Fine-tuning is available for select foundation models on OCI GenAI","LangChain agents can combine RAG retrieval with tool-calling for multi-step reasoning"],
+  scenario:[{q:"Your RAG chatbot answers correctly for short FAQs but fails on multi-page policy documents. What retrieval tuning should you investigate first?", a:"Chunk size and overlap — long documents likely need smaller, overlapping chunks (and possibly a higher top-k) so the relevant passage is actually retrievable."}]
+},
+{
+  id:8, icon:"🔐", title:"Vault, Labeling, Logging & Monitoring",
+  blurb:"Securing secrets with OCI Vault, structured dataset labeling with the Data Labeling service, and observability through Logging and Monitoring.",
+  arch:"security",
+  topics:[
+    {name:"OCI Vault & Secrets",
+      definition:"OCI Vault is a managed key-management and secrets service for storing, rotating and controlling access to sensitive values like database passwords or third-party API keys used by ML workloads.",
+      purpose:"Avoids hardcoding credentials in notebooks/jobs/pipelines; centralizes rotation and access auditing.",
+      working:"Store a secret in a Vault → grant the notebook/job's dynamic group 'read secret-family' via IAM policy → retrieve at runtime using the OCI SDK's secrets client with resource principal auth.",
+      example:"A notebook session retrieves a third-party API key from Vault at runtime instead of storing it in plaintext in the notebook file.",
+      certTip:"Vault secrets are retrieved via the 'secrets' resource-type in IAM policies, separate from the 'keys' (encryption key) resource-type.",
+      mistake:"Storing credentials as plaintext environment variables in a Job definition instead of retrieving them from Vault at runtime.",
+      bestPractice:"Rotate secrets periodically and grant only the minimum dynamic groups access to specific secrets, not the whole vault."},
+    {name:"Data Labeling Service",
+      definition:"A managed OCI service for creating human-in-the-loop labeling/annotation datasets (text classification, entity extraction, image classification/object detection) used to build supervised training data.",
+      purpose:"Produces high-quality labeled datasets required for supervised model training, with team collaboration and quality workflows.",
+      working:"Create a Dataset → define label set → upload unlabeled records from Object Storage → assign to labelers → export the labeled dataset (JSONL) for training.",
+      example:"A team labels 10,000 product images as 'defective'/'ok' using bounding boxes via the Data Labeling console, then exports for a defect-detection model.",
+      certTip:"Data Labeling supports three record types: TEXT, IMAGE, and DOCUMENT — know which annotation types map to which record type.",
+      mistake:"Not defining a clear labeling guideline/rubric upfront, leading to inconsistent labels across annotators.",
+      bestPractice:"Use a small pilot labeling batch with inter-annotator agreement checks before scaling to the full dataset."},
+    {name:"Logging Architecture",
+      definition:"OCI Logging aggregates logs from Data Science resources (notebook sessions, jobs, model deployments, pipelines) into Log Groups for centralized search and troubleshooting.",
+      purpose:"Provides visibility into training progress, deployment request/response activity, and error diagnostics without SSH access to underlying infrastructure.",
+      working:"Enable logging when creating a resource → logs stream to a chosen Log Group/Log → searchable via the Logging console or exported to Object Storage/Streaming for long-term retention.",
+      example:"A model deployment's predict request/response logs are streamed to a Log Group, letting the team audit exactly which payloads caused errors.",
+      certTip:"Enabling logging is OPTIONAL but strongly recommended at resource creation time — it cannot always be retroactively enabled for past activity.",
+      mistake:"Not enabling access/predict logs on a Model Deployment, leaving no audit trail when production issues occur.",
+      bestPractice:"Always enable both access logs and predict logs on production Model Deployments."},
+    {name:"Monitoring & Alarms",
+      definition:"OCI Monitoring collects metrics (CPU, memory, request count, latency) from Data Science resources and lets you configure Alarms that notify via OCI Notifications when thresholds are breached.",
+      purpose:"Enables proactive operational awareness — detect performance degradation or resource exhaustion before it impacts users.",
+      working:"Metrics are automatically emitted to the 'oci_datascience' metric namespace; create an Alarm with a Monitoring Query Language (MQL) condition and attach a Notification Topic (email/Slack/PagerDuty via function).",
+      example:"An alarm triggers when a Model Deployment's average CPU exceeds 85% for 5 minutes, notifying the on-call engineer to consider scaling up.",
+      certTip:"Model Deployment metrics include request count, response latency, and error rate — key metrics for exam scenario questions.",
+      mistake:"Setting alarm thresholds so tight that alert fatigue occurs, causing teams to ignore real issues.",
+      bestPractice:"Pair Monitoring alarms with autoscaling policies so capacity issues are both detected AND automatically remediated."}
+  ],
+  flashcards:[
+    {q:"What IAM resource-type is used to grant access to Vault secrets?",a:"secrets (secret-family)"},
+    {q:"What are the three Data Labeling record types?",a:"TEXT, IMAGE, DOCUMENT"},
+    {q:"What OCI service aggregates notebook/job/deployment logs centrally?",a:"OCI Logging (into Log Groups)"},
+    {q:"What metric namespace do Data Science resource metrics emit to?",a:"oci_datascience"},
+    {q:"What two log types should always be enabled on a production Model Deployment?",a:"Access logs and predict logs"}
+  ],
+  mcq:[
+    {q:"A production incident occurs but there is no record of which requests caused model deployment errors. What was most likely misconfigured?",
+      options:["Autoscaling policy","Access and predict logging were not enabled","Vault secret rotation","Conda environment version"],
+      answer:1, explain:"Without enabling access/predict logs at deployment creation, there is no audit trail of request/response activity to investigate."},
+    {q:"How should a third-party API key be supplied to a Data Science Job at runtime?",
+      options:["Hardcoded in the job script","Stored in Vault and retrieved at runtime via resource principal auth","Embedded in the conda environment","Pasted into a Slack message"],
+      answer:1, explain:"Vault centralizes secret storage/rotation; jobs retrieve secrets at runtime using their resource principal — never hardcoded."},
+    {q:"What is the primary purpose of the OCI Data Labeling service?",
+      options:["Monitoring model latency","Producing human-annotated datasets for supervised training","Encrypting model artifacts","Managing IAM policies"],
+      answer:1, explain:"Data Labeling provides a managed workflow for humans to annotate text/image/document data to create supervised training datasets."}
+  ],
+  dragdrop:[
+    {term:"Vault", match:"Secure storage and rotation of secrets/keys"},
+    {term:"Data Labeling", match:"Human-in-the-loop dataset annotation"},
+    {term:"Log Group", match:"Centralized destination for resource logs"},
+    {term:"Alarm", match:"Notifies when a monitoring metric crosses a threshold"}
+  ],
+  cheatsheet:[
+    {label:"Secrets IAM resource", value:"secret-family", c:"accent"},
+    {label:"Labeling record types", value:"TEXT / IMAGE / DOCUMENT", c:"success"},
+    {label:"Metrics namespace", value:"oci_datascience", c:"warning"},
+    {label:"Prod deployment logs", value:"Access + Predict logs", c:"purple"}
+  ],
+  mistakes:["Hardcoding secrets instead of using Vault","Skipping predict logging on production deployments","No labeling rubric causing inconsistent annotations"],
+  examNotes:["Vault supports both software-protected and HSM-protected master encryption keys","Data Labeling exports integrate directly with ADS DatasetFactory","Monitoring alarms can trigger OCI Functions for automated remediation"],
+  scenario:[{q:"Multiple annotators are labeling the same image dataset with inconsistent bounding boxes. What process improvement addresses this before scaling up?", a:"Run a small pilot batch with a clear labeling rubric/guideline and measure inter-annotator agreement before assigning the full dataset."}]
+},
+{
+  id:9, icon:"🌐", title:"REST APIs, Deployment Architecture & CI/CD",
+  blurb:"How client applications invoke Model Deployments, the underlying network/load-balancer architecture, and integrating ML into CI/CD pipelines.",
+  arch:"restapi",
+  topics:[
+    {name:"REST API Access to Model Deployment",
+      definition:"Every active Model Deployment exposes a unique HTTPS 'predict' URI that accepts POST requests with a JSON payload and returns JSON predictions, secured via OCI signing or API keys.",
+      purpose:"Allows any authorized application (web app, mobile backend, another service) to consume ML predictions as a standard REST API.",
+      working:"Client signs the HTTP request using OCI request signing (or uses the OCI SDK) → POST JSON payload to '<deployment-uri>/predict' → the deployment's score.py predict() function runs and returns JSON.",
+      example:"A mobile app backend POSTs customer transaction features to the fraud model's predict URI and receives a fraud probability score in under 200ms.",
+      certTip:"Requests to a Model Deployment predict endpoint must be signed (OCI request signing) unless the deployment is configured for a different auth flow — plain unauthenticated calls are rejected.",
+      mistake:"Attempting to call the predict endpoint with a plain HTTP request lacking OCI signature headers, resulting in 401 Unauthorized.",
+      bestPractice:"Use the OCI SDK's DataScienceClient / raw signed-requests library so signing is handled correctly and consistently."},
+    {name:"Model Deployment Network Architecture",
+      definition:"Behind the scenes, a Model Deployment provisions a managed load balancer distributing requests across N compute instances, each running the model artifact inside a managed container runtime.",
+      purpose:"Provides horizontal scalability and fault tolerance without the team managing load balancers or container orchestration manually.",
+      working:"Requests hit the deployment's load balancer → routed to a healthy instance → instance loads the model once at startup (via load_model()) and serves predict() per request → unhealthy instances are automatically replaced.",
+      example:"During a traffic spike, the load balancer distributes requests evenly across 5 autoscaled instances, none of which the team had to provision manually.",
+      certTip:"Model Deployment instances run inside OCI-managed infrastructure — you configure shape/count/networking, not the container orchestration itself.",
+      mistake:"Assuming you can SSH into a Model Deployment instance directly — you cannot; observability is via Logging/Monitoring only.",
+      bestPractice:"Use health-check-aware client retry logic since instances can be replaced transparently during scaling/healing."},
+    {name:"CI/CD for ML (DevOps Integration)",
+      definition:"Integrating OCI Data Science with OCI DevOps (or external CI/CD tools) to automate testing, model training, and deployment promotion through build pipelines triggered by code commits.",
+      purpose:"Brings software engineering rigor (automated testing, staged rollouts, rollback) to the ML lifecycle — MLOps.",
+      working:"A code push triggers a DevOps Build Pipeline → runs a Data Science Job to retrain/validate the model → if metrics pass a gate, a Deployment Pipeline promotes the new Model Catalog version to a staging/production Model Deployment.",
+      example:"Merging to the 'main' branch triggers a pipeline that retrains the model, validates AUC > 0.85, and if it passes, updates the production deployment to the new model version automatically.",
+      certTip:"OCI DevOps Build/Deployment Pipelines can directly invoke Data Science Jobs and update Model Deployments as pipeline stages.",
+      mistake:"Deploying directly to production without an automated evaluation gate step in the CI/CD pipeline.",
+      bestPractice:"Always include an automated metric threshold gate before promoting a model to a production deployment."},
+    {name:"Cost Management & Resource Limits",
+      definition:"Understanding OCI service limits (max notebook sessions, max deployment instances per tenancy) and cost levers (shape selection, autoscaling bounds, stopping idle resources) for Data Science workloads.",
+      purpose:"Prevents budget overruns and unexpected quota blocks, especially in multi-team tenancies.",
+      working:"OCI enforces default service limits per compartment/tenancy (adjustable via limit increase requests); Cost Analysis / Budgets in the Console track spend by compartment or tag.",
+      example:"A team sets a Budget alert at 80% of their monthly Data Science compute allocation to get notified before overspending.",
+      certTip:"Service limits are adjustable via a Limit Increase Request in the Console — know this exists for exam scenario questions about hitting quota.",
+      mistake:"Not tagging Data Science resources by team/project, making cost attribution and Budget alerts imprecise.",
+      bestPractice:"Tag every project/notebook/deployment with cost-center metadata and configure Budgets per compartment."}
+  ],
+  flashcards:[
+    {q:"What must every request to a Model Deployment predict endpoint include?",a:"OCI request signing (signed HTTP headers) unless configured otherwise"},
+    {q:"What component distributes traffic across Model Deployment instances?",a:"A managed load balancer (provisioned automatically)"},
+    {q:"Can you SSH into a Model Deployment compute instance?",a:"No — it's fully managed; observability is via Logging/Monitoring"},
+    {q:"What OCI service commonly orchestrates ML CI/CD alongside Data Science Jobs?",a:"OCI DevOps (Build & Deployment Pipelines)"},
+    {q:"How do you request more notebook sessions than the default tenancy limit allows?",a:"Submit a Limit Increase Request in the Console"}
+  ],
+  mcq:[
+    {q:"A client's unauthenticated POST request to a Model Deployment predict URI returns 401. What is the most likely cause?",
+      options:["Wrong conda environment","Missing/invalid OCI request signature","Deployment is autoscaling","Model Catalog quota exceeded"],
+      answer:1, explain:"Model Deployment endpoints require properly signed OCI requests; unsigned or invalid requests are rejected with 401."},
+    {q:"Which OCI service is most commonly used to automate retraining-and-redeploy workflows triggered by a git commit?",
+      options:["OCI Vault","OCI DevOps (with Data Science Jobs)","OCI Data Labeling","OCI Notifications"],
+      answer:1, explain:"OCI DevOps Build/Deployment Pipelines can trigger Data Science Jobs for retraining and update Model Deployments as part of CI/CD."},
+    {q:"A tenancy hits the maximum allowed concurrent notebook sessions. What is the correct next step?",
+      options:["Delete IAM policies","Submit a service Limit Increase Request","Switch regions permanently","Disable logging"],
+      answer:1, explain:"Default OCI service limits can be raised via a formal Limit Increase Request through the Console/support."}
+  ],
+  dragdrop:[
+    {term:"Request signing", match:"Required authentication for predict endpoint calls"},
+    {term:"Load balancer", match:"Distributes traffic across deployment instances"},
+    {term:"OCI DevOps", match:"Orchestrates CI/CD build & deployment pipelines for ML"},
+    {term:"Limit Increase Request", match:"Raises default OCI service quotas"}
+  ],
+  cheatsheet:[
+    {label:"Predict auth", value:"OCI request signing", c:"accent"},
+    {label:"Traffic distribution", value:"Managed load balancer", c:"success"},
+    {label:"CI/CD orchestrator", value:"OCI DevOps", c:"warning"},
+    {label:"Quota fix", value:"Limit Increase Request", c:"purple"}
+  ],
+  mistakes:["Calling predict endpoint unsigned","Deploying to prod without an evaluation gate","Not tagging resources for cost tracking"],
+  examNotes:["Model Deployment supports canary-style rollout via updating to a new model version gradually","Cost Analysis in OCI Console can filter by compartment, tag, or service","DevOps Deployment Pipelines can target Model Deployment updates as a stage"],
+  scenario:[{q:"Finance flags unexpectedly high Data Science spend but cannot tell which team caused it. What preventive measure should have been in place?", a:"Consistent resource tagging (by team/project/cost-center) combined with per-compartment Budgets and Cost Analysis dashboards."}]
+},
+{
+  id:10, icon:"🏆", title:"Full Lifecycle Review & Exam Blueprint",
+  blurb:"End-to-end synthesis of the entire OCI Data Science ML lifecycle, the certification exam blueprint, top traps, and a full mock test for final readiness.",
+  arch:"lifecycle",
+  topics:[
+    {name:"Full ML Lifecycle Review",
+      definition:"The complete, end-to-end OCI Data Science workflow: Problem Definition → EDA → Feature Engineering → Training/AutoML → Evaluation/Explainability → Model Catalog → Deployment → Monitoring → Retraining.",
+      purpose:"Ties every Day 1-9 topic into one coherent mental model for rapid recall on exam day.",
+      working:"Each stage maps to specific OCI services: EDA/Training→Notebook Sessions+ADS; heavy ETL→Data Flow; batch/scheduled steps→Jobs/Pipelines; governance→Model Catalog; serving→Model Deployment; ops→Logging/Monitoring; automation→DevOps CI/CD.",
+      example:"A complete churn-prediction system: data explored in a notebook, features engineered via Data Flow, AutoML baselines a model, best model saved to Catalog with provenance, deployed with autoscaling, monitored via alarms, and retrained monthly via a scheduled Pipeline.",
+      certTip:"Exam scenario questions often describe a business problem and ask 'which OCI Data Science component fits this stage?' — map keywords to stages instantly.",
+      mistake:"Memorizing services in isolation instead of understanding how they connect across the lifecycle.",
+      bestPractice:"Practice sketching the full lifecycle diagram from memory until it's automatic."},
+    {name:"Certification Exam Blueprint",
+      definition:"The OCI Data Science certification typically weights: Data Science Fundamentals, OCI Data Science Service (Projects/Notebooks/Conda), Model Building (ADS/AutoML), Model Management & Deployment, MLOps (Jobs/Pipelines/CI-CD), and Responsible/Generative AI topics.",
+      purpose:"Guides where to focus final revision hours proportionally to exam weighting.",
+      working:"Balance revision time across domains rather than over-indexing on one favorite topic; scenario-based questions dominate over pure definition recall.",
+      example:"Spending disproportionate time memorizing conda CLI flags while under-preparing on Model Deployment architecture would be a blueprint misallocation.",
+      certTip:"Expect scenario-style questions ('a team needs X, which service/feature fits?') far more than direct definition questions.",
+      mistake:"Skipping Generative AI/RAG topics assuming they're minor — they are increasingly emphasized in current blueprints.",
+      bestPractice:"Do a final pass across ALL 10 days rather than deep-diving only your weakest single day."},
+    {name:"Top Certification Traps",
+      definition:"Recurring exam distractor patterns: similar-sounding services (Data Flow vs Data Integration), auth-mode confusion (api_key vs resource_principal), and lifecycle-order mix-ups.",
+      purpose:"Pre-empts the most common ways certification questions are designed to trip up under-prepared candidates.",
+      working:"Distractor options are often 'almost right' — e.g., a correct concept paired with the wrong OCI service name, or a correct service with the wrong resource-type keyword.",
+      example:"A question about Spark ETL might offer 'OCI Data Integration' as a plausible-sounding but WRONG distractor for the correct answer 'OCI Data Flow'.",
+      certTip:"Read every option fully before selecting — distractors are deliberately close to the correct answer's wording.",
+      mistake:"Answering from pattern-matching a single keyword instead of reading the full scenario and all options.",
+      bestPractice:"Eliminate obviously wrong answers first, then carefully compare the remaining close pair."},
+    {name:"Final Mock Test Readiness",
+      definition:"A comprehensive self-check across all 10 days' MCQs, rapid fire, and scenario questions to confirm exam readiness before the real attempt.",
+      purpose:"Surfaces remaining weak areas with enough time left to target final revision effectively.",
+      working:"Use this app's Rapid Fire mode across all days, review any missed questions' explanations, and revisit the Cheat Sheets for those specific days.",
+      example:"A candidate scoring 90%+ across all 10 days' quizzes with no single day below 75% is considered exam-ready by most benchmarks.",
+      certTip:"Aim for consistent 80%+ across ALL days, not just a high average — a single very weak day is a real exam risk.",
+      mistake:"Stopping revision after one successful quiz attempt without retesting after a break to confirm retention.",
+      bestPractice:"Do a final 'Last Night Before Exam' pass focusing only on Cheat Sheets and Memory Tricks, not new material."}
+  ],
+  flashcards:[
+    {q:"What are the 9 stages of the full OCI Data Science ML lifecycle?",a:"Problem Definition → EDA → Feature Engineering → Training/AutoML → Evaluation/Explainability → Model Catalog → Deployment → Monitoring → Retraining"},
+    {q:"What question style dominates the certification exam?",a:"Scenario-based questions, not pure definition recall"},
+    {q:"What is a classic 'almost right' distractor pattern in this exam?",a:"A correct concept paired with a similar-sounding but wrong OCI service name"},
+    {q:"What score pattern indicates real exam readiness across days?",a:"80%+ on every day, not just a high overall average"},
+    {q:"What should final-night revision focus on?",a:"Cheat sheets and memory tricks only — no new material"}
+  ],
+  mcq:[
+    {q:"A candidate is very strong on Model Deployment but weak on Data Labeling and GenAI. What should the final revision plan prioritize?",
+      options:["Re-study Model Deployment more since it's most important","Target the weak Data Labeling and GenAI days specifically","Skip Data Labeling entirely — it's rarely tested","Only take more Model Deployment quizzes"],
+      answer:1, explain:"Efficient final revision targets weak areas directly rather than over-polishing already-strong topics."},
+    {q:"Which best describes the typical distractor design in OCI certification MCQs?",
+      options:["Random unrelated wrong answers","Options that are deliberately close/plausible to the correct answer","Only true/false format","No distractors are ever used"],
+      answer:1, explain:"Well-designed certification distractors are close to correct, testing precise understanding rather than guesswork."},
+    {q:"In the full ML lifecycle, which stage comes immediately after Model Catalog?",
+      options:["Feature Engineering","Model Deployment","EDA","Problem Definition"],
+      answer:1, explain:"After a model is registered/versioned in the Model Catalog, the next lifecycle stage is deploying it for inference."}
+  ],
+  dragdrop:[
+    {term:"Problem Definition", match:"First lifecycle stage — define the business objective"},
+    {term:"Model Catalog", match:"Governance stage before deployment"},
+    {term:"Monitoring", match:"Post-deployment operational visibility stage"},
+    {term:"Retraining", match:"Final lifecycle stage feeding back into new training runs"}
+  ],
+  cheatsheet:[
+    {label:"Lifecycle stage count", value:"9 stages", c:"accent"},
+    {label:"Dominant question style", value:"Scenario-based", c:"success"},
+    {label:"Target readiness score", value:"80%+ every day", c:"warning"},
+    {label:"Night-before focus", value:"Cheat sheets only", c:"purple"}
+  ],
+  mistakes:["Over-indexing revision on favorite topics","Ignoring GenAI/RAG as 'minor'","Answering from a single keyword match instead of full context"],
+  examNotes:["Full lifecycle fluency is tested more than isolated facts","Balance revision proportionally across all 10 days","Practice explaining each service's PURPOSE, not just its name"],
+  scenario:[{q:"With 48 hours left, a candidate is scoring 60% on Day 7 (GenAI/RAG) and 90%+ everywhere else. What is the highest-leverage use of remaining time?", a:"Concentrate remaining revision time on Day 7's cheat sheet, memory tricks, and rapid fire quiz specifically, since it is the clear outlier weak area with the most score upside."}]
+}
+];
+
+/* Diagram node sets per architecture key, used by the Architecture Visualizer */
+const ARCH_DIAGRAMS = {
+  vcn:{title:"VCN & Data Science Networking", nodes:[
+    {ic:"🌐",b:"Internet Gateway",s:"Public access"},{ic:"🧱",b:"NAT Gateway",s:"Outbound only"},
+    {ic:"🔌",b:"Service Gateway",s:"OCI services"},{ic:"📓",b:"Notebook Session",s:"Private subnet"},
+    {ic:"🗄️",b:"Object Storage",s:"Data lake"}], vcnGroup:true},
+  notebook:{title:"Notebook Session Lifecycle", nodes:[
+    {ic:"🆕",b:"Create",s:"Choose shape+storage"},{ic:"⚙️",b:"Provisioning",s:"~2-5 min"},
+    {ic:"🟢",b:"Active",s:"JupyterLab ready"},{ic:"📦",b:"Conda Attach",s:"odsc conda install"},
+    {ic:"⏸️",b:"Stopped",s:"Compute billing halts"}]},
+  dataflow:{title:"Data Flow Spark Execution", nodes:[
+    {ic:"📓",b:"Notebook",s:"Spark session magic"},{ic:"🔥",b:"Data Flow Cluster",s:"Managed Spark"},
+    {ic:"🗄️",b:"Object Storage",s:"Source/sink"},{ic:"📊",b:"Feature Set",s:"Reduced output"}]},
+  deployment:{title:"Model Deployment Architecture", nodes:[
+    {ic:"📚",b:"Model Catalog",s:"Versioned artifact"},{ic:"⚖️",b:"Load Balancer",s:"Managed, auto"},
+    {ic:"🖥️",b:"Instance 1",s:"score.py loaded"},{ic:"🖥️",b:"Instance 2",s:"score.py loaded"},
+    {ic:"🌍",b:"Client App",s:"Signed REST call"}]},
+  pipeline:{title:"ML Pipeline DAG", nodes:[
+    {ic:"🧹",b:"Data Prep",s:"Step 1"},{ic:"🧠",b:"Train A",s:"Parallel branch"},
+    {ic:"🧠",b:"Train B",s:"Parallel branch"},{ic:"📈",b:"Evaluate",s:"Gate step"},
+    {ic:"🚀",b:"Deploy",s:"Conditional"}]},
+  explainability:{title:"Explainability Pipeline", nodes:[
+    {ic:"🧠",b:"Trained Model",s:"Black box"},{ic:"🎲",b:"SHAP",s:"Additive, exact"},
+    {ic:"🎯",b:"LIME",s:"Local surrogate"},{ic:"📉",b:"PDP",s:"Global trend"}]},
+  genai:{title:"RAG + OCI Generative AI", nodes:[
+    {ic:"📄",b:"Documents",s:"Chunked"},{ic:"🔢",b:"Embeddings",s:"OCI GenAI"},
+    {ic:"🗂️",b:"Vector Store",s:"Similarity index"},{ic:"❓",b:"Query",s:"User question"},
+    {ic:"🤖",b:"LLM Answer",s:"Grounded response"}]},
+  security:{title:"Security & Observability", nodes:[
+    {ic:"🔐",b:"Vault",s:"Secrets/keys"},{ic:"🏷️",b:"Data Labeling",s:"Annotated data"},
+    {ic:"📜",b:"Logging",s:"Log Groups"},{ic:"📟",b:"Monitoring",s:"Alarms"}]},
+  restapi:{title:"REST Request Flow", nodes:[
+    {ic:"📱",b:"Client",s:"Signs request"},{ic:"⚖️",b:"Load Balancer",s:"Routes traffic"},
+    {ic:"🖥️",b:"Deployment Instance",s:"predict()"},{ic:"📤",b:"JSON Response",s:"Prediction"}]},
+  lifecycle:{title:"Full ML Lifecycle", nodes:[
+    {ic:"🎯",b:"Problem",s:"Define objective"},{ic:"🔎",b:"EDA",s:"Explore data"},
+    {ic:"🛠️",b:"Feature Eng.",s:"Transform"},{ic:"🧠",b:"Train/AutoML",s:"Fit models"},
+    {ic:"📈",b:"Evaluate",s:"SHAP/LIME/PDP"},{ic:"📚",b:"Catalog",s:"Version+provenance"},
+    {ic:"🚀",b:"Deploy",s:"REST endpoint"},{ic:"📟",b:"Monitor",s:"Alarms"},{ic:"🔁",b:"Retrain",s:"Loop"}]}
+};
+
+/* ================================================================
+   STATE MANAGEMENT (localStorage)
+   ================================================================ */
+const STORAGE_KEY = "ocids_revision_state_v1";
+function loadState(){
+  try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return { completedTopics:{}, bookmarks:{}, streak:0, lastVisit:null, quizScores:{}, checklist:{} };
+}
+let STATE = loadState();
+function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){} }
+
+function todayStr(){ return new Date().toDateString(); }
+function bumpStreak(){
+  const t = todayStr();
+  if(STATE.lastVisit === t) return;
+  const y = new Date(Date.now()-86400000).toDateString();
+  STATE.streak = (STATE.lastVisit === y) ? (STATE.streak||0)+1 : 1;
+  STATE.lastVisit = t;
+  saveState();
+}
+bumpStreak();
+
+function dayTopicKey(dayId, idx){ return "d"+dayId+"_t"+idx; }
+function isTopicDone(dayId, idx){ return !!STATE.completedTopics[dayTopicKey(dayId,idx)]; }
+function toggleTopicDone(dayId, idx){
+  const k = dayTopicKey(dayId, idx);
+  STATE.completedTopics[k] = !STATE.completedTopics[k];
+  saveState(); refreshProgressUI();
+}
+function dayProgress(day){
+  const total = day.topics.length;
+  let done = 0;
+  day.topics.forEach((t,i)=>{ if(isTopicDone(day.id,i)) done++; });
+  return Math.round((done/total)*100);
+}
+function overallProgress(){
+  let total=0, done=0;
+  DAYS.forEach(d=>{ d.topics.forEach((t,i)=>{ total++; if(isTopicDone(d.id,i)) done++; }); });
+  return total? Math.round((done/total)*100):0;
+}
+function toggleBookmark(dayId, e){
+  e.stopPropagation();
+  STATE.bookmarks[dayId] = !STATE.bookmarks[dayId];
+  saveState(); buildSidebarNav();
+}
+
+/* ================================================================
+   LANDING PAGE ANIMATIONS
+   ================================================================ */
+function initMeshCanvas(){
+  const c = document.getElementById('meshCanvas'); const ctx = c.getContext('2d');
+  function resize(){ c.width=innerWidth; c.height=innerHeight; } resize(); addEventListener('resize',resize);
+  let t=0;
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    t+=0.003;
+    const grad = ctx.createLinearGradient(0,0,c.width,c.height);
+    grad.addColorStop(0,'rgba(229,57,53,0.03)');
+    grad.addColorStop(.5,'rgba(255,152,0,0.02)');
+    grad.addColorStop(1,'rgba(0,194,255,0.03)');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,c.width,c.height);
+    requestAnimationFrame(draw);
+  } draw();
+}
+function initNeuralCanvas(){
+  const c = document.getElementById('neuralCanvas'); const ctx = c.getContext('2d');
+  function resize(){ c.width=innerWidth; c.height=innerHeight; } resize(); addEventListener('resize',resize);
+  const N = Math.min(60, Math.floor(innerWidth/26));
+  const pts = Array.from({length:N},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3}));
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    pts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>c.width) p.vx*=-1;
+      if(p.y<0||p.y>c.height) p.vy*=-1;
+    });
+    for(let i=0;i<pts.length;i++){
+      for(let j=i+1;j<pts.length;j++){
+        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<130){
+          ctx.strokeStyle = `rgba(0,194,255,${0.15*(1-d/130)})`;
+          ctx.lineWidth=1;
+          ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
+        }
+      }
+    }
+    pts.forEach(p=>{
+      ctx.fillStyle='rgba(255,152,0,.55)';
+      ctx.beginPath(); ctx.arc(p.x,p.y,1.8,0,7); ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  } draw();
+}
+function initCloudParticles(){
+  const layer = document.getElementById('cloudLayer');
+  for(let i=0;i<26;i++){
+    const s = document.createElement('div');
+    s.className='cloud-particle';
+    const size = 4+Math.random()*10;
+    s.style.width=size+'px'; s.style.height=size+'px';
+    s.style.left = Math.random()*100+'vw';
+    s.style.bottom = '-20px';
+    s.style.animationDuration = (12+Math.random()*16)+'s';
+    s.style.animationDelay = (Math.random()*14)+'s';
+    layer.appendChild(s);
+  }
+}
+function initTyping(){
+  const phrases = ["Master OCI Data Science Service.","Ace Model Deployment & MLOps.","Nail SHAP, LIME & PDP.","Understand RAG & Generative AI.","Walk into the exam ready."];
+  const el = document.getElementById('typeTarget');
+  let pi=0, ci=0, deleting=false;
+  function tick(){
+    const phrase = phrases[pi];
+    if(!deleting){ ci++; el.textContent = phrase.slice(0,ci);
+      if(ci===phrase.length){ deleting=true; setTimeout(tick,1300); return; }
+    } else { ci--; el.textContent = phrase.slice(0,ci);
+      if(ci===0){ deleting=false; pi=(pi+1)%phrases.length; }
+    }
+    setTimeout(tick, deleting?28:48);
+  } tick();
+}
+function initLandingRing(){
+  const p = overallProgress();
+  const ring = document.getElementById('landingRing');
+  const circumference = 2*Math.PI*64;
+  setTimeout(()=>{ ring.style.strokeDashoffset = circumference - (p/100)*circumference; },400);
+  document.getElementById('landingRingPct').textContent = p+'%';
+}
+
+/* ================================================================
+   APP BOOTSTRAP
+   ================================================================ */
+function startRevision(){
+  document.getElementById('landing').style.display='none';
+  document.getElementById('app').classList.add('active');
+  buildSidebarNav();
+  refreshProgressUI();
+  renderDayPage(DAYS[0].id);
+}
+function buildSidebarNav(){
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '<div class="nav-section-title">Revision Days</div>';
+  DAYS.forEach(d=>{
+    const prog = dayProgress(d);
+    const bm = !!STATE.bookmarks[d.id];
+    const el = document.createElement('div');
+    el.className='day-item'; el.id='navday'+d.id;
+    el.onclick=()=>renderDayPage(d.id);
+    el.innerHTML = `
+      <div class="day-num">${d.icon}</div>
+      <div class="day-info">
+        <b>Day ${d.id}: ${d.title}</b>
+        <div class="day-progress-bar"><div class="day-progress-fill" style="width:${prog}%"></div></div>
+      </div>
+      <button class="bookmark-btn ${bm?'on':''}" onclick="toggleBookmark(${d.id}, event)">★</button>
+    `;
+    nav.appendChild(el);
+  });
+}
+function refreshProgressUI(){
+  buildSidebarNav();
+  const p = overallProgress();
+  document.getElementById('sidebarPct').textContent = p+'%';
+  document.getElementById('streakCount').textContent = STATE.streak||0;
+  const ring = document.getElementById('sidebarRing');
+  const c = 2*Math.PI*14;
+  ring.style.strokeDashoffset = c - (p/100)*c;
+  updateActiveNav();
+  updateReadinessBar();
+}
+function updateActiveNav(){
+  document.querySelectorAll('.day-item').forEach(e=>e.classList.remove('active'));
+  if(currentDayId){ const el=document.getElementById('navday'+currentDayId); if(el) el.classList.add('active'); }
+}
+
+/* ================================================================
+   RENDER: DAY PAGE
+   ================================================================ */
+let currentDayId = null;
+function renderDayPage(dayId){
+  currentDayId = dayId;
+  const day = DAYS.find(d=>d.id===dayId);
+  const main = document.getElementById('mainContent');
+  const prog = dayProgress(day);
+  main.innerHTML = `
+    ${topbarHTML(`Day ${day.id} <b>/ ${day.title}</b>`)}
+    <div class="glass day-hero lift">
+      <h1>${day.icon} Day ${day.id}: ${day.title}</h1>
+      <p>${day.blurb}</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><b>${day.topics.length}</b><span>Core Topics</span></div>
+        <div class="hero-stat"><b>${day.flashcards.length}</b><span>Flash Cards</span></div>
+        <div class="hero-stat"><b>${day.mcq.length}</b><span>MCQ Questions</span></div>
+        <div class="hero-stat"><b>${prog}%</b><span>Completed</span></div>
+      </div>
+    </div>
+
+    ${sectionTitle(1,"Animated Learning Path")}
+    <div class="glass" style="padding:10px 18px;">${learningPathHTML(day)}</div>
+
+    ${sectionTitle(2,"Topic Mind Map","drag to pan, scroll buttons to zoom")}
+    <div class="glass mindmap-box" id="mindmapBox">${mindMapHTML(day)}</div>
+
+    ${sectionTitle(3,"Interactive Flow Diagram")}
+    <div class="glass" style="padding:10px 4px;">${flowDiagramHTML(day)}</div>
+
+    ${sectionTitle(4,"Visual Architecture")}
+    <div class="glass" style="padding:20px;">${architectureHTML(day)}</div>
+
+    ${sectionTitle(5,"Important Concepts — click to expand")}
+    <div class="concept-grid hide-in-revision">${conceptsHTML(day)}</div>
+
+    ${sectionTitle(6,"OCI Console Simulation")}
+    <div class="glass" style="padding:0;">${consoleMockHTML(day)}</div>
+
+    ${sectionTitle(7,"Flash Cards")}
+    <div class="flash-grid">${flashcardsHTML(day)}</div>
+
+    ${sectionTitle(8,"Memory Tricks")}
+    <div class="memory-grid">${memoryTricksHTML(day)}</div>
+
+    ${sectionTitle(9,"Exam Notes")}
+    <div class="note-list hide-in-revision">${examNotesHTML(day)}</div>
+
+    ${sectionTitle(10,"Common Mistakes")}
+    <div class="note-list">${mistakesHTML(day)}</div>
+
+    ${sectionTitle(11,"Scenario Questions")}
+    <div style="display:flex;flex-direction:column;gap:14px;">${scenarioHTML(day)}</div>
+
+    ${sectionTitle(12,"Drag & Drop Matching")}
+    <div class="glass" style="padding:22px;">${dragDropHTML(day)}</div>
+
+    ${sectionTitle(13,"MCQ Quiz")}
+    <div class="glass quiz-box" id="mcqBox"></div>
+
+    ${sectionTitle(14,"Rapid Fire Quiz (30s)")}
+    <div class="glass quiz-box" id="rapidBox">${rapidFireIntroHTML(day)}</div>
+
+    ${sectionTitle(15,"Architecture Visualizer")}
+    <div class="glass" style="padding:20px;">${architectureHTML(day,true)}</div>
+
+    ${sectionTitle(16,"Animated Sequence")}
+    <div class="glass" style="padding:20px;"><div class="seq-row" id="seqRow">${sequenceHTML(day)}</div>
+      <button class="pill-btn" style="margin-top:14px;" onclick="replaySequence()">↻ Replay Animation</button>
+    </div>
+
+    ${sectionTitle(17,"Cheat Sheet")}
+    <div class="cheat-grid">${cheatSheetHTML(day)}</div>
+
+    ${sectionTitle(18,"Certification Tips")}
+    <div class="tips-strip">${certTipsHTML(day)}</div>
+
+    <div class="special-panels">
+      ${specialPanel("panel-most","🔥 Most Asked in Exam", day.topics.map(t=>t.name))}
+      ${specialPanel("panel-confused","⚠️ Frequently Confused", day.mistakes)}
+      ${specialPanel("panel-practice","✅ Oracle Best Practice", day.topics.map(t=>t.bestPractice))}
+      ${specialPanel("panel-interview","💼 Real Interview Angle", day.topics.map(t=>t.memory?t.memory.interview:t.certTip))}
+      ${specialPanel("panel-oneminute","⏱ One Minute Revision", day.cheatsheet.map(c=>c.label+': '+c.value))}
+      ${specialPanel("panel-lastnight","🌙 Last Night Before Exam", day.examNotes)}
+    </div>
+
+    <div style="text-align:center;margin-top:30px;">
+      <button class="pill-btn primary" onclick="markDayDone(${day.id})">✔ Mark All Day ${day.id} Topics Complete</button>
+    </div>
+  `;
+  initMindMapDrag();
+  buildMCQ(day);
+  refreshProgressUI();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function topbarHTML(crumb){
+  return `<div class="topbar">
+    <div class="crumbs">${crumb}</div>
+    <div class="topbar-actions">
+      <button class="pill-btn menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menu</button>
+      <button class="pill-btn" onclick="renderMindMapPage()">🗺 Full Map</button>
+      <button class="pill-btn" onclick="renderTimelinePage()">⏱ Timeline</button>
+      <button class="pill-btn primary" onclick="renderFinalPage()">🏁 Final Review</button>
+    </div>
+  </div>`;
+}
+function sectionTitle(n,title,hint){
+  return `<div class="section-title"><div class="num">${n}</div>${title}${hint?`<small>${hint}</small>`:''}</div>`;
+}
+function specialPanel(cls,title,items){
+  return `<div class="glass special-panel ${cls}"><div class="ptitle">${title}</div><ul>${items.slice(0,4).map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+}
+function markDayDone(dayId){
+  const day = DAYS.find(d=>d.id===dayId);
+  day.topics.forEach((t,i)=> STATE.completedTopics[dayTopicKey(dayId,i)] = true);
+  saveState(); refreshProgressUI(); showToast('Day '+dayId+' marked complete! 🎉');
+}
+
+/* ---- Learning Path ---- */
+function learningPathHTML(day){
+  return `<div class="path-track">${day.topics.map((t,i)=>{
+    const done = isTopicDone(day.id,i);
+    return `<div class="path-node ${done?'done':''}" onclick="toggleTopicDone(${day.id},${i})">
+      <div class="circle">${done?'✓':(i+1)}</div><div class="line"></div>
+      <span>${t.name}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* ---- Mind map (radial SVG) ---- */
+function mindMapHTML(day){
+  const cx=400, cy=210, r=150;
+  const nodes = day.topics.map((t,i)=>{
+    const angle = (i/day.topics.length)*2*Math.PI - Math.PI/2;
+    return {x:cx+r*Math.cos(angle), y:cy+r*Math.sin(angle), name:t.name};
+  });
+  const links = nodes.map(n=>`<path class="mm-link" d="M${cx},${cy} L${n.x},${n.y}"/>`).join('');
+  const nodeEls = nodes.map((n,i)=>`
+    <g class="mm-node" transform="translate(${n.x},${n.y})">
+      <circle class="mm-node-circle" r="34" fill="${['#E53935','#FF9800','#00C2FF','#4CAF50','#8E44AD'][i%5]}" opacity="0.85"/>
+      <foreignObject x="-46" y="-46" width="92" height="92" style="pointer-events:none;">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9.5px;font-weight:700;color:#fff;padding:4px;">${n.name}</div>
+      </foreignObject>
+    </g>`).join('');
+  return `
+  <div class="mindmap-controls">
+    <button onclick="mmZoom(1.15)">+</button><button onclick="mmZoom(0.87)">−</button><button onclick="mmReset()">⟲</button>
+  </div>
+  <svg class="mindmap-svg" id="mmSvg" viewBox="0 0 800 420">
+    <defs><radialGradient id="nodeGradCenter"><stop offset="0%" stop-color="#FF9800"/><stop offset="100%" stop-color="#E53935"/></radialGradient></defs>
+    <g id="mmPanGroup">
+      ${links}
+      <circle class="mm-center" cx="${cx}" cy="${cy}" r="46"/>
+      <foreignObject x="${cx-56}" y="${cy-46}" width="112" height="92" style="pointer-events:none;">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="width:112px;height:92px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;font-weight:800;color:#fff;">Day ${day.id}<br>${day.title}</div>
+      </foreignObject>
+      ${nodeEls}
+    </g>
+  </svg>`;
+}
+let mmScale=1, mmPan={x:0,y:0}, mmDrag=false, mmStart={x:0,y:0};
+function mmApply(){ const g=document.getElementById('mmPanGroup'); if(g) g.setAttribute('transform',`translate(${mmPan.x},${mmPan.y}) scale(${mmScale})`); }
+function mmZoom(f){ mmScale=Math.max(.5,Math.min(2.4,mmScale*f)); mmApply(); }
+function mmReset(){ mmScale=1; mmPan={x:0,y:0}; mmApply(); }
+function initMindMapDrag(){
+  const svg = document.getElementById('mmSvg'); if(!svg) return;
+  mmReset();
+  svg.onmousedown = e=>{ mmDrag=true; mmStart={x:e.clientX-mmPan.x,y:e.clientY-mmPan.y}; };
+  window.onmousemove = e=>{ if(mmDrag){ mmPan.x=e.clientX-mmStart.x; mmPan.y=e.clientY-mmStart.y; mmApply(); } };
+  window.onmouseup = ()=>{ mmDrag=false; };
+  svg.onwheel = e=>{ e.preventDefault(); mmZoom(e.deltaY<0?1.08:0.93); };
+}
+
+/* ---- Flow diagram ---- */
+function flowDiagramHTML(day){
+  return `<div class="flow-row">${day.topics.map((t,i)=>`
+    <div class="flow-step">
+      <div class="fico">${['🎯','⚙️','🧠','📦'][i%4]}</div>
+      <b>${t.name}</b><p>${t.purpose.slice(0,70)}...</p>
+      ${i<day.topics.length-1?`<div class="flow-arrow"><svg viewBox="0 0 28 14"><path d="M0,7 H24 M18,2 L24,7 L18,12"/></svg></div>`:''}
+    </div>`).join('')}</div>`;
+}
+
+/* ---- Architecture visualizer ---- */
+function architectureHTML(day, alt){
+  const conf = ARCH_DIAGRAMS[day.arch];
+  const nodesHTML = conf.nodes.map(n=>`<div class="arch-node"><span class="ic">${n.ic}</span><b>${n.b}</b><span>${n.s}</span></div>`).join(alt?`<div style="align-self:center;color:var(--accent);font-size:1.3rem;">→</div>`:'');
+  return `<div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">${conf.title}</div>
+    <div class="arch-box">${conf.vcnGroup? `<div class="arch-vcn">${nodesHTML}</div>` : nodesHTML}</div>`;
+}
+
+/* ---- Console mock ---- */
+function consoleMockHTML(day){
+  const t = day.topics[0];
+  return `<div class="console-mock">
+    <div class="console-topbar"><div class="dot" style="background:#E53935"></div><div class="dot" style="background:#FF9800"></div><div class="dot" style="background:#4CAF50"></div>
+      <span style="margin-left:10px;font-size:.72rem;color:var(--muted);">console.oraclecloud.com — Data Science</span></div>
+    <div class="console-body">
+      <div class="console-breadcrumb">Data Science &rsaquo; Projects &rsaquo; <b>day-${day.id}-demo-project</b></div>
+      <div class="console-panel">
+        <div class="console-row"><span>Resource</span><span>Status</span></div>
+        <div class="console-row"><span>📓 notebook-session-day${day.id}</span><span class="status-chip status-active">ACTIVE</span></div>
+        <div class="console-row"><span>🧠 ${t.name.toLowerCase().replace(/ /g,'-')}-model</span><span class="status-chip status-creating">CREATING</span></div>
+        <div class="console-row"><span>🚀 model-deployment-day${day.id}</span><span class="status-chip status-active">ACTIVE</span></div>
+      </div>
+      <div style="font-size:.68rem;color:var(--muted);">Simulated console view for illustration purposes — drawn entirely with HTML/CSS.</div>
+    </div>
+  </div>`;
+}
+
+/* ---- Concepts ---- */
+function conceptsHTML(day){
+  return day.topics.map((t,i)=>`
+    <div class="glass concept-card lift" onclick="this.querySelector('.concept-detail').classList.toggle('open')">
+      <h4>${t.name} <span class="tag">Topic ${i+1}</span></h4>
+      <p>${t.definition}</p>
+      <span class="expand-hint">▾ Click to expand full details</span>
+      <div class="concept-detail">
+        <div class="row"><b>Purpose</b><p>${t.purpose}</p></div>
+        <div class="row"><b>How It Works</b><p>${t.working}</p></div>
+        <div class="row"><b>Real OCI Example</b><p>${t.example}</p></div>
+        <div class="row"><b>Certification Tip</b><p>${t.certTip}</p></div>
+        <div class="row"><b>Common Mistake</b><p>${t.mistake}</p></div>
+        <div class="row"><b>Best Practice</b><p>${t.bestPractice}</p></div>
+      </div>
+    </div>`).join('');
+}
+
+/* ---- Flashcards ---- */
+function flashcardsHTML(day){
+  return day.flashcards.map((f,i)=>`
+    <div class="flash-card" onclick="this.classList.toggle('flipped')">
+      <div class="flash-inner">
+        <div class="flash-face flash-front"><span class="flash-tag">Q${i+1}</span>${f.q}</div>
+        <div class="flash-face flash-back"><span class="flash-tag">Answer</span>${f.a}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ---- Memory tricks ---- */
+function memoryTricksHTML(day){
+  let cards = [];
+  day.topics.forEach(t=>{
+    cards.push({cls:'remember',label:'Remember',text:`${t.name}: ${t.definition.slice(0,90)}...`});
+    cards.push({cls:'trap',label:'Exam Trap',text:t.mistake});
+    cards.push({cls:'golden',label:'Golden Rule',text:t.bestPractice});
+  });
+  cards.push({cls:'think',label:'Think Like This',text:`Map Day ${day.id} to the lifecycle stage it belongs to — ${day.title}.`});
+  cards.push({cls:'interview',label:'Interview Tip',text:day.topics[0].certTip});
+  return cards.map(c=>`<div class="glass memory-card ${c.cls}"><b>${c.label}</b><p>${c.text}</p></div>`).join('');
+}
+
+/* ---- Exam notes / mistakes ---- */
+function examNotesHTML(day){ return day.examNotes.map(n=>`<div class="glass note-item tip-item"><span class="ic">📝</span><p>${n}</p></div>`).join(''); }
+function mistakesHTML(day){ return day.mistakes.map(n=>`<div class="glass note-item mistake-item"><span class="ic">⚠️</span><p>${n}</p></div>`).join(''); }
+
+/* ---- Scenario Qs ---- */
+function scenarioHTML(day){
+  return day.scenario.map((s,i)=>`
+    <div class="glass scenario-card">
+      <div class="q"><b>Scenario ${i+1}:</b> ${s.q}</div>
+      <button class="reveal-btn" onclick="this.nextElementSibling.classList.toggle('show')">Reveal Answer</button>
+      <div class="scenario-answer">${s.a}</div>
+    </div>`).join('');
+}
+
+/* ---- Drag and drop matching ---- */
+function dragDropHTML(day){
+  const items = day.dragdrop;
+  const targets = [...items].sort(()=>Math.random()-.5);
+  const leftHTML = items.map((it,i)=>`<div class="dnd-item" draggable="true" data-term="${it.term}" ondragstart="dndStart(event)">${it.term}</div>`).join('');
+  const rightHTML = targets.map((it,i)=>`<div class="dnd-target" data-answer="${it.term}" ondragover="dndOver(event)" ondrop="dndDrop(event)" ondragleave="dndLeave(event)"><span>${it.match}</span><span class="dropped"></span></div>`).join('');
+  return `<div class="dnd-wrap">
+    <div class="dnd-col"><b>Terms (drag these)</b>${leftHTML}</div>
+    <div class="dnd-col"><b>Definitions (drop here)</b>${rightHTML}</div>
+  </div>
+  <div class="dnd-check"><button class="pill-btn primary" onclick="checkDnd(this)">Check Matches</button></div>`;
+}
+function dndStart(e){ e.dataTransfer.setData('text/plain', e.target.dataset.term); e.target.classList.add('dragging'); }
+function dndOver(e){ e.preventDefault(); e.currentTarget.classList.add('over'); }
+function dndLeave(e){ e.currentTarget.classList.remove('over'); }
+function dndDrop(e){
+  e.preventDefault(); e.currentTarget.classList.remove('over');
+  const term = e.dataTransfer.getData('text/plain');
+  e.currentTarget.querySelector('.dropped').textContent = ' → '+term;
+  e.currentTarget.dataset.placed = term;
+  e.currentTarget.classList.remove('correct','wrong');
+}
+function checkDnd(btn){
+  const targets = btn.closest('.glass').querySelectorAll('.dnd-target');
+  let correct=0;
+  targets.forEach(t=>{
+    if(!t.dataset.placed) return;
+    if(t.dataset.placed === t.dataset.answer){ t.classList.add('correct'); t.classList.remove('wrong'); correct++; }
+    else { t.classList.add('wrong'); t.classList.remove('correct'); }
+  });
+  showToast(`Matched ${correct}/${targets.length} correctly!`);
+}
+
+/* ---- MCQ Quiz engine ---- */
+function buildMCQ(day){
+  const box = document.getElementById('mcqBox');
+  let idx=0, score=0;
+  function render(){
+    if(idx>=day.mcq.length){
+      box.innerHTML = `<div style="text-align:center;padding:20px;"><h3>Quiz Complete! 🎉</h3><p style="color:var(--muted);margin-top:8px;">Score: ${score}/${day.mcq.length}</p>
+      <button class="pill-btn primary" style="margin-top:14px;" onclick="STATE.quizScores['d${day.id}']=${score}/${day.mcq.length}*100;saveState();buildMCQ(DAYS.find(d=>d.id===${day.id}));updateReadinessBar();">↻ Retake Quiz</button></div>`;
+      STATE.quizScores['d'+day.id] = Math.round(score/day.mcq.length*100); saveState(); updateReadinessBar();
+      return;
+    }
+    const q = day.mcq[idx];
+    box.innerHTML = `
+      <div class="quiz-head"><div class="quiz-progress">Question ${idx+1} / ${day.mcq.length}</div><div class="score-badge">Score: ${score}</div></div>
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-opts">${q.options.map((o,i)=>`<button class="quiz-opt" onclick="answerMCQ(${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}</div>
+      <div class="quiz-explain" id="quizExplain">${q.explain}</div>
+      <div class="quiz-footer"><span></span><button class="pill-btn" id="nextBtn" style="display:none;" onclick="nextMCQ()">Next →</button></div>
+    `;
+  }
+  window.answerMCQ = function(i){
+    const q = day.mcq[idx];
+    const opts = box.querySelectorAll('.quiz-opt');
+    opts.forEach(o=>o.onclick=null);
+    opts[q.answer].classList.add('correct');
+    if(i!==q.answer) opts[i].classList.add('wrong'); else score++;
+    document.getElementById('quizExplain').classList.add('show');
+    document.getElementById('nextBtn').style.display='inline-block';
+  };
+  window.nextMCQ = function(){ idx++; render(); };
+  render();
+}
+
+/* ---- Rapid fire ---- */
+function rapidFireIntroHTML(day){
+  return `<div style="text-align:center;padding:16px;">
+    <p style="color:var(--muted);margin-bottom:14px;">30 seconds. Random questions from Day ${day.id}. Answer as many as you can!</p>
+    <button class="pill-btn primary" onclick="startRapidFire(${day.id})">⚡ Start Rapid Fire</button>
+    <div id="rapidLeaderboard" style="margin-top:16px;font-size:.78rem;color:var(--muted);"></div>
+  </div>`;
+}
+function startRapidFire(dayId){
+  const day = DAYS.find(d=>d.id===dayId);
+  const box = document.getElementById('rapidBox');
+  let pool = [...day.mcq]; while(pool.length<8) pool = pool.concat(day.mcq);
+  pool.sort(()=>Math.random()-.5);
+  let qi=0, score=0, timeLeft=30;
+  const timer = setInterval(()=>{
+    timeLeft--;
+    const tEl = box.querySelector('.quiz-timer'); if(tEl) tEl.textContent = timeLeft+'s';
+    if(timeLeft<=0){ clearInterval(timer); finish(); }
+  },1000);
+  function finish(){
+    const key = 'rapid_d'+dayId;
+    const best = Math.max(score, STATE.quizScores[key]||0);
+    STATE.quizScores[key]=best; saveState();
+    box.innerHTML = `<div style="text-align:center;padding:20px;"><h3>⏱ Time's Up!</h3><p style="margin-top:8px;color:var(--muted);">You answered <b style="color:var(--success)">${score}</b> correctly.</p>
+    <p style="margin-top:4px;font-size:.76rem;color:var(--muted);">Best score this session: ${best}</p>
+    <button class="pill-btn primary" style="margin-top:14px;" onclick="renderRapidReset(${dayId})">↻ Play Again</button></div>`;
+  }
+  function renderQ(){
+    if(timeLeft<=0) return;
+    const q = pool[qi%pool.length];
+    box.innerHTML = `
+      <div class="quiz-head"><div class="quiz-progress">⚡ Rapid Fire</div><div class="quiz-timer">${timeLeft}s</div></div>
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-opts">${q.options.map((o,i)=>`<button class="quiz-opt" onclick="rapidAnswer(${i})">${o}</button>`).join('')}</div>
+      <div class="score-badge" style="margin-top:14px;">Score: ${score}</div>
+    `;
+    window.rapidAnswer = function(i){
+      if(i===q.answer) score++;
+      qi++; renderQ();
+    };
+  }
+  renderQ();
+}
+function renderRapidReset(dayId){ document.getElementById('rapidBox').innerHTML = rapidFireIntroHTML(DAYS.find(d=>d.id===dayId)); }
+
+/* ---- Animated sequence ---- */
+function sequenceHTML(day){
+  return day.topics.map((t,i)=>`<div class="seq-item" style="animation-delay:${i*0.35}s;">Step ${i+1}: ${t.name}</div>`).join('')
+    + `<div class="seq-item" style="animation-delay:${day.topics.length*0.35}s;background:rgba(76,175,80,.12);border-color:rgba(76,175,80,.4);">✅ Day ${day.id} sequence complete</div>`;
+}
+function replaySequence(){
+  const row = document.getElementById('seqRow');
+  const items = [...row.children];
+  items.forEach((it,i)=>{ it.style.animation='none'; void it.offsetWidth; it.style.animation=`seqIn .5s ease forwards`; it.style.animationDelay=(i*0.35)+'s'; });
+}
+
+/* ---- Cheat sheet ---- */
+function cheatSheetHTML(day){
+  return day.cheatsheet.map(c=>`<div class="glass cheat-item" style="border-left-color:var(--${c.c})"><b>${c.label}</b><span>${c.value}</span></div>`).join('');
+}
+/* ---- Cert tips ---- */
+function certTipsHTML(day){
+  return day.topics.map(t=>`<div class="glass tip-card"><div class="ic">🎓</div><p>${t.certTip}</p></div>`).join('');
+}
+
+/* ================================================================
+   GLOBAL SEARCH
+   ================================================================ */
+function doGlobalSearch(q){
+  const res = document.getElementById('searchResults');
+  if(!q || q.length<2){ res.innerHTML=''; return; }
+  const lower = q.toLowerCase();
+  let hits = [];
+  DAYS.forEach(d=>{
+    d.topics.forEach(t=>{
+      if(t.name.toLowerCase().includes(lower) || t.definition.toLowerCase().includes(lower)){
+        hits.push({dayId:d.id, name:t.name});
+      }
+    });
+  });
+  if(hits.length===0){ res.innerHTML = `<div style="font-size:.72rem;color:var(--muted);padding:8px;">No matches found.</div>`; return; }
+  res.innerHTML = hits.slice(0,8).map(h=>`<div class="day-item" style="padding:8px 10px;" onclick="renderDayPage(${h.dayId});document.getElementById('globalSearch').value='';document.getElementById('searchResults').innerHTML=''">
+    <div class="day-num" style="width:24px;height:24px;font-size:.65rem;">D${h.dayId}</div><div class="day-info"><b style="font-size:.74rem;">${highlightMatch(h.name,q)}</b></div>
+  </div>`).join('');
+}
+function highlightMatch(text,q){
+  const re = new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');
+  return text.replace(re,'<mark>$1</mark>');
+}
+
+/* ================================================================
+   REVISION MODE
+   ================================================================ */
+let revisionMode=false;
+function toggleRevisionMode(){
+  revisionMode=!revisionMode;
+  document.body.classList.toggle('revision-mode', revisionMode);
+  document.getElementById('revModeBtn').classList.toggle('on', revisionMode);
+  showToast(revisionMode? 'Revision Mode ON — explanations hidden' : 'Revision Mode OFF');
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ================================================================
+   READINESS BAR
+   ================================================================ */
+function updateReadinessBar(){
+  let bar = document.getElementById('readinessBar');
+  const overall = overallProgress();
+  const scores = Object.values(STATE.quizScores||{});
+  const avgScore = scores.length? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const readiness = Math.round((overall*0.5)+(avgScore*0.5));
+  const weak = DAYS.filter(d=> (STATE.quizScores['d'+d.id]||0) < 70 ).map(d=>'Day '+d.id);
+  const strong = DAYS.filter(d=> (STATE.quizScores['d'+d.id]||0) >= 85 ).map(d=>'Day '+d.id);
+  const remaining = DAYS.filter(d=> dayProgress(d) < 100).length;
+  if(!bar){
+    const main = document.getElementById('mainContent');
+    const div = document.createElement('div');
+    div.className='glass readiness-bar'; div.id='readinessBar';
+    main.appendChild(div);
+    bar = div;
+  }
+  bar.innerHTML = `
+    <div class="readiness-meter"><div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);"><span>🏆 Certification Readiness</span><b style="color:var(--text)">${readiness}%</b></div><div class="track"><div class="fill" style="width:${readiness}%"></div></div></div>
+    <div class="readiness-cols">
+      <div class="readiness-col"><b>Weak Areas</b><span>${weak.length? weak.join(', ') : 'None 🎉'}</span></div>
+      <div class="readiness-col"><b>Strong Areas</b><span>${strong.length? strong.join(', ') : '—'}</span></div>
+      <div class="readiness-col"><b>Topics Remaining</b><span>${remaining} day(s)</span></div>
+      <div class="readiness-col"><b>Confidence</b><span>${readiness>=85?'High 💪':readiness>=60?'Medium 👍':'Building 🌱'}</span></div>
+    </div>`;
+}
+
+/* ================================================================
+   FULL MIND MAP PAGE
+   ================================================================ */
+function renderMindMapPage(){
+  currentDayId=null;
+  const main = document.getElementById('mainContent');
+  const cx=460, cy=290, r1=90, r2=230;
+  let dayNodes = DAYS.map((d,i)=>{
+    const angle = (i/DAYS.length)*2*Math.PI - Math.PI/2;
+    return {x:cx+r1*Math.cos(angle), y:cy+r1*Math.sin(angle), d, angle};
+  });
+  let linksHTML = dayNodes.map(n=>`<path class="mm-link" d="M${cx},${cy} L${n.x},${n.y}"/>`).join('');
+  let topicHTML = '';
+  dayNodes.forEach(n=>{
+    n.d.topics.forEach((t,j)=>{
+      const spread = 0.5;
+      const a2 = n.angle + (j - (n.d.topics.length-1)/2) * (spread/n.d.topics.length*2.2);
+      const tx = cx + r2*Math.cos(a2), ty = cy + r2*Math.sin(a2);
+      linksHTML += `<path class="mm-link" d="M${n.x},${n.y} L${tx},${ty}" style="stroke:rgba(0,194,255,.15)"/>`;
+      topicHTML += `<g class="mm-node" transform="translate(${tx},${ty})" onclick="renderDayPage(${n.d.id})" style="cursor:pointer;">
+        <circle class="mm-node-circle" r="20" fill="#00C2FF" opacity="0.55"/>
+        <foreignObject x="-40" y="-30" width="80" height="60" style="pointer-events:none;"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:7.5px;color:#fff;text-align:center;font-weight:600;">${t.name}</div></foreignObject>
+      </g>`;
+    });
+  });
+  const dayHTML = dayNodes.map((n,i)=>`
+    <g class="mm-node" transform="translate(${n.x},${n.y})" onclick="renderDayPage(${n.d.id})" style="cursor:pointer;">
+      <circle class="mm-node-circle" r="40" fill="${['#E53935','#FF9800','#00C2FF','#4CAF50','#8E44AD'][i%5]}" opacity="0.9"/>
+      <foreignObject x="-52" y="-40" width="104" height="80" style="pointer-events:none;"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:9.5px;color:#fff;text-align:center;font-weight:800;">Day ${n.d.id}<br><span style="font-weight:400;font-size:8px;">${n.d.title}</span></div></foreignObject>
+    </g>`).join('');
+  main.innerHTML = `
+    ${topbarHTML('Program <b>/ Full Syllabus Mind Map</b>')}
+    <div class="glass day-hero"><h1>🗺 Complete 10-Day Syllabus Mind Map</h1><p>Zoom, pan, and click any node to jump straight into that day's revision module.</p></div>
+    <div class="glass mindmap-box" style="height:600px;">
+      <div class="mindmap-controls"><button onclick="mmZoom(1.15)">+</button><button onclick="mmZoom(0.87)">−</button><button onclick="mmReset()">⟲</button></div>
+      <svg class="mindmap-svg" id="mmSvg" viewBox="0 0 920 580">
+        <g id="mmPanGroup">
+          ${linksHTML}
+          <circle class="mm-center" cx="${cx}" cy="${cy}" r="54"/>
+          <foreignObject x="${cx-70}" y="${cy-30}" width="140" height="60" style="pointer-events:none;"><div xmlns="http://www.w3.org/1999/xhtml" style="color:#fff;text-align:center;font-size:11px;font-weight:800;">OCI Data<br>Science Cert</div></foreignObject>
+          ${topicHTML}
+          ${dayHTML}
+        </g>
+      </svg>
+    </div>
+  `;
+  initMindMapDrag();
+  refreshProgressUI();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ================================================================
+   TIMELINE PAGE — full ML lifecycle animation
+   ================================================================ */
+function renderTimelinePage(){
+  currentDayId=null;
+  const main = document.getElementById('mainContent');
+  const stages = [
+    {ic:"🎯",b:"Problem",d:"Define the business objective & success metric."},
+    {ic:"🔎",b:"EDA",d:"Explore data distributions, nulls, correlations."},
+    {ic:"🛠️",b:"Feature Engineering",d:"Impute, encode, scale, engineer features."},
+    {ic:"🧠",b:"Training",d:"Fit candidate models; AutoML for baselines."},
+    {ic:"📈",b:"Evaluation",d:"Metrics + SHAP/LIME/PDP explainability."},
+    {ic:"📚",b:"Catalog",d:"Version & govern in the Model Catalog."},
+    {ic:"🚀",b:"Deployment",d:"Serve via managed REST endpoint."},
+    {ic:"📟",b:"Monitoring",d:"Track metrics, logs, alarms."},
+    {ic:"🔁",b:"Retraining",d:"Loop back with fresh data."}
+  ];
+  main.innerHTML = `
+    ${topbarHTML('Program <b>/ ML Lifecycle Timeline</b>')}
+    <div class="glass day-hero"><h1>⏱ Complete ML Lifecycle — Animated Timeline</h1><p>The end-to-end journey every OCI Data Science workload follows, from problem definition to continuous retraining.</p></div>
+    <div class="glass" style="padding:30px 20px;overflow-x:auto;">
+      <div class="flow-row" id="timelineRow">
+        ${stages.map((s,i)=>`<div class="flow-step" style="min-width:190px;animation-delay:${i*0.12}s;">
+          <div class="fico">${s.ic}</div><b>${s.b}</b><p>${s.d}</p>
+          ${i<stages.length-1?`<div class="flow-arrow"><svg viewBox="0 0 28 14"><path d="M0,7 H24 M18,2 L24,7 L18,12"/></svg></div>`:`<div class="flow-arrow" style="right:-40px;"><svg viewBox="0 0 28 14"><path d="M0,7 H24 M18,2 L24,7 L18,12" style="stroke:var(--success)"/></svg></div>`}
+        </div>`).join('')}
+      </div>
+      <div style="text-align:center;margin-top:20px;"><button class="pill-btn primary" onclick="replayTimeline()">↻ Replay Timeline Animation</button></div>
+    </div>
+    ${sectionTitle('∞',"Which Day Covers Which Stage")}
+    <div class="concept-grid">
+      ${DAYS.map(d=>`<div class="glass concept-card" style="cursor:pointer;" onclick="renderDayPage(${d.id})"><h4>${d.icon} Day ${d.id}</h4><p>${d.title}</p></div>`).join('')}
+    </div>
+  `;
+  refreshProgressUI();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function replayTimeline(){
+  const row = document.getElementById('timelineRow');
+  [...row.children].forEach((it,i)=>{ it.style.animation='none'; void it.offsetWidth; it.style.animation='fadeUp .6s ease both'; it.style.animationDelay=(i*0.12)+'s'; });
+}
+
+/* ================================================================
+   FINAL PAGE
+   ================================================================ */
+function renderFinalPage(){
+  currentDayId=null;
+  const main = document.getElementById('mainContent');
+  const overall = overallProgress();
+  const allQuestions = [];
+  DAYS.forEach(d=> d.mcq.forEach(q=> allQuestions.push({day:d.id, q:q.q})));
+  const allTricks = [];
+  DAYS.forEach(d=> d.topics.forEach(t=> allTricks.push(`${t.name}: ${t.bestPractice}`)));
+  const allArch = DAYS.map(d=> ARCH_DIAGRAMS[d.arch].title);
+  const checklistItems = [
+    "Review all 10 Cheat Sheets one final time",
+    "Retake Rapid Fire quiz for any day below 80%",
+    "Re-read every 'Exam Trap' memory card",
+    "Sleep 7-8 hours the night before the exam",
+    "Arrive/login 15 minutes early with valid ID ready",
+    "Read every MCQ option fully before answering",
+    "Flag uncertain questions and revisit before submitting",
+    "Stay calm — you have done 10 full days of revision!"
+  ];
+  main.innerHTML = `
+    ${topbarHTML('Program <b>/ Final Revision & Exam Day</b>')}
+    <div class="final-hero glass">
+      <h1>🏁 You've Reached The Finish Line</h1>
+      <p style="color:var(--muted);max-width:600px;margin:0 auto 20px;">Complete 10-Day OCI Data Science Certification architecture, top revision points, and your exam-day checklist.</p>
+      <div class="ring-wrap" style="margin:0 auto;">
+        <svg viewBox="0 0 150 150" width="150" height="150">
+          <circle class="ring-bg" cx="75" cy="75" r="64"/>
+          <circle class="ring-fg" id="finalRing" cx="75" cy="75" r="64" stroke="url(#ringGrad2)" stroke-dasharray="402" stroke-dashoffset="${402-(overall/100)*402}"/>
+          <defs><linearGradient id="ringGrad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E53935"/><stop offset="50%" stop-color="#FF9800"/><stop offset="100%" stop-color="#00C2FF"/></linearGradient></defs>
+        </svg>
+        <div class="ring-label"><b>${overall}%</b><span>Ready</span></div>
+      </div>
+      <button class="start-btn" style="margin-top:22px;" onclick="launchConfetti()">🎉 Celebrate Progress</button>
+    </div>
+
+    ${sectionTitle(1,"Interactive Exam Blueprint")}
+    <div class="concept-grid">
+      ${DAYS.map(d=>`<div class="glass concept-card" style="cursor:pointer;" onclick="renderDayPage(${d.id})"><h4>${d.icon} Day ${d.id}: ${d.title}</h4><p>${d.blurb}</p><span class="expand-hint">Progress: ${dayProgress(d)}% · Quiz: ${STATE.quizScores['d'+d.id]||0}%</span></div>`).join('')}
+    </div>
+
+    ${sectionTitle(2,"Top 50 Certification Questions", allQuestions.length+" total generated from all days")}
+    <div class="glass" style="padding:20px;"><ol class="big-list">${allQuestions.slice(0,50).map(q=>`<li><b>[Day ${q.day}]</b> ${q.q}</li>`).join('')}</ol></div>
+
+    ${sectionTitle(3,"Top 25 Memory Tricks / Best Practices")}
+    <div class="glass" style="padding:20px;"><ol class="big-list">${allTricks.slice(0,25).map(t=>`<li>${t}</li>`).join('')}</ol></div>
+
+    ${sectionTitle(4,"Top 20 OCI Architectures Reviewed")}
+    <div class="glass" style="padding:20px;"><ol class="big-list">${[...allArch,...allArch].slice(0,20).map((a,i)=>`<li>${a}</li>`).join('')}</ol></div>
+
+    ${sectionTitle(5,"Exam Day Checklist")}
+    <div class="glass" style="padding:20px;"><div class="checklist">
+      ${checklistItems.map((c,i)=>`<label><input type="checkbox" ${STATE.checklist['c'+i]?'checked':''} onchange="STATE.checklist['c${i}']=this.checked;saveState();"> ${c}</label>`).join('')}
+    </div></div>
+
+    <div style="text-align:center;margin:40px 0;">
+      <h2 style="font-size:1.5rem;background:linear-gradient(120deg,var(--success),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;">🎓 Good luck — you're ready for the OCI Data Science Certification!</h2>
+    </div>
+  `;
+  refreshProgressUI();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function launchConfetti(){
+  const wrap = document.createElement('div'); wrap.className='confetti';
+  const colors=['#E53935','#FF9800','#00C2FF','#4CAF50','#8E44AD','#FFC107'];
+  for(let i=0;i<80;i++){
+    const s = document.createElement('span');
+    s.style.left = Math.random()*100+'vw';
+    s.style.background = colors[Math.floor(Math.random()*colors.length)];
+    s.style.animationDelay = (Math.random()*0.6)+'s';
+    s.style.animationDuration = (2.2+Math.random()*1.6)+'s';
+    wrap.appendChild(s);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(()=>wrap.remove(),4200);
+  showToast('🎉 Great work — keep the momentum going!');
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+initMeshCanvas();
+initNeuralCanvas();
+initCloudParticles();
+initTyping();
+initLandingRing();
+</script>
+</body>
+</html>

@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 Lab — OCI Vault, Key Management &amp; Secrets | 1Z0-1067-26</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#11161d; --panel:#151b23; --panel2:#1a212b;
+  --border:#232b36; --border-soft:#1d2530;
+  --text:#e6ebf1; --text-dim:#9aa7b6; --text-faint:#5f6b7a;
+  --red:#ff3b30; --red-dim:#c62b22; --red-glow:rgba(255,59,48,.25);
+  --blue:#4da3ff; --blue-dim:#2f6fd1;
+  --orange:#ffab40; --green:#3ddc84; --green-dim:#279a5c;
+  --yellow:#ffd54a; --purple:#b48bff;
+  --radius:14px; --radius-sm:9px;
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --mono: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f5f7; --bg2:#eceef1; --panel:#ffffff; --panel2:#f7f8fa;
+  --border:#e1e4e9; --border-soft:#ebedf0;
+  --text:#1b2129; --text-dim:#5b6572; --text-faint:#8b95a3;
+  --red:#e0342a; --red-dim:#c62b22; --red-glow:rgba(224,52,42,.18);
+  --shadow: 0 8px 30px rgba(20,20,30,.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; transition:background .3s,color .3s;}
+body::before{content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(circle at 15% 10%, var(--red-glow), transparent 40%), radial-gradient(circle at 85% 90%, rgba(77,163,255,.10), transparent 45%);}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:10px;}
+a{color:inherit;} button{font-family:inherit; cursor:pointer;}
+
+.topbar{position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:14px; padding:10px 18px;
+  background:color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter:blur(14px); border-bottom:1px solid var(--border-soft);}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700;}
+.brand .logo{width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg, var(--red), var(--red-dim));
+  display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; font-weight:800; box-shadow:0 4px 14px var(--red-glow);}
+.brand small{display:block; font-weight:500; color:var(--text-faint); font-size:10.5px; letter-spacing:.5px;}
+.crumb{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-dim); flex:1; min-width:0; overflow:hidden; white-space:nowrap;}
+.crumb b{color:var(--text); font-weight:600;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.xp-chip{display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--border); padding:6px 12px; border-radius:20px; font-size:12.5px; font-weight:600;}
+.xp-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange);}
+.rank-chip{background:linear-gradient(135deg, var(--red), var(--red-dim)); color:#fff; font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:20px;}
+.icon-btn{width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:15px; transition:.15s;}
+.icon-btn:hover{color:var(--text); border-color:var(--text-faint);}
+
+.app{display:flex; min-height:calc(100vh - 54px); position:relative; z-index:1;}
+.sidebar{width:255px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:16px 10px; position:sticky; top:54px; height:calc(100vh - 54px); overflow-y:auto; background:color-mix(in srgb, var(--bg2) 60%, transparent);}
+.sidebar h4{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); padding:14px 10px 6px;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:12.5px; color:var(--text-dim); cursor:pointer; transition:.15s; margin-bottom:2px; border:1px solid transparent;}
+.nav-item .n-ico{width:22px; text-align:center; font-size:12.5px; flex-shrink:0;}
+.nav-item:hover{background:var(--panel2); color:var(--text);}
+.nav-item.active{background:var(--red-glow); color:var(--text); border-color:var(--red-dim); font-weight:600;}
+.nav-item.locked{opacity:.4; cursor:not-allowed;}
+.nav-item.done .n-ico{color:var(--green);}
+.nav-badge{margin-left:auto; font-size:10px; background:var(--panel); border:1px solid var(--border); padding:1px 6px; border-radius:8px; color:var(--text-faint);}
+.nav-item.done .nav-badge{color:var(--green); border-color:var(--green-dim);}
+.progress-mini{margin:10px 8px 4px; padding:10px; background:var(--panel); border:1px solid var(--border); border-radius:10px;}
+.progress-mini .lbl{display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-bottom:6px;}
+.bar-track{height:6px; border-radius:5px; background:var(--border-soft); overflow:hidden;}
+.bar-fill{height:100%; background:linear-gradient(90deg, var(--red), var(--orange)); border-radius:5px; transition:width .5s ease;}
+
+.main{flex:1; min-width:0; padding:26px 30px 80px;}
+.view{display:none; animation:fadeIn .35s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+.section-head{margin-bottom:22px;}
+.eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--red); font-weight:700; margin-bottom:6px;}
+h1.page-title{font-size:24px; font-weight:800; letter-spacing:-.3px;}
+.page-sub{color:var(--text-dim); font-size:13.5px; margin-top:5px; max-width:700px;}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);}
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:1000px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr 1fr;}}
+@media(max-width:650px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr;}}
+.btn{display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:10px; border:none; font-weight:700; font-size:13.5px; transition:.15s;}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--red-dim)); color:#fff; box-shadow:0 6px 20px var(--red-glow);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 10px 26px var(--red-glow);}
+.btn-ghost{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text-faint);}
+.btn-sm{padding:7px 13px; font-size:12px; border-radius:8px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.pill-green{background:rgba(61,220,132,.14); color:var(--green);}
+.pill-red{background:rgba(255,59,48,.14); color:var(--red);}
+.pill-orange{background:rgba(255,171,64,.14); color:var(--orange);}
+.pill-blue{background:rgba(77,163,255,.14); color:var(--blue);}
+.pill-purple{background:rgba(180,139,255,.14); color:var(--purple);}
+.pill-gray{background:var(--panel2); color:var(--text-faint); border:1px solid var(--border);}
+#toast-wrap{position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; flex-direction:column; gap:10px;}
+.toast{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:13px 16px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; min-width:260px; animation:toastIn .3s ease; font-size:13px;}
+@keyframes toastIn{from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);}}
+.toast .t-ico{font-size:18px;} .toast b{display:block; font-size:12.5px;} .toast span{color:var(--text-dim); font-size:11.5px;}
+.toast.xp b{color:var(--orange);} .toast.ok .t-ico{color:var(--green);} .toast.err .t-ico{color:var(--red);}
+
+.mission-map{position:relative; padding:20px 10px;}
+.mission-track{display:flex; flex-wrap:wrap; gap:16px;}
+.m-node{width:190px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px; position:relative; transition:.2s; cursor:pointer;}
+.m-node:hover{transform:translateY(-3px); border-color:var(--text-faint);}
+.m-node.locked{opacity:.45; cursor:not-allowed; filter:grayscale(.6);}
+.m-node.locked:hover{transform:none;}
+.m-node.done{border-color:var(--green-dim); background:linear-gradient(180deg, rgba(61,220,132,.06), var(--panel));}
+.m-node.current{border-color:var(--red-dim); box-shadow:0 0 0 3px var(--red-glow);}
+.m-num{width:30px; height:30px; border-radius:10px; background:var(--panel2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11.5px; margin-bottom:8px;}
+.m-node.done .m-num{background:var(--green); color:#052e17; border-color:var(--green);}
+.m-node.current .m-num{background:var(--red); color:#fff; border-color:var(--red);}
+.m-node h4{font-size:12.5px; margin-bottom:4px;}
+.m-node p{font-size:10.5px; color:var(--text-dim); line-height:1.5; margin-bottom:8px;}
+.m-node .m-xp{font-size:10px; color:var(--orange); font-weight:700;}
+
+.terminal{background:#0a0d12; border-radius:12px; border:1px solid #232b36; font-family:var(--mono); font-size:12.5px; padding:16px; min-height:200px; color:#3ddc84; overflow-y:auto; max-height:420px;}
+.terminal .line{margin-bottom:6px; line-height:1.6; white-space:pre-wrap;}
+.terminal .prompt{color:#4da3ff;} .terminal .out{color:#c9d2dc;} .terminal .comment{color:#5f6b7a;} .terminal .errline{color:#ff6b60;}
+
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600;}
+.field input, .field select, .field textarea{width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text); font-size:13px; font-family:inherit;}
+.field textarea{font-family:var(--mono); font-size:12px; min-height:90px; resize:vertical;}
+.field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--red-dim);}
+
+.hr{height:1px; background:var(--border-soft); margin:20px 0;}
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;} .sidebar{display:none;}}
+.tag-list{display:flex; flex-wrap:wrap; gap:8px;}
+.info-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--blue-dim); background:rgba(77,163,255,.06); font-size:12.5px; margin:12px 0;}
+.tip-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--orange); background:rgba(255,171,64,.07); font-size:12.5px; margin:12px 0;}
+.mistake-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--red); background:rgba(255,59,48,.06); font-size:12.5px; margin:12px 0;}
+.hidden{display:none !important;}
+.chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+.chip{padding:8px 13px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s;}
+.chip:hover{border-color:var(--text-faint);}
+.chip.active{background:var(--red-glow); border-color:var(--red-dim);}
+.code-block{background:#0a0d12; border:1px solid #232b36; border-radius:10px; padding:14px; font-family:var(--mono); font-size:12px; color:#c9d2dc; overflow-x:auto; white-space:pre;}
+
+.quiz-q{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border:none;}
+.quiz-q .q-txt{font-weight:700; font-size:14px; margin-bottom:12px;}
+.q-opt{display:flex; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; cursor:pointer; transition:.15s; font-size:13px;}
+.q-opt:hover{border-color:var(--text-faint);}
+.q-opt.correct{border-color:var(--green-dim); background:rgba(61,220,132,.1);}
+.q-opt.incorrect{border-color:var(--red-dim); background:rgba(255,59,48,.1);}
+.q-explain{margin-top:8px; padding:10px 12px; background:var(--panel2); border-radius:9px; font-size:12px; color:var(--text-dim); display:none; border-left:3px solid var(--blue-dim);}
+.q-explain.show{display:block;}
+
+.ach-card{text-align:center; padding:20px 12px; border-radius:14px; border:1px solid var(--border); background:var(--panel); transition:.2s;}
+.ach-card.locked{opacity:.35; filter:grayscale(1);}
+.ach-card .ico{font-size:32px; margin-bottom:8px;}
+.ach-card h5{font-size:12.5px; margin-bottom:4px;}
+.ach-card p{font-size:10.5px; color:var(--text-dim);}
+
+.health-meter{margin-bottom:12px;}
+.health-meter .hm-lbl{display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-bottom:5px;}
+.hm-track{height:8px; border-radius:6px; background:var(--border-soft); overflow:hidden;}
+.hm-fill{height:100%; border-radius:6px; transition:width .5s ease;}
+
+.toggle{width:40px; height:22px; border-radius:20px; background:var(--border); position:relative; cursor:pointer; flex-shrink:0; transition:.2s;}
+.toggle.on{background:var(--green-dim);}
+.toggle .knob{width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:.2s;}
+.toggle.on .knob{left:20px;}
+
+.finding-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:6px; background:var(--panel2); font-size:12.5px;}
+.sev-badge{font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; text-transform:uppercase;}
+.sev-badge.critical{background:rgba(255,59,48,.2); color:var(--red);}
+.sev-badge.high{background:rgba(255,59,48,.14); color:var(--red);}
+.sev-badge.medium{background:rgba(255,171,64,.18); color:var(--orange);}
+.sev-badge.low{background:rgba(77,163,255,.18); color:var(--blue);}
+.sev-badge.allowed{background:rgba(61,220,132,.18); color:var(--green);}
+.sev-badge.denied{background:rgba(255,59,48,.18); color:var(--red);}
+
+.arch-diagram{display:flex; flex-direction:column; align-items:center; gap:0; padding:16px 0;}
+.arch-node{padding:10px 18px; border-radius:12px; border:2px solid var(--border); background:var(--panel2); font-weight:700; font-size:12.5px; cursor:default; transition:.2s; text-align:center; min-width:150px;}
+.arch-node.active{border-color:var(--green-dim); background:rgba(61,220,132,.08); box-shadow:0 0 0 3px rgba(61,220,132,.15);}
+.arch-node.pending{opacity:.35;}
+.arch-node.branch{cursor:pointer;}
+.arch-arrow{font-size:18px; color:var(--text-faint); padding:2px 0;}
+.arch-row{display:flex; gap:14px; flex-wrap:wrap; justify-content:center;}
+
+.cidr-viz{font-family:var(--mono); font-size:12px; padding:12px; background:var(--panel2); border-radius:9px; border:1px solid var(--border);}
+
+.incident-card{border:1px solid var(--border); border-radius:12px; padding:16px; background:var(--panel2); margin-bottom:12px;}
+.incident-card.resolved{border-color:var(--green-dim); opacity:.6;}
+
+.gauge-wrap{text-align:center;}
+.gauge-track{height:8px; border-radius:6px; background:var(--border-soft); overflow:hidden; margin:8px 0;}
+.gauge-fill{height:100%; border-radius:6px; transition:width .6s ease;}
+
+/* ============ OCI CONSOLE CHROME (always light — matches the real console) ============ */
+.oci-console{
+  background:#fff; color:#1B1B1B; border-radius:8px; border:1px solid #d6d7d9; overflow:hidden;
+  box-shadow:0 2px 10px rgba(0,0,0,.25); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  margin-bottom:16px;
+}
+.oci-topbar{background:#1B1B1B; color:#fff; display:flex; align-items:center; gap:12px; padding:9px 16px; font-size:13px;}
+.oci-topbar .oci-hamburger{font-size:16px; opacity:.8;}
+.oci-topbar .oci-logo{font-weight:700; letter-spacing:.2px; display:flex; align-items:center; gap:7px; white-space:nowrap;}
+.oci-topbar .oci-logo .dot{width:9px; height:9px; border-radius:50%; background:#C74634; display:inline-block;}
+.oci-topbar .oci-search{flex:1; max-width:360px; background:#2c2c2c; border:1px solid #444; border-radius:4px; padding:5px 10px; font-size:12px; color:#aaa;}
+.oci-topbar .oci-region{margin-left:auto; background:#2c2c2c; border:1px solid #444; padding:5px 12px; border-radius:4px; font-size:12px; white-space:nowrap;}
+.oci-topbar .oci-user{width:26px; height:26px; border-radius:50%; background:#C74634; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0;}
+.oci-breadcrumb{padding:10px 18px; background:#f4f4f5; border-bottom:1px solid #e1e1e3; font-size:12px; color:#6b6b6b; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+.oci-breadcrumb b{color:#1B1B1B; font-weight:600;}
+.oci-breadcrumb .sep{color:#c4c4c4;}
+.oci-body{padding:22px 24px; background:#fff;}
+.oci-page-title{font-size:19px; font-weight:600; color:#1B1B1B; margin-bottom:4px;}
+.oci-page-sub{font-size:12.5px; color:#6b6b6b; margin-bottom:14px;}
+.oci-actions{display:flex; gap:8px; margin:14px 0 18px;}
+.oci-btn{padding:7px 16px; border-radius:4px; font-size:13px; font-weight:600; border:1px solid transparent; cursor:pointer; font-family:inherit;}
+.oci-btn-primary{background:#C74634; color:#fff;}
+.oci-btn-primary:hover{background:#B23D2D;}
+.oci-btn-primary:disabled{opacity:.45; cursor:not-allowed;}
+.oci-btn-secondary{background:#fff; color:#1B1B1B; border:1px solid #c4c4c4;}
+.oci-btn-secondary:hover{background:#f4f4f5;}
+.oci-table{width:100%; border-collapse:collapse; font-size:13px; margin-top:6px;}
+.oci-table th{text-align:left; padding:9px 12px; background:#f4f4f5; border-bottom:1px solid #e1e1e3; color:#555; font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.3px;}
+.oci-table td{padding:11px 12px; border-bottom:1px solid #eee; color:#1B1B1B;}
+.oci-table tr:last-child td{border-bottom:none;}
+.oci-table a.oci-link{color:#0572CE; font-weight:600; cursor:pointer;}
+.oci-empty{padding:34px 20px; text-align:center; color:#8a8a8a; font-size:13px; border:1px dashed #d6d7d9; border-radius:6px; margin-top:6px;}
+.oci-status{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;}
+.oci-status .dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.oci-status.running .dot,.oci-status.available .dot,.oci-status.active .dot{background:#1E8E3E;}
+.oci-status.provisioning .dot{background:#B58200; animation:ociPulse 1s infinite;}
+@keyframes ociPulse{50%{opacity:.35;}}
+.oci-status.terminated .dot,.oci-status.blocked .dot{background:#C5221F;}
+.oci-status.running{color:#1E8E3E;} .oci-status.available{color:#1E8E3E;} .oci-status.active{color:#1E8E3E;}
+.oci-status.provisioning{color:#946200;} .oci-status.terminated{color:#C5221F;} .oci-status.blocked{color:#C5221F;}
+.oci-field{margin-bottom:16px; max-width:480px;}
+.oci-field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:#1B1B1B;}
+.oci-field input,.oci-field select{width:100%; padding:8px 10px; border:1px solid #c4c4c4; border-radius:4px; font-size:13px; font-family:inherit; color:#1B1B1B; background:#fff;}
+.oci-field input:focus,.oci-field select:focus{outline:2px solid #0572CE; outline-offset:1px; border-color:#0572CE;}
+.oci-help{font-size:11.5px; color:#767676; margin-top:4px;}
+.oci-panel-footer{display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid #e1e1e3; background:#fafafa;}
+.oci-radio-card{border:1px solid #c4c4c4; border-radius:6px; padding:12px 14px; margin-bottom:8px; cursor:pointer; font-size:13px;}
+.oci-radio-card.selected{border-color:#C74634; background:#fdf3f1; box-shadow:0 0 0 1px #C74634;}
+.oci-radio-card b{display:block; margin-bottom:2px;}
+.oci-radio-card span{color:#6b6b6b; font-size:12px;}
+.oci-tabs{display:flex; gap:2px; border-bottom:1px solid #e1e1e3; margin-bottom:16px;}
+.oci-tab{padding:9px 16px; font-size:12.5px; font-weight:600; color:#6b6b6b; cursor:pointer; border-bottom:2px solid transparent;}
+.oci-tab.active{color:#C74634; border-bottom-color:#C74634;}
+.oci-console-note{font-size:12px; color:#6b6b6b; background:#f4f4f5; border-left:3px solid #0572CE; padding:9px 12px; border-radius:4px; margin:12px 0;}
+.oci-copyable{font-family:'SFMono-Regular',Consolas,monospace; font-size:12px; background:#f4f4f5; padding:2px 6px; border-radius:3px;}
+
+.key-timeline{display:flex; flex-direction:column; gap:0;}
+.key-timeline .kt-step{display:flex; align-items:center; gap:12px; padding:10px 0;}
+.key-timeline .kt-dot{width:14px; height:14px; border-radius:50%; background:var(--border); flex-shrink:0; border:2px solid var(--border);}
+.key-timeline .kt-step.done .kt-dot{background:var(--green); border-color:var(--green);}
+.key-timeline .kt-step.current .kt-dot{background:var(--red); border-color:var(--red); box-shadow:0 0 0 4px var(--red-glow);}
+.key-timeline .kt-line{width:2px; height:22px; background:var(--border); margin-left:6px;}
+.base64-box{font-family:var(--mono); font-size:12px; background:#0a0d12; border:1px solid #232b36; border-radius:9px; padding:12px; color:#3ddc84; word-break:break-all;}
+.version-row{display:flex; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border); border-radius:9px; margin-bottom:8px; background:var(--panel2);}
+.version-row.current{border-color:var(--green-dim); background:rgba(61,220,132,.06);}
+</style>
+</head>
+<body data-theme="dark">
+<div id="toast-wrap"></div>
+<div class="topbar">
+  <div class="brand"><div class="logo">C</div><div>Day 6 Lab <small>1Z0-1067-26 · Vault, KMS &amp; Secrets</small></div></div>
+  <div class="crumb">Home <span>›</span> <b id="crumbCurrent">Mission Control</b></div>
+  <div class="topbar-right">
+    <div class="xp-chip"><span class="dot"></span><span id="xpDisplay">0</span> XP</div>
+    <div class="rank-chip" id="rankChip">Security Trainee</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">◐</button>
+  </div>
+</div>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main"></div>
+</div>
+<script>
+/* ================= DATA ================= */
+const NAV = [
+  {id:'home', label:'Mission Control', ico:'⌂', group:'main'},
+  {id:'missionmap', label:'Mission Map', ico:'🗺', group:'main'},
+  {id:'m1', label:'M1 · Create Vault', ico:'①', group:'missions'},
+  {id:'m2', label:'M2 · Master Key', ico:'②', group:'missions'},
+  {id:'m3', label:'M3 · Create Secret', ico:'③', group:'missions'},
+  {id:'m4', label:'M4 · Encrypt Volume', ico:'④', group:'missions'},
+  {id:'m5', label:'M5 · Verify Encryption', ico:'⑤', group:'missions'},
+  {id:'m6', label:'M6 · Rotate Key', ico:'⑥', group:'missions'},
+  {id:'m7', label:'M7 · Key Versions', ico:'⑦', group:'missions'},
+  {id:'m8', label:'M8 · Secret Versioning', ico:'⑧', group:'missions'},
+  {id:'m9', label:'M9 · Retrieve Secret', ico:'⑨', group:'missions'},
+  {id:'m10', label:'M10 · OCI CLI', ico:'⑩', group:'missions'},
+  {id:'m11', label:'M11 · SDK Integration', ico:'⑪', group:'missions'},
+  {id:'m12', label:'M12 · Incident Response', ico:'⑫', group:'missions'},
+  {id:'achievements', label:'Achievements', ico:'🏆', group:'extra'},
+  {id:'capstone', label:'Final Capstone', ico:'🎓', group:'extra'},
+];
+
+const MISSIONS = [
+  {id:'m1', num:1, title:'Create Vault', desc:'Stand up the enterprise Vault.', xp:90},
+  {id:'m2', num:2, title:'Create Master Encryption Key', desc:'Generate an HSM-backed key.', xp:100},
+  {id:'m3', num:3, title:'Create Secret', desc:'Store a password without plaintext.', xp:90},
+  {id:'m4', num:4, title:'Encrypt Block Volume', desc:'Move from Oracle-managed to customer-managed.', xp:100},
+  {id:'m5', num:5, title:'Verify Encryption', desc:'Prove compliance with an audit check.', xp:70},
+  {id:'m6', num:6, title:'Rotate Key', desc:'Rotate without downtime.', xp:90},
+  {id:'m7', num:7, title:'Key Versions', desc:'Track the key lifecycle over time.', xp:70},
+  {id:'m8', num:8, title:'Secret Versioning', desc:'Update a secret without breaking rollback.', xp:80},
+  {id:'m9', num:9, title:'Retrieve Secret', desc:'Fetch and decode a secret bundle.', xp:80},
+  {id:'m10', num:10, title:'OCI CLI', desc:'Manage Vault from the command line.', xp:100},
+  {id:'m11', num:11, title:'SDK Integration', desc:'Call Vault APIs from real code.', xp:100},
+  {id:'m12', num:12, title:'Enterprise Incident Response', desc:'Defend production before the audit.', xp:150},
+];
+const MISSION_ORDER = MISSIONS.map(m=>m.id);
+
+const VAULT_CONCEPTS = [
+  {term:'Vault', def:'A managed, logical container for encryption keys and secrets — the root of OCI\'s key management service.'},
+  {term:'Key Management', def:'Create, rotate, enable/disable, and control access to encryption keys used across OCI resources.'},
+  {term:'Secrets', def:'Securely store and retrieve credentials, tokens, and other sensitive values — never in plaintext.'},
+  {term:'Certificates', def:'Manage TLS/SSL certificates used to secure application traffic.'},
+  {term:'HSM', def:'Hardware Security Module — tamper-resistant hardware that generates and protects key material, never exposing raw key bytes.'},
+];
+const VAULT_ARCHITECTURE = ['Vault','Master Keys','Secrets','Encrypted Resources','Applications'];
+
+const KEY_FIELDS = [
+  {key:'name', label:'Key Name', ph:'Production-Key'},
+  {key:'protection', label:'Protection Mode', opts:['HSM','Software']},
+  {key:'shape', label:'Key Shape (Algorithm)', opts:['AES','RSA','ECDSA']},
+  {key:'length', label:'Key Length', opts:['256-bit','192-bit','128-bit']},
+];
+const CMK_VS_OMK = [
+  {label:'Oracle Managed Key', points:['Oracle generates and controls the key','Zero setup required','No rotation control for you','Good default, weaker for compliance']},
+  {label:'Customer Managed Key', points:['You create and control the key in your Vault','Full control over rotation and disablement','Required for many compliance frameworks (PCI DSS, ISO 27001)','You can audit every use']},
+];
+const KEY_LIFECYCLE = ['Create','Enable','Rotate','Disable','Schedule Deletion','Deleted'];
+
+const SECRET_TYPES = [
+  {id:'dbpass', label:'Database Password'}, {id:'apikey', label:'API Key'}, {id:'jwt', label:'JWT Secret'},
+  {id:'sshkey', label:'SSH Private Key'}, {id:'oauth', label:'OAuth Token'}, {id:'connstr', label:'Connection String'},
+];
+const SECRET_ARCHITECTURE = ['Application','OCI Vault','Encrypted Secret','Authorized User (IAM)','Application Reads Secret'];
+
+const ENCRYPTION_FLOW = ['Plain Data','AES Encryption','Cipher Text','Block Volume'];
+
+const CLI_STEPS_M10 = [
+  {cmd:'oci vault secret list --compartment-id ocid1.compartment.oc1..aaa', out:'{\n  "data": [\n    {"secret-name":"Database-Password","lifecycle-state":"ACTIVE"}\n  ]\n}', note:'Lists all secrets visible in the compartment.'},
+  {cmd:'oci secrets secret-bundle get --secret-id ocid1.vaultsecret.oc1..aaa', out:'{\n  "data": {\n    "secret-bundle-content": {"content":"V2VsY29tZUAxMjM="}\n  }\n}', note:'Retrieves the current secret bundle — content arrives Base64-encoded.'},
+  {cmd:'oci vault secret get --secret-id ocid1.vaultsecret.oc1..aaa', out:'{\n  "data": {"secret-name":"Database-Password","lifecycle-state":"ACTIVE","current-version-number":2}\n  }', note:'Gets secret metadata (not the value) — name, state, current version.'},
+  {cmd:'oci kms management key list --compartment-id ocid1.compartment.oc1..aaa --endpoint https://kms.us-ashburn-1.oraclecloud.com', out:'{\n  "data": [\n    {"display-name":"Production-Key","lifecycle-state":"ENABLED"}\n  ]\n}', note:'Lists keys — note this requires the Vault\'s management endpoint, not the generic OCI endpoint.'},
+  {cmd:'oci kms management key get --key-id ocid1.key.oc1..aaa --endpoint https://kms.us-ashburn-1.oraclecloud.com', out:'{\n  "data": {"display-name":"Production-Key","protection-mode":"HSM","current-key-version":"ocid1.keyversion.oc1..bbb"}\n  }', note:'Gets full key detail including protection mode and current version.'},
+];
+
+const SDK_LANGS = {
+  Python:`import oci
+
+config = oci.config.from_file()
+secrets_client = oci.secrets.SecretsClient(config)
+
+response = secrets_client.get_secret_bundle(
+    secret_id="ocid1.vaultsecret.oc1..aaa"
+)
+content = response.data.secret_bundle_content.content
+print(content)  # Base64 — decode before use`,
+  Java:`ConfigFileAuthenticationDetailsProvider provider =
+    new ConfigFileAuthenticationDetailsProvider("~/.oci/config", "DEFAULT");
+
+SecretsClient client = SecretsClient.builder().build(provider);
+GetSecretBundleRequest request = GetSecretBundleRequest.builder()
+    .secretId("ocid1.vaultsecret.oc1..aaa").build();
+GetSecretBundleResponse response = client.getSecretBundle(request);`,
+  'Node.js':`const common = require("oci-common");
+const secrets = require("oci-secrets");
+
+const provider = new common.ConfigFileAuthenticationDetailsProvider();
+const client = new secrets.SecretsClient({ authenticationDetailsProvider: provider });
+
+const response = await client.getSecretBundle({ secretId: "ocid1.vaultsecret.oc1..aaa" });
+console.log(response.secretBundle.secretBundleContent.content);`,
+  Go:`provider := common.DefaultConfigProvider()
+client, _ := secrets.NewSecretsClientWithConfigurationProvider(provider)
+
+request := secrets.GetSecretBundleRequest{SecretId: &secretId}
+response, _ := client.GetSecretBundle(context.Background(), request)
+fmt.Println(*response.SecretBundleContentDetails)`,
+};
+const SDK_ACTIONS = ['Retrieve Secret','List Keys','Create Secret'];
+const SDK_RESPONSES = {
+  'Retrieve Secret':'{\n  "secretBundleContent": {\n    "content": "V2VsY29tZUAxMjM=",\n    "contentType": "BASE64"\n  }\n}',
+  'List Keys':'{\n  "data": [\n    {"displayName":"Production-Key","lifecycleState":"ENABLED"}\n  ]\n}',
+  'Create Secret':'{\n  "data": {"id":"ocid1.vaultsecret.oc1..new","lifecycleState":"CREATING"}\n}',
+};
+
+const INCIDENTS_12 = [
+  {id:'i1', title:'Vault Not Active', symptoms:'Cannot create keys — every request returns "Vault must be ACTIVE".', opts:['Wait for provisioning to finish — a new Vault takes a few minutes to reach ACTIVE','Delete and recreate the Vault repeatedly','Grant broader IAM permissions','Switch regions'], a:0},
+  {id:'i2', title:'Permission Denied', symptoms:'Cannot create a Vault: "NotAuthorizedOrNotFound".', opts:['Add an IAM policy granting manage vaults in the target compartment to the user\'s group','Recreate the compartment','Restart the tenancy','Disable MFA'], a:0},
+  {id:'i3', title:'KMS Endpoint Error', symptoms:'oci kms management key list fails with a connection error.', opts:['Use the Vault\'s specific management endpoint, not a generic regional one','Reinstall the CLI','Switch to the SDK instead','Delete the key and retry'], a:0},
+  {id:'i4', title:'Secret Shows Base64', symptoms:'Retrieved secret value looks like "V2VsY29tZUAxMjM=" instead of the real password.', opts:['This is expected — Base64-decode the secret-bundle-content client-side','The secret is corrupted, recreate it','The Vault is misconfigured','Rotate the key immediately'], a:0},
+  {id:'i5', title:'Block Volume Not Encrypted with CMK', symptoms:'Audit flags a volume still using the Oracle Managed Key.', opts:['Update the volume\'s encryption key to the Customer Managed Key','Delete and recreate the volume from scratch','Disable encryption entirely','Ignore it — Oracle Managed is equally compliant'], a:0},
+  {id:'i6', title:'Application Cannot Read Secret', symptoms:'App gets "NotAuthorizedOrNotFound" when calling get_secret_bundle.', opts:['Check the IAM policy for the app\'s dynamic group/user AND confirm the secret OCID and current version','Increase the app\'s CPU allocation','Rotate the encryption key','Delete the secret and recreate it'], a:0},
+  {id:'i7', title:'Expired API Key', symptoms:'SDK authentication suddenly fails with AuthenticationException.', opts:['Check the config file\'s fingerprint, private key path, region, and user OCID — the local key may be stale or rotated','Reinstall the SDK','Use a different programming language','Increase the timeout value'], a:0},
+  {id:'i8', title:'Key Rotation Failure', symptoms:'"Rotate" fails with an error about protection mode.', opts:['Confirm the Vault and key are ACTIVE/ENABLED and the caller has permission to manage key-versions','Delete the key and start over','Downgrade to a Software-protected key','Disable the Vault'], a:0},
+];
+const COMPLIANCE_CHECKS = [
+  {label:'Vault exists and is Active', ok:s=>s.m1.active},
+  {label:'Customer Managed Key in use', ok:s=>s.m2.created},
+  {label:'Secrets have more than one version', ok:s=>s.m8.newVersionCreated},
+  {label:'Key has been rotated at least once', ok:s=>s.m6.rotations>=1},
+  {label:'Block Volume uses CMK, not Oracle Managed', ok:s=>s.m4.switched},
+  {label:'Audit logging reviewed', ok:s=>s.m5.verified},
+];
+const ATTACK_ATTEMPTS = [
+  {id:'a1', label:'Steal Password from App Logs', reason:'Application never logs the plaintext password — only ever references the secret OCID.'},
+  {id:'a2', label:'Access API Key without IAM Grant', reason:'No IAM policy exists granting this identity read access to the secret — request denied and logged.'},
+  {id:'a3', label:'Read Secret via Public Internet', reason:'Vault API calls require authenticated, signed requests — anonymous access is rejected outright.'},
+  {id:'a4', label:'Decrypt Volume without Key Access', reason:'The volume\'s Customer Managed Key never leaves the HSM — without explicit key policy grants, decryption is impossible.'},
+];
+
+const ACHIEVEMENTS = [
+  {id:'a1', name:'Vault Administrator', ico:'🔐', cond:'Create the Vault and Master Encryption Key', check:s=>s.done.has('m1') && s.done.has('m2')},
+  {id:'a2', name:'Encryption Expert', ico:'🛡', cond:'Encrypt and verify the Block Volume', check:s=>s.done.has('m4') && s.done.has('m5')},
+  {id:'a3', name:'Secret Manager', ico:'🗝', cond:'Create and version a secret', check:s=>s.done.has('m3') && s.done.has('m8')},
+  {id:'a4', name:'KMS Specialist', ico:'♻', cond:'Rotate a key and review its versions', check:s=>s.done.has('m6') && s.done.has('m7')},
+  {id:'a5', name:'Compliance Officer', ico:'📋', cond:'Pass every compliance check', check:s=>COMPLIANCE_CHECKS.every(c=>c.ok(s))},
+  {id:'a6', name:'Incident Responder', ico:'🚨', cond:'Resolve every incident in Mission 12', check:s=>s.m12.resolved.size>=INCIDENTS_12.length},
+  {id:'a7', name:'Cloud Security Engineer', ico:'🕶', cond:'Complete OCI CLI and SDK missions', check:s=>s.done.has('m10') && s.done.has('m11')},
+  {id:'a8', name:'OCI Operations Professional Ready', ico:'🎓', cond:'Complete all 12 missions with a strong quiz score', check:s=>MISSION_ORDER.every(m=>s.done.has(m)) && Object.values(s.quizScores).reduce((a,b)=>a+b,0)>=10},
+];
+
+const QUIZZES = {
+  m1:[
+    {q:'What is a Virtual Private Vault, compared to a shared Vault?', opts:['A dedicated partition backed by its own HSM partition, for the strictest compliance needs','A free-tier-only Vault type','A Vault with no encryption keys allowed','A Vault that can only store certificates'], a:0, ex:'Virtual Private Vaults give a dedicated, isolated HSM partition rather than sharing partitions with other tenants — used where compliance demands full isolation.'},
+    {q:'Which Vault sub-feature manages TLS/SSL certificates?', opts:['Certificates','Secrets','Key Management','HSM'], a:0, ex:'The Certificates feature of Vault issues and manages TLS certificates separately from encryption keys and secrets.'},
+  ],
+  m2:[
+    {q:'What does HSM protection mode guarantee?', opts:['Raw key material never leaves tamper-resistant hardware','Keys rotate automatically every hour','Keys are stored in plaintext for fast access','Keys can be exported as plain text on request'], a:0, ex:'HSM-protected keys are generated and used entirely inside hardware designed to prevent extraction of raw key material.'},
+    {q:'Why might a compliance framework require Customer Managed Keys over Oracle Managed Keys?', opts:['CMKs give the customer full control over rotation, disablement, and audit of key usage','CMKs are always free','OMKs cannot encrypt any data','CMKs remove the need for IAM policies'], a:0, ex:'Frameworks like PCI DSS often require the customer to control and audit their own key lifecycle — something only CMKs allow.'},
+  ],
+  m3:[
+    {q:'Why should application passwords be stored as Vault Secrets instead of environment variables?', opts:['Secrets are encrypted at rest, access-controlled by IAM, and centrally audited','Environment variables are faster','Vault Secrets are free while env vars cost money','There is no difference'], a:0, ex:'Environment variables are often visible in process listings, logs, or container definitions — Vault Secrets are encrypted, access-controlled, and audited.'},
+    {q:'In what format does a retrieved secret bundle\'s content typically arrive?', opts:['Base64-encoded','Plaintext CSV','XML','Binary protobuf only'], a:0, ex:'Secret bundle content is delivered Base64-encoded and must be decoded by the caller.'},
+  ],
+  m4:[
+    {q:'What is the main compliance benefit of switching a Block Volume from Oracle Managed to Customer Managed Key?', opts:['The customer can control, audit, and rotate the exact key protecting their data','It makes the volume larger','It removes the need for backups','It disables encryption to improve speed'], a:0, ex:'Compliance frameworks generally require customer control over key material and its lifecycle — CMK provides that; OMK does not.'},
+  ],
+  m5:[
+    {q:'What does verifying encryption typically confirm during an audit?', opts:['That the resource is using the expected Customer Managed Key, not a default Oracle Managed one','That the resource has a public IP','That the resource is running the latest OS patch','That the resource has automatic backups enabled'], a:0, ex:'Auditors check that sensitive resources are encrypted with the specific customer-controlled key mandated by policy.'},
+  ],
+  m6:[
+    {q:'What happens to previously encrypted data when a key is rotated?', opts:['It remains readable — Vault manages old key versions automatically for decryption','It becomes permanently unreadable','It must be manually re-encrypted immediately','The resource is deleted'], a:0, ex:'Key rotation creates a new key version for new encryption operations while retaining old versions to decrypt previously encrypted data — zero downtime.'},
+    {q:'Why rotate encryption keys periodically?', opts:['Reduces the impact if a key is ever compromised, and satisfies compliance mandates','It makes data larger','It\'s required before every reboot','It automatically deletes old secrets'], a:0, ex:'Regular rotation limits the blast radius of a potential key compromise and is often explicitly required by compliance frameworks.'},
+  ],
+  m7:[
+    {q:'What states can a key version move through over its lifecycle?', opts:['Current, Retired, Disabled','Public, Private, Shared','Fast, Medium, Slow','Free, Paid, Enterprise'], a:0, ex:'Key versions progress from Current (actively used) to Retired (kept for decrypting old data) to potentially Disabled.'},
+  ],
+  m8:[
+    {q:'Why version secrets instead of overwriting them in place?', opts:['Versioning allows rollback and keeps a history without breaking apps mid-transition','Versioning is required by OCI and cannot be disabled','It makes secrets load faster','It automatically encrypts the secret twice'], a:0, ex:'New secret versions let you rotate a password while retaining the ability to roll back, and let consumers migrate gradually.'},
+  ],
+  m9:[
+    {q:'What must a caller do after retrieving a secret bundle\'s content?', opts:['Base64-decode it before using the actual value','Re-encrypt it manually','Convert it to XML','Nothing — it\'s already plaintext'], a:0, ex:'Secret bundle content is delivered Base64-encoded; the actual secret value only appears after decoding.'},
+  ],
+  m10:[
+    {q:'Why does "oci kms management key list" need a special --endpoint flag?', opts:['KMS management calls are routed to the Vault\'s dedicated management endpoint, not a generic regional one','The flag is optional and never required','It only applies when using Windows','It replaces the need for authentication'], a:0, ex:'Unlike most OCI CLI commands, KMS management operations require the specific per-Vault management endpoint.'},
+  ],
+  m11:[
+    {q:'What authentication does the OCI SDK use by default for Vault calls?', opts:['The same config file/profile format used by the OCI CLI (~/.oci/config)','A separate SDK-only login system','No authentication is required for Vault reads','OAuth2 only'], a:0, ex:'The SDK reuses the standard OCI config file, so credentials configured for the CLI work directly with SDK calls too.'},
+  ],
+  m12:[
+    {q:'During incident response, what should be checked first when an application suddenly can\'t read a secret it could read yesterday?', opts:['IAM policy changes, the secret OCID, and whether the current version changed','The office Wi-Fi','The application\'s CSS','The region\'s weather status'], a:0, ex:'Sudden access failures are almost always a policy change, an OCID mismatch, or a version pointer that moved — check those first.'},
+  ],
+};
+
+
+/* ================= STATE ================= */
+const STATE = {
+  view:'home', xp:0, done:new Set(),
+  quizScores:{}, quizAnswered:{}, achUnlocked:new Set(),
+  m1:{state:'idle', active:false},
+  m2:{created:false, fields:{protection:'HSM', shape:'AES', length:'256-bit'}},
+  m3:{created:{}, dbPassValue:'Welcome@123'},
+  m4:{switched:false},
+  m5:{verified:false},
+  m6:{rotations:0},
+  m7:{viewed:false},
+  m8:{newVersionCreated:false, currentVersion:1},
+  m9:{retrieved:false, decoded:false},
+  m10:{step:0, history:[]},
+  m11:{lang:'Python', executed:{}},
+  m12:{resolved:new Set(), complianceChecked:{}, attacksTried:{}},
+};
+
+function isUnlocked(id){
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx<=0) return true;
+  return STATE.done.has(MISSION_ORDER[idx-1]);
+}
+function rankFor(xp){
+  if(xp>=1200) return 'Cloud Security Engineer (Ready)';
+  if(xp>=800) return 'Senior Security Engineer';
+  if(xp>=450) return 'Security Engineer';
+  if(xp>=150) return 'Associate Security Engineer';
+  return 'Security Trainee';
+}
+function addXP(n, label){
+  STATE.xp = Math.max(0, STATE.xp + n);
+  document.getElementById('xpDisplay').textContent = STATE.xp;
+  document.getElementById('rankChip').textContent = rankFor(STATE.xp);
+  toast(n>=0?'xp':'err', (n>=0?'+':'')+n+' XP', label||'');
+  checkAchievements();
+}
+function toast(type, title, msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const ico = type==='xp' ? '⭐' : type==='ok' ? '✅' : type==='err' ? '⛔' : 'ℹ';
+  el.innerHTML = `<div class="t-ico">${ico}</div><div><b>${title}</b><span>${msg||''}</span></div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+function completeMission(id, xp){
+  if(STATE.done.has(id)) return;
+  STATE.done.add(id);
+  addXP(xp, MISSIONS.find(m=>m.id===id).title + ' complete');
+  toast('ok','Mission Complete', MISSIONS.find(m=>m.id===id).title);
+  renderSidebar();
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx>=0 && idx<MISSION_ORDER.length-1){
+    setTimeout(()=>toast('info','Next mission unlocked', MISSIONS[idx+1].title), 900);
+  }
+}
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!STATE.achUnlocked.has(a.id) && a.check(STATE)){
+      STATE.achUnlocked.add(a.id);
+      setTimeout(()=>toast('ok','Achievement Unlocked 🏆', a.name), 600);
+    }
+  });
+}
+
+/* ================= NAV ================= */
+function renderSidebar(){
+  const groups = {main:'Overview', missions:'Mission Track', extra:'Beyond the Labs'};
+  let html = '';
+  Object.keys(groups).forEach(g=>{
+    html += `<h4>${groups[g]}</h4>`;
+    NAV.filter(n=>n.group===g).forEach(n=>{
+      let locked=false, done=false;
+      if(MISSION_ORDER.includes(n.id)){ locked=!isUnlocked(n.id); done=STATE.done.has(n.id); }
+      html += `<div class="nav-item ${STATE.view===n.id?'active':''} ${locked?'locked':''} ${done?'done':''}"
+        onclick="${locked?'':`setView('${n.id}')`}">
+        <span class="n-ico">${done?'✓':n.ico}</span>${n.label}
+        ${locked?'<span class="nav-badge">🔒</span>':''}
+      </div>`;
+    });
+  });
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  html += `<div class="progress-mini"><div class="lbl"><span>Mission Progress</span><span>${pct}%</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
+  document.getElementById('sidebar').innerHTML = html;
+}
+function setView(id){
+  STATE.view = id;
+  const nav = NAV.find(n=>n.id===id);
+  document.getElementById('crumbCurrent').textContent = nav ? nav.label : id;
+  renderSidebar();
+  renderMain();
+  const mainEl = document.getElementById('main');
+  if(mainEl.scrollIntoView) mainEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderMain(){
+  const map = {
+    home:renderHome, missionmap:renderMissionMap,
+    m1:renderM1, m2:renderM2, m3:renderM3, m4:renderM4, m5:renderM5, m6:renderM6,
+    m7:renderM7, m8:renderM8, m9:renderM9, m10:renderM10, m11:renderM11, m12:renderM12,
+    achievements:renderAchievements, capstone:renderCapstone,
+  };
+  const fn = map[STATE.view] || renderHome;
+  document.getElementById('main').innerHTML = `<div class="view active">${fn()}</div>`;
+  afterRenderHooks[STATE.view] && afterRenderHooks[STATE.view]();
+}
+const afterRenderHooks = {};
+
+/* ================= OCI CONSOLE CHROME HELPERS ================= */
+function ociFrame(breadcrumbParts, title, actionsHtml, bodyHtml){
+  return `<div class="oci-console">
+    <div class="oci-topbar">
+      <span class="oci-hamburger">☰</span>
+      <span class="oci-logo"><span class="dot"></span>Oracle Cloud</span>
+      <span class="oci-search">🔍 Search resources, services, and documentation</span>
+      <span class="oci-region">🌐 US East (Ashburn)</span>
+      <span class="oci-user">AB</span>
+    </div>
+    <div class="oci-breadcrumb">${breadcrumbParts.map((p,i)=>`${i>0?'<span class="sep">/</span>':''}${i===breadcrumbParts.length-1?`<b>${p}</b>`:p}`).join('')}</div>
+    <div class="oci-body">
+      <div class="oci-page-title">${title}</div>
+      ${actionsHtml?`<div class="oci-actions">${actionsHtml}</div>`:''}
+      ${bodyHtml}
+    </div>
+  </div>`;
+}
+function ociStatus(state){
+  const map = {ACTIVE:'active', AVAILABLE:'available', ENABLED:'active', CREATING:'provisioning', PROVISIONING:'provisioning', DISABLED:'terminated'};
+  const cls = map[state] || 'provisioning';
+  return `<span class="oci-status ${cls}"><span class="dot"></span>${state}</span>`;
+}
+function ociTable(headers, rows){
+  if(!rows.length) return `<div class="oci-empty">No resources found in this compartment yet. Click the button above to create one.</div>`;
+  return `<table class="oci-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>
+    ${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}
+  </tbody></table>`;
+}
+function archDiagram(steps, activeCount){
+  return `<div class="arch-diagram">${steps.map((s,i)=>`${i>0?'<div class="arch-arrow">↓</div>':''}<div class="arch-node ${i<activeCount?'active':'pending'}">${s}</div>`).join('')}</div>`;
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  const nextMission = MISSIONS[STATE.done.size];
+  const encryptionCoverage = (STATE.m4.switched?50:0) + (STATE.m5.verified?50:0);
+  const complianceScore = Math.round(COMPLIANCE_CHECKS.filter(c=>c.ok(STATE)).length/COMPLIANCE_CHECKS.length*100);
+  const securityScore = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  return `
+  <div class="section-head">
+    <div class="eyebrow">OCI Operations Professional · 1Z0-1067-26 · Day 6 Lab</div>
+    <h1 class="page-title">OCI Vault — Key Management &amp; Secrets</h1>
+    <p class="page-sub">You've joined ABC Bank as a Cloud Security Engineer. PCI DSS, ISO 27001, SOC2, and NIST auditors arrive soon — secure production before they do.</p>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-orange">XP</div><h2 style="margin-top:10px;font-size:24px;">${STATE.xp}</h2></div>
+    <div class="card"><div class="pill pill-blue">Rank</div><h2 style="margin-top:10px;font-size:14px;">${rankFor(STATE.xp)}</h2></div>
+    <div class="card"><div class="pill pill-green">Missions</div><h2 style="margin-top:10px;font-size:24px;">${STATE.done.size}/12</h2></div>
+    <div class="card"><div class="pill pill-red">Security Score</div><h2 style="margin-top:10px;font-size:24px;">${securityScore}%</h2></div>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-gray">Vault Status</div><h3 style="margin-top:8px; font-size:14px;">${STATE.m1.active?'ACTIVE':'Not created'}</h3></div>
+    <div class="card"><div class="pill pill-gray">Active Keys</div><h3 style="margin-top:8px;">${STATE.m2.created?1:0}</h3></div>
+    <div class="card"><div class="pill pill-gray">Secrets Stored</div><h3 style="margin-top:8px;">${Object.keys(STATE.m3.created).length}</h3></div>
+    <div class="card"><div class="pill pill-gray">Encryption Coverage</div><h3 style="margin-top:8px;">${encryptionCoverage}%</h3></div>
+  </div>
+  <div class="grid grid-2" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-blue">Compliance Score</div><h2 style="margin-top:10px;font-size:22px;">${complianceScore}%</h2></div>
+    <div class="card"><div class="pill pill-purple">Secret Versions</div><h2 style="margin-top:10px;font-size:22px;">${STATE.m8.currentVersion}</h2></div>
+  </div>
+  <div class="card" style="text-align:center; padding:40px 24px; background:linear-gradient(180deg, var(--red-glow), var(--panel));">
+    <div style="font-size:13px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Current Mission</div>
+    <h2 style="font-size:20px; margin-bottom:10px;">${nextMission ? 'Mission '+nextMission.num+' — '+nextMission.title : 'All Missions Complete!'}</h2>
+    <p class="page-sub" style="margin:0 auto 20px;">Mission progress: ${pct}%</p>
+    <button class="btn btn-primary" onclick="setView('missionmap')">🚀 Start Mission</button>
+  </div>`;
+}
+
+/* ================= MISSION MAP ================= */
+function renderMissionMap(){
+  let nodes = MISSIONS.map(m=>{
+    const locked = !isUnlocked(m.id); const done = STATE.done.has(m.id); const current = !locked && !done;
+    return `<div class="m-node ${locked?'locked':''} ${done?'done':''} ${current?'current':''}" onclick="${locked?'':`setView('${m.id}')`}">
+      <div class="m-num">${done?'✓':m.num}</div><h4>${m.title}</h4><p>${m.desc}</p>
+      <div class="m-xp">⭐ ${m.xp} XP</div>${locked?'<div class="pill pill-gray" style="margin-top:6px;">🔒</div>':''}
+    </div>`;
+  }).join('');
+  return `<div class="section-head"><div class="eyebrow">Mission Map</div><h1 class="page-title">Secure ABC Bank's Production Environment</h1>
+  <p class="page-sub">Complete missions in order — each unlocks the next.</p></div>
+  <div class="mission-map"><div class="mission-track">${nodes}</div></div>`;
+}
+
+/* ================= M1: CREATE VAULT ================= */
+function renderM1(){
+  const done = STATE.done.has('m1');
+  const rows = STATE.m1.state!=='idle' ? [[`<a class="oci-link">Production-Vault</a>`, ociStatus(STATE.m1.state==='active'?'ACTIVE':STATE.m1.state.toUpperCase()), 'Virtual Private Vault', 'Just now']] : [];
+  const body = STATE.m1.state==='idle' ? `
+    ${ociTable(['Name','State','Type','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Vault</h4>
+    <div class="oci-field"><label>Name</label><input id="vaultName" value="Production-Vault"></div>
+    <div class="oci-radio-card selected"><b>◉ Virtual Private Vault</b><span>Dedicated HSM partition — the strongest isolation level, for the strictest compliance needs.</span></div>
+    <div class="oci-field"><label>Compartment</label><select><option>Production</option></select></div>
+    <button class="oci-btn oci-btn-primary" onclick="createVault()">Create Vault</button>
+  ` : `${ociTable(['Name','State','Type','Created'], rows)}
+    ${STATE.m1.state!=='active' ? `<div class="oci-console-note">⏳ Provisioning a Virtual Private Vault takes a few minutes in real OCI…</div>` : ''}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 1 · 90 XP</div><h1 class="page-title">Create Vault</h1>
+  <p class="page-sub">Navigate Identity &amp; Security → Vault, and stand up the enterprise Vault.</p></div>
+  ${ociFrame(['Identity &amp; Security','Vault'], 'Vaults in Production compartment', '', body)}
+  ${STATE.m1.active ? `
+  <div class="grid grid-2" style="margin-bottom:16px;">
+    ${VAULT_CONCEPTS.map(c=>`<div class="card" style="padding:14px;"><b>${c.term}</b><p class="page-sub" style="margin-top:6px;">${c.def}</p></div>`).join('')}
+  </div>
+  <div class="card"><h4 style="margin-bottom:10px;">Live Vault Architecture</h4>${archDiagram(VAULT_ARCHITECTURE, 1)}</div>
+  ` : ''}
+  ${STATE.m1.active && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m1',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m1') : ''}`;
+}
+function createVault(){
+  STATE.m1.state = 'creating';
+  toast('info','Creating Vault…','');
+  renderMain();
+  setTimeout(()=>{ STATE.m1.state='provisioning'; renderMain(); }, 800);
+  setTimeout(()=>{ STATE.m1.state='active'; STATE.m1.active=true; addXP(15,'Vault is ACTIVE'); renderMain(); }, 1700);
+}
+
+/* ================= M2: MASTER ENCRYPTION KEY ================= */
+function renderM2(){
+  const done = STATE.done.has('m2');
+  const rows = STATE.m2.created ? [[`<a class="oci-link">Production-Key</a>`, ociStatus('ENABLED'), 'HSM', 'AES · 256-bit', 'Just now']] : [];
+  const body = !STATE.m2.created ? `
+    ${ociTable(['Name','State','Protection Mode','Shape','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Key</h4>
+    <div class="oci-field"><label>Key Name</label><input id="keyName" value="Production-Key"></div>
+    <div class="oci-field"><label>Protection Mode</label><select id="keyProtection"><option>HSM</option><option>Software</option></select></div>
+    <div class="oci-field"><label>Key Shape (Algorithm)</label><select id="keyShape"><option>AES</option><option>RSA</option><option>ECDSA</option></select></div>
+    <div class="oci-field"><label>Key Length</label><select id="keyLength"><option>256-bit</option><option>192-bit</option><option>128-bit</option></select></div>
+    <button class="oci-btn oci-btn-primary" onclick="createKey()">Create Key</button>
+  ` : `${ociTable(['Name','State','Protection Mode','Shape','Created'], rows)}`;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 2 · 100 XP</div><h1 class="page-title">Create Master Encryption Key</h1>
+  <p class="page-sub">Generate an HSM-backed AES-256 key you fully control.</p></div>
+  ${ociFrame(['Identity &amp; Security','Vault','Production-Vault','Master Encryption Keys'], 'Keys in Production-Vault', '', body)}
+  ${STATE.m2.created ? `
+  <div class="two-col" style="margin-bottom:16px;">
+    ${CMK_VS_OMK.map(c=>`<div class="card"><h5 style="margin-bottom:8px;">${c.label}</h5><ul style="margin-left:18px; font-size:12.5px; color:var(--text-dim); line-height:1.9;">${c.points.map(p=>`<li>${p}</li>`).join('')}</ul></div>`).join('')}
+  </div>
+  <div class="card"><h4 style="margin-bottom:10px;">Key Lifecycle</h4>${archDiagram(KEY_LIFECYCLE, 2)}</div>
+  ` : ''}
+  ${STATE.m2.created && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m2',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m2') : ''}`;
+}
+function createKey(){
+  STATE.m2.created = true;
+  toast('ok','Key created','Production-Key · HSM · AES-256');
+  addXP(18,'Master Encryption Key created');
+  renderMain();
+}
+
+/* ================= M3: CREATE SECRET ================= */
+function renderM3(){
+  const done = STATE.done.has('m3');
+  const rows = Object.keys(STATE.m3.created).map(id=>{
+    const t = SECRET_TYPES.find(x=>x.id===id);
+    return [`<a class="oci-link">${t.id==='dbpass'?'Database-Password':t.label.replace(/\s/g,'-')}</a>`, ociStatus('ACTIVE'), t.label, 'Just now'];
+  });
+  const body = `
+    ${ociTable(['Name','State','Type','Created'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    <h4 style="font-size:14px; margin-bottom:12px;">Create Secret</h4>
+    <div class="chip-row">${SECRET_TYPES.map(t=>`<button class="chip ${STATE.m3.created[t.id]?'active':''}" onclick="createSecret('${t.id}')">${STATE.m3.created[t.id]?'✓ ':''}${t.label}</button>`).join('')}</div>
+    ${!STATE.m3.created.dbpass ? `<div class="oci-console-note">💡 Create the <b>Database Password</b> secret to continue — it stores the value "Welcome@123" as Base64.</div>` :
+      `<div class="oci-field" style="margin-top:14px;"><label>Base64-encoded content (Database-Password)</label><div class="base64-box">${btoa(STATE.m3.dbPassValue)}</div></div>`}
+  `;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 3 · 90 XP</div><h1 class="page-title">Secret Manager</h1>
+  <p class="page-sub">Store the database password — never in plaintext.</p></div>
+  ${ociFrame(['Identity &amp; Security','Vault','Production-Vault','Secrets'], 'Secrets in Production-Vault', '', body)}
+  ${STATE.m3.created.dbpass ? `<div class="card"><h4 style="margin-bottom:10px;">Secret Architecture</h4>${archDiagram(SECRET_ARCHITECTURE, 5)}</div>` : ''}
+  ${STATE.m3.created.dbpass && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m3',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m3') : ''}`;
+}
+function createSecret(id){
+  if(STATE.m3.created[id]) return;
+  STATE.m3.created[id] = true;
+  const t = SECRET_TYPES.find(x=>x.id===id);
+  toast('ok','Secret created', t.label);
+  addXP(10, t.label+' stored');
+  renderMain();
+}
+
+/* ================= M4: ENCRYPT BLOCK VOLUME ================= */
+function renderM4(){
+  const done = STATE.done.has('m4');
+  const rows = [[`<a class="oci-link">app-vm-01-vol</a>`, '50 GB', STATE.m4.switched?'Production-Key (Customer Managed)':'oracle_managed_key (Oracle Managed)']];
+  const body = `
+    ${ociTable(['Volume','Size','Encryption Key'], rows)}
+    <div class="hr" style="margin:20px 0;"></div>
+    ${!STATE.m4.switched ? `<button class="oci-btn oci-btn-primary" onclick="switchToCMK()">Edit Encryption Key → Switch to Production-Key</button>` : `<div class="oci-console-note">✓ Now using Production-Key (Customer Managed, HSM-protected).</div>`}
+  `;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 4 · 100 XP</div><h1 class="page-title">Encrypt Block Volume</h1>
+  <p class="page-sub">Move from Oracle Managed to Customer Managed Key.</p></div>
+  ${ociFrame(['Storage','Block Storage','Block Volumes','app-vm-01-vol'], 'Encryption', '', body)}
+  ${STATE.m4.switched ? `<div class="card"><h4 style="margin-bottom:10px;">Encryption Visualizer</h4>${archDiagram(ENCRYPTION_FLOW, 4)}
+    <div class="info-box">Encryption at rest protects data on disk; encryption in transit (TLS) protects it while moving across the network — both matter.</div>
+  </div>` : ''}
+  ${STATE.m4.switched && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m4',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m4') : ''}`;
+}
+function switchToCMK(){
+  STATE.m4.switched = true;
+  toast('ok','Encryption key updated','Production-Key (Customer Managed)');
+  addXP(18,'Block Volume now CMK-encrypted');
+  renderMain();
+}
+
+/* ================= M5: VERIFY ENCRYPTION ================= */
+function renderM5(){
+  const done = STATE.done.has('m5');
+  const body = `
+    <table class="oci-table"><thead><tr><th>Check</th><th>Expected</th><th>Actual</th><th>Result</th></tr></thead><tbody>
+      <tr><td>Encryption Key Type</td><td>Customer Managed</td><td>${STATE.m4.switched?'Customer Managed':'Oracle Managed'}</td><td>${STATE.m4.switched?ociStatus('ACTIVE'):'<span class="oci-status terminated"><span class="dot"></span>FAIL</span>'}</td></tr>
+      <tr><td>Key Name</td><td>Production-Key</td><td>${STATE.m4.switched?'Production-Key':'—'}</td><td>${STATE.m4.switched?ociStatus('ACTIVE'):'<span class="oci-status terminated"><span class="dot"></span>FAIL</span>'}</td></tr>
+    </tbody></table>
+  `;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 5 · 70 XP</div><h1 class="page-title">Verify Encryption</h1>
+  <p class="page-sub">Run the audit check auditors will run.</p></div>
+  ${ociFrame(['Storage','Block Storage','Block Volumes','app-vm-01-vol'], 'Compliance Verification', '', body)}
+  ${!STATE.m5.verified ? `<button class="btn btn-primary" onclick="runVerify()">Run Compliance Check</button>` : `<div class="info-box">✓ Verification passed — this volume meets the Customer Managed Key requirement.</div>`}
+  ${STATE.m5.verified && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m5',70); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m5') : ''}`;
+}
+function runVerify(){
+  if(!STATE.m4.switched){ toast('err','Verification failed','Volume is still using the Oracle Managed Key — complete Mission 4 first.'); return; }
+  STATE.m5.verified = true;
+  addXP(12,'Encryption verified');
+  renderMain();
+}
+
+/* ================= M6: KEY ROTATION ================= */
+function renderM6(){
+  const done = STATE.done.has('m6');
+  const version = STATE.m6.rotations + 1;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 6 · 90 XP</div><h1 class="page-title">Key Rotation</h1>
+  <p class="page-sub">Rotate Production-Key without any application downtime.</p></div>
+  ${ociFrame(['Identity &amp; Security','Vault','Production-Vault','Master Encryption Keys','Production-Key'], 'Key Version: v'+version, `<button class="oci-btn oci-btn-primary" onclick="rotateKey()" ${STATE.m6.rotations>=2?'disabled':''}>Rotate Key</button>`, `
+    <div class="oci-console-note">Current version: <b>v${version}</b> · Rotations performed: ${STATE.m6.rotations}</div>
+    ${STATE.m6.rotations>0 ? `<div class="info-box">✓ Applications continued working uninterrupted — old key versions remain available to decrypt previously encrypted data.</div>` : ''}
+  `)}
+  <div class="info-box">🎓 Key Rotation · Compliance · Zero Downtime · Risk Reduction — rotating limits how much data any single compromised key could expose.</div>
+  ${STATE.m6.rotations>=1 && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m6',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m6') : ''}`;
+}
+function rotateKey(){
+  STATE.m6.rotations++;
+  toast('ok','Key rotated', 'Now on version v'+(STATE.m6.rotations+1));
+  addXP(15,'Key rotated');
+  renderMain();
+}
+
+/* ================= M7: KEY VERSIONS ================= */
+function renderM7(){
+  const done = STATE.done.has('m7');
+  const totalVersions = STATE.m6.rotations + 1;
+  const rows = [];
+  for(let v=1; v<=totalVersions; v++){
+    rows.push([`v${v}`, `2026-08-0${v}`, v===totalVersions?ociStatus('ACTIVE')+' (Current)':'<span class="pill pill-gray">Retired</span>']);
+  }
+  const body = ociTable(['Version','Created Date','Status'], rows);
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 7 · 70 XP</div><h1 class="page-title">Key Versions</h1>
+  <p class="page-sub">Review the full lifecycle timeline for Production-Key.</p></div>
+  ${ociFrame(['Identity &amp; Security','Vault','Production-Vault','Master Encryption Keys','Production-Key','Key Versions'], 'Key Version History', '', body)}
+  ${!STATE.m7.viewed ? `<button class="btn btn-ghost" onclick="viewKeyVersions()">Acknowledge Version History</button>` : ''}
+  ${STATE.m7.viewed && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m7',70); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m7') : ''}`;
+}
+function viewKeyVersions(){
+  STATE.m7.viewed = true;
+  addXP(10,'Key version history reviewed');
+  renderMain();
+}
+
+/* ================= M8: SECRET VERSIONING ================= */
+function renderM8(){
+  const done = STATE.done.has('m8');
+  const versions = [{v:1, val:'Welcome@123'}];
+  if(STATE.m8.newVersionCreated) versions.push({v:2, val:'Welcome@456'});
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 8 · 80 XP</div><h1 class="page-title">Secret Versioning</h1>
+  <p class="page-sub">Update Database-Password without breaking rollback.</p></div>
+  ${ociFrame(['Identity &amp; Security','Vault','Production-Vault','Secrets','Database-Password'], 'Secret Version History', '', `
+    ${versions.map(v=>`<div class="version-row ${v.v===STATE.m8.currentVersion?'current':''}"><b>Version ${v.v}</b><span class="oci-copyable" style="margin-left:8px;">${btoa(v.val)}</span>${v.v===STATE.m8.currentVersion?'<span class="pill pill-green" style="margin-left:auto;">Current</span>':`<button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="rollbackSecret(${v.v})">Rollback to this version</button>`}</div>`).join('')}
+    <div class="hr" style="margin:16px 0;"></div>
+    ${!STATE.m8.newVersionCreated ? `<button class="oci-btn oci-btn-primary" onclick="createSecretVersion()">Create New Secret Version</button>` : ''}
+  `)}
+  ${STATE.m8.newVersionCreated && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m8',80); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m8') : ''}`;
+}
+function createSecretVersion(){
+  STATE.m8.newVersionCreated = true;
+  STATE.m8.currentVersion = 2;
+  toast('ok','New secret version created','v2 · Welcome@456');
+  addXP(15,'Secret rotated to v2');
+  renderMain();
+}
+function rollbackSecret(v){
+  STATE.m8.currentVersion = v;
+  toast('info','Rolled back', 'Current version is now v'+v);
+  addXP(5,'Secret rollback');
+  renderMain();
+}
+
+/* ================= M9: RETRIEVE SECRET ================= */
+function renderM9(){
+  const done = STATE.done.has('m9');
+  const encoded = btoa(STATE.m8.currentVersion===2 ? 'Welcome@456' : 'Welcome@123');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 9 · 80 XP</div><h1 class="page-title">Retrieve Secret</h1>
+  <p class="page-sub">Fetch the current secret bundle and decode it.</p></div>
+  ${ociFrame(['Identity &amp; Security','Vault','Production-Vault','Secrets','Database-Password'], 'Secret Bundle', `<button class="oci-btn oci-btn-primary" onclick="retrieveSecret()">Retrieve Secret Bundle</button>`, `
+    ${STATE.m9.retrieved ? `<div class="oci-field"><label>secret-bundle-content (Base64)</label><div class="base64-box">${encoded}</div></div>
+    ${!STATE.m9.decoded ? `<button class="btn btn-ghost" onclick="decodeSecret()">Decode</button>` : `<div class="info-box">✓ Decoded value: <b>${atob(encoded)}</b></div>`}` : `<div class="oci-empty">Click "Retrieve Secret Bundle" above.</div>`}
+  `)}
+  <div class="info-box">💡 Secrets are Base64-encoded in transit so binary-safe values (keys, certs) survive JSON responses intact — it is encoding, not encryption, so always paired with TLS + IAM.</div>
+  ${STATE.m9.decoded && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m9',80); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m9') : ''}`;
+}
+function retrieveSecret(){
+  STATE.m9.retrieved = true;
+  addXP(10,'Secret bundle retrieved');
+  renderMain();
+}
+function decodeSecret(){
+  STATE.m9.decoded = true;
+  addXP(10,'Secret decoded');
+  renderMain();
+}
+
+/* ================= M10: OCI CLI ================= */
+function renderM10(){
+  const done = STATE.done.has('m10');
+  const step = STATE.m10.step;
+  afterRenderHooks.m10 = ()=>{ const t=document.getElementById('m10term'); if(t) t.scrollTop = t.scrollHeight; };
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 10 · 100 XP</div><h1 class="page-title">OCI CLI — Vault &amp; KMS</h1>
+  <p class="page-sub">Manage secrets and keys from the command line.</p></div>
+  <div class="terminal" id="m10term">
+    ${STATE.m10.history.map(h=>`<div class="line"><span class="prompt">$</span> ${h.cmd}</div><div class="line out">${h.out.replace(/\n/g,'<br>')}</div><div class="line comment"># ${h.note}</div>`).join('')}
+    ${step<CLI_STEPS_M10.length ? `<div class="line"><span class="prompt">$</span> <span style="color:var(--text-faint);">${CLI_STEPS_M10[step].cmd}</span></div>` : ''}
+  </div>
+  <div style="margin-top:14px;">${step<CLI_STEPS_M10.length ? `<button class="btn btn-primary" onclick="runM10Step()">▶ Run next command</button>` : `<span class="pill pill-green">All commands executed</span>`}</div>
+  ${step>=CLI_STEPS_M10.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m10',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m10') : ''}`;
+}
+function runM10Step(){
+  const s = CLI_STEPS_M10[STATE.m10.step];
+  STATE.m10.history.push(s);
+  STATE.m10.step++;
+  addXP(10, s.cmd.split(' ').slice(0,3).join(' '));
+  renderMain();
+}
+
+/* ================= M11: SDK INTEGRATION ================= */
+function renderM11(){
+  const done = STATE.done.has('m11');
+  const execCount = Object.keys(STATE.m11.executed).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 11 · 100 XP</div><h1 class="page-title">SDK Integration</h1>
+  <p class="page-sub">Call Vault APIs from real application code.</p></div>
+  <div class="chip-row">${Object.keys(SDK_LANGS).map(l=>`<button class="chip ${STATE.m11.lang===l?'active':''}" onclick="setSdkLang('${l}')">${l}</button>`).join('')}</div>
+  <div class="code-block">${SDK_LANGS[STATE.m11.lang]}</div>
+  <div class="chip-row" style="margin-top:14px;">${SDK_ACTIONS.map(a=>`<button class="btn btn-ghost btn-sm" onclick="execSdk('${a}')">Execute: ${a}</button>`).join('')}</div>
+  <div id="sdkResult"></div>
+  ${execCount>=SDK_ACTIONS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m11',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m11') : ''}`;
+}
+function setSdkLang(l){ STATE.m11.lang = l; renderMain(); }
+function execSdk(action){
+  STATE.m11.executed[action] = true;
+  document.getElementById('sdkResult').innerHTML = `<div class="code-block" style="margin-top:10px;">${SDK_RESPONSES[action]}</div>`;
+  addXP(10, action);
+  renderSidebar();
+}
+
+/* ================= M12: ENTERPRISE INCIDENT RESPONSE ================= */
+function renderM12(){
+  const done = STATE.done.has('m12');
+  const complianceOk = COMPLIANCE_CHECKS.filter(c=>c.ok(STATE)).length;
+  const attacksCount = Object.keys(STATE.m12.attacksTried).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 12 · 150 XP</div><h1 class="page-title">Enterprise Incident Response</h1>
+  <p class="page-sub">Resolved: ${STATE.m12.resolved.size}/${INCIDENTS_12.length}. The auditor arrives soon.</p></div>
+  ${INCIDENTS_12.map(inc=>{
+    const resolved = STATE.m12.resolved.has(inc.id);
+    return `<div class="incident-card ${resolved?'resolved':''}">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h4>🚨 ${inc.title}</h4>${resolved?'<span class="pill pill-green">Resolved</span>':'<span class="pill pill-red">Active</span>'}
+      </div>
+      <p class="page-sub" style="margin:8px 0 10px;">${inc.symptoms}</p>
+      ${!resolved ? `<div id="inc12-${inc.id}">${inc.opts.map((o,i)=>`<div class="q-opt" onclick="answerIncident12('${inc.id}',${i})">${o}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('')}
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">🕵 Compliance Game (${complianceOk}/${COMPLIANCE_CHECKS.length})</h4>
+  <div class="card" style="margin-bottom:16px;">
+    ${COMPLIANCE_CHECKS.map(c=>`<div class="finding-row"><span>${c.label}</span><span style="margin-left:auto;"><span class="pill ${c.ok(STATE)?'pill-green':'pill-red'}">${c.ok(STATE)?'✓ Pass':'✗ Fail'}</span></span></div>`).join('')}
+  </div>
+  <h4 style="margin-bottom:10px;">🥷 Attack Simulation (${attacksCount}/${ATTACK_ATTEMPTS.length})</h4>
+  <div class="card">
+    ${ATTACK_ATTEMPTS.map(a=>`<div class="finding-row"><span>${a.label}</span><span style="margin-left:auto;">${STATE.m12.attacksTried[a.id]?'<span class="sev-badge denied">access denied</span>':`<button class="btn btn-ghost btn-sm" onclick="tryAttack('${a.id}')">Attempt</button>`}</span></div>${STATE.m12.attacksTried[a.id]?`<p class="page-sub" style="margin:-2px 0 8px 4px;">${a.reason}</p>`:''}`).join('')}
+  </div>
+  ${STATE.m12.resolved.size>=INCIDENTS_12.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m12',150); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m12') : ''}`;
+}
+function answerIncident12(id, idx){
+  const inc = INCIDENTS_12.find(x=>x.id===id);
+  const container = document.getElementById('inc12-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{ o.onclick=null; if(i===inc.a) o.classList.add('correct'); else if(i===idx) o.classList.add('incorrect'); });
+  if(idx===inc.a){
+    STATE.m12.resolved.add(id);
+    addXP(15, inc.title+' resolved');
+    toast('ok','Incident resolved', inc.title);
+  } else {
+    addXP(-5, 'Incorrect response to '+inc.title);
+  }
+  renderSidebar();
+  setTimeout(renderMain, 400);
+}
+function tryAttack(id){
+  if(STATE.m12.attacksTried[id]) return;
+  STATE.m12.attacksTried[id] = true;
+  addXP(6,'Attack blocked and logged');
+  renderMain();
+}
+
+/* ================= ACHIEVEMENTS ================= */
+function renderAchievements(){
+  return `<div class="section-head"><div class="eyebrow">Achievements</div><h1 class="page-title">Trophy Case</h1>
+  <p class="page-sub">${STATE.achUnlocked.size}/${ACHIEVEMENTS.length} unlocked</p></div>
+  <div class="grid grid-4">
+    ${ACHIEVEMENTS.map(a=>{ const u = STATE.achUnlocked.has(a.id);
+      return `<div class="ach-card ${u?'':'locked'}"><div class="ico">${a.ico}</div><h5>${a.name}</h5><p>${u?'Unlocked':a.cond}</p></div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ================= CAPSTONE ================= */
+function renderCapstone(){
+  const allDone = MISSION_ORDER.every(m=>STATE.done.has(m));
+  const checklist = [
+    {label:'Vault created and Active', ok:STATE.m1.active},
+    {label:'Customer Managed Key created', ok:STATE.m2.created},
+    {label:'Secret created with a version history', ok:STATE.m8.newVersionCreated},
+    {label:'Key rotated at least once', ok:STATE.m6.rotations>=1},
+    {label:'Block Volume encrypted with CMK', ok:STATE.m4.switched},
+    {label:'Encryption verified', ok:STATE.m5.verified},
+    {label:'OCI CLI working end to end', ok:STATE.done.has('m10')},
+    {label:'IAM policies &amp; application access repaired', ok:STATE.done.has('m11')},
+    {label:'All incidents resolved', ok:STATE.done.has('m12')},
+  ];
+  return `
+  <div class="section-head"><div class="eyebrow">Final Capstone</div><h1 class="page-title">Pass the Audit</h1>
+  <p class="page-sub">You inherited an insecure production environment. Repair everything before the auditors arrive.</p></div>
+  <div class="card">${checklist.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
+    <span class="pill ${c.ok?'pill-green':'pill-gray'}">${c.ok?'✓':'○'}</span><span>${c.label}</span></div>`).join('')}</div>
+  ${allDone ? `
+  <div class="card" style="text-align:center; margin-top:18px; padding:44px; background:linear-gradient(180deg, rgba(61,220,132,.12), var(--panel));">
+    <div style="font-size:44px;margin-bottom:10px;">🎓</div>
+    <h2 style="margin-bottom:8px;">Production Environment Secured</h2>
+    <p class="page-sub" style="margin-bottom:14px;">Cloud Security Engineer · XP ${STATE.xp}</p>
+    <div class="pill pill-green" style="font-size:13px; padding:8px 16px;">Certification Ready</div>
+  </div>` : `<div class="tip-box" style="margin-top:16px;">Complete all 12 missions to pass the audit.</div>`}`;
+}
+
+/* ================= QUIZ BLOCK (reused) ================= */
+function renderQuizBlock(missionId){
+  const qs = QUIZZES[missionId];
+  if(!qs) return '';
+  const answered = STATE.quizAnswered[missionId] || {};
+  return `<div class="card" style="margin-top:20px;"><h4 style="margin-bottom:14px;">🎯 Knowledge Check</h4>
+    ${qs.map((q,qi)=>`<div class="quiz-q"><div class="q-txt">${qi+1}. ${q.q}</div>
+      ${q.opts.map((o,oi)=>`<div class="q-opt ${answered[qi]===oi?(oi===q.a?'correct':'incorrect'):''}" onclick="answerQuiz('${missionId}',${qi},${oi})">${o}</div>`).join('')}
+      <div class="q-explain ${answered[qi]!==undefined?'show':''}">${q.ex}</div></div>`).join('')}
+  </div>`;
+}
+function answerQuiz(missionId, qi, oi){
+  if(!STATE.quizAnswered[missionId]) STATE.quizAnswered[missionId] = {};
+  if(STATE.quizAnswered[missionId][qi] !== undefined) return;
+  STATE.quizAnswered[missionId][qi] = oi;
+  const q = QUIZZES[missionId][qi];
+  if(oi===q.a){ STATE.quizScores[missionId] = (STATE.quizScores[missionId]||0)+1; addXP(10,'Correct answer'); }
+  else toast('err','Not quite','Review the explanation.');
+  renderMain();
+}
+
+/* ================= INIT ================= */
+function toggleTheme(){
+  const theme = document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', theme);
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+renderSidebar();
+renderMain();
+window.STATE = STATE;
+Object.assign(window, {QUIZZES, MISSIONS, MISSION_ORDER, SECRET_TYPES, CLI_STEPS_M10, SDK_ACTIONS,
+  INCIDENTS_12, COMPLIANCE_CHECKS, ATTACK_ATTEMPTS, ACHIEVEMENTS});
+
+</script>
+</body>
+</html>

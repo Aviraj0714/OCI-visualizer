@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 Lab — Security &amp; Governance | 1Z0-1067-26</title>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#11161d; --panel:#151b23; --panel2:#1a212b;
+  --border:#232b36; --border-soft:#1d2530;
+  --text:#e6ebf1; --text-dim:#9aa7b6; --text-faint:#5f6b7a;
+  --red:#ff3b30; --red-dim:#c62b22; --red-glow:rgba(255,59,48,.25);
+  --blue:#4da3ff; --blue-dim:#2f6fd1;
+  --orange:#ffab40; --green:#3ddc84; --green-dim:#279a5c;
+  --yellow:#ffd54a; --purple:#b48bff;
+  --radius:14px; --radius-sm:9px;
+  --shadow: 0 8px 30px rgba(0,0,0,.35);
+  --mono: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+[data-theme="light"]{
+  --bg:#f4f5f7; --bg2:#eceef1; --panel:#ffffff; --panel2:#f7f8fa;
+  --border:#e1e4e9; --border-soft:#ebedf0;
+  --text:#1b2129; --text-dim:#5b6572; --text-faint:#8b95a3;
+  --red:#e0342a; --red-dim:#c62b22; --red-glow:rgba(224,52,42,.18);
+  --shadow: 0 8px 30px rgba(20,20,30,.08);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; transition:background .3s,color .3s;}
+body::before{content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: radial-gradient(circle at 15% 10%, var(--red-glow), transparent 40%), radial-gradient(circle at 85% 90%, rgba(77,163,255,.10), transparent 45%);}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border); border-radius:10px;}
+a{color:inherit;} button{font-family:inherit; cursor:pointer;}
+
+.topbar{position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:14px; padding:10px 18px;
+  background:color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter:blur(14px); border-bottom:1px solid var(--border-soft);}
+.brand{display:flex; align-items:center; gap:10px; font-weight:700;}
+.brand .logo{width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg, var(--red), var(--red-dim));
+  display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; font-weight:800; box-shadow:0 4px 14px var(--red-glow);}
+.brand small{display:block; font-weight:500; color:var(--text-faint); font-size:10.5px; letter-spacing:.5px;}
+.crumb{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-dim); flex:1; min-width:0; overflow:hidden; white-space:nowrap;}
+.crumb b{color:var(--text); font-weight:600;}
+.topbar-right{display:flex; align-items:center; gap:10px;}
+.xp-chip{display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--border); padding:6px 12px; border-radius:20px; font-size:12.5px; font-weight:600;}
+.xp-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--orange); box-shadow:0 0 8px var(--orange);}
+.rank-chip{background:linear-gradient(135deg, var(--red), var(--red-dim)); color:#fff; font-size:11.5px; font-weight:700; padding:6px 11px; border-radius:20px;}
+.icon-btn{width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:15px; transition:.15s;}
+.icon-btn:hover{color:var(--text); border-color:var(--text-faint);}
+
+.app{display:flex; min-height:calc(100vh - 54px); position:relative; z-index:1;}
+.sidebar{width:255px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:16px 10px; position:sticky; top:54px; height:calc(100vh - 54px); overflow-y:auto; background:color-mix(in srgb, var(--bg2) 60%, transparent);}
+.sidebar h4{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faint); padding:14px 10px 6px;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; font-size:12.5px; color:var(--text-dim); cursor:pointer; transition:.15s; margin-bottom:2px; border:1px solid transparent;}
+.nav-item .n-ico{width:22px; text-align:center; font-size:12.5px; flex-shrink:0;}
+.nav-item:hover{background:var(--panel2); color:var(--text);}
+.nav-item.active{background:var(--red-glow); color:var(--text); border-color:var(--red-dim); font-weight:600;}
+.nav-item.locked{opacity:.4; cursor:not-allowed;}
+.nav-item.done .n-ico{color:var(--green);}
+.nav-badge{margin-left:auto; font-size:10px; background:var(--panel); border:1px solid var(--border); padding:1px 6px; border-radius:8px; color:var(--text-faint);}
+.nav-item.done .nav-badge{color:var(--green); border-color:var(--green-dim);}
+.progress-mini{margin:10px 8px 4px; padding:10px; background:var(--panel); border:1px solid var(--border); border-radius:10px;}
+.progress-mini .lbl{display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-bottom:6px;}
+.bar-track{height:6px; border-radius:5px; background:var(--border-soft); overflow:hidden;}
+.bar-fill{height:100%; background:linear-gradient(90deg, var(--red), var(--orange)); border-radius:5px; transition:width .5s ease;}
+
+.main{flex:1; min-width:0; padding:26px 30px 80px;}
+.view{display:none; animation:fadeIn .35s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+.section-head{margin-bottom:22px;}
+.eyebrow{font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--red); font-weight:700; margin-bottom:6px;}
+h1.page-title{font-size:25px; font-weight:800; letter-spacing:-.3px;}
+.page-sub{color:var(--text-dim); font-size:13.5px; margin-top:5px; max-width:700px;}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow);}
+.grid{display:grid; gap:16px;}
+.grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-6{grid-template-columns:repeat(6,1fr);}
+@media(max-width:1000px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr 1fr;}}
+@media(max-width:650px){.grid-2,.grid-3,.grid-4,.grid-6{grid-template-columns:1fr;}}
+.btn{display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:10px; border:none; font-weight:700; font-size:13.5px; transition:.15s;}
+.btn-primary{background:linear-gradient(135deg,var(--red),var(--red-dim)); color:#fff; box-shadow:0 6px 20px var(--red-glow);}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 10px 26px var(--red-glow);}
+.btn-ghost{background:var(--panel2); color:var(--text); border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text-faint);}
+.btn-sm{padding:7px 13px; font-size:12px; border-radius:8px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
+.pill{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px;}
+.pill-green{background:rgba(61,220,132,.14); color:var(--green);}
+.pill-red{background:rgba(255,59,48,.14); color:var(--red);}
+.pill-orange{background:rgba(255,171,64,.14); color:var(--orange);}
+.pill-blue{background:rgba(77,163,255,.14); color:var(--blue);}
+.pill-purple{background:rgba(180,139,255,.14); color:var(--purple);}
+.pill-gray{background:var(--panel2); color:var(--text-faint); border:1px solid var(--border);}
+#toast-wrap{position:fixed; bottom:22px; right:22px; z-index:9999; display:flex; flex-direction:column; gap:10px;}
+.toast{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:13px 16px; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px; min-width:260px; animation:toastIn .3s ease; font-size:13px;}
+@keyframes toastIn{from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);}}
+.toast .t-ico{font-size:18px;} .toast b{display:block; font-size:12.5px;} .toast span{color:var(--text-dim); font-size:11.5px;}
+.toast.xp b{color:var(--orange);} .toast.ok .t-ico{color:var(--green);} .toast.err .t-ico{color:var(--red);}
+
+.mission-map{position:relative; padding:20px 10px;}
+.mission-track{display:flex; flex-wrap:wrap; gap:18px;}
+.m-node{width:205px; background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:16px; position:relative; transition:.2s; cursor:pointer;}
+.m-node:hover{transform:translateY(-3px); border-color:var(--text-faint);}
+.m-node.locked{opacity:.45; cursor:not-allowed; filter:grayscale(.6);}
+.m-node.locked:hover{transform:none;}
+.m-node.done{border-color:var(--green-dim); background:linear-gradient(180deg, rgba(61,220,132,.06), var(--panel));}
+.m-node.current{border-color:var(--red-dim); box-shadow:0 0 0 3px var(--red-glow);}
+.m-num{width:32px; height:32px; border-radius:10px; background:var(--panel2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; margin-bottom:8px;}
+.m-node.done .m-num{background:var(--green); color:#052e17; border-color:var(--green);}
+.m-node.current .m-num{background:var(--red); color:#fff; border-color:var(--red);}
+.m-node h4{font-size:13.5px; margin-bottom:4px;}
+.m-node p{font-size:11px; color:var(--text-dim); line-height:1.5; margin-bottom:8px;}
+.m-node .m-xp{font-size:10.5px; color:var(--orange); font-weight:700;}
+
+.field{margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600;}
+.field input, .field select, .field textarea{width:100%; padding:10px 12px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); color:var(--text); font-size:13px; font-family:inherit;}
+.field input:focus, .field select:focus, .field textarea:focus{outline:none; border-color:var(--red-dim);}
+
+.hr{height:1px; background:var(--border-soft); margin:20px 0;}
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+@media(max-width:900px){.two-col{grid-template-columns:1fr;} .sidebar{display:none;}}
+.tag-list{display:flex; flex-wrap:wrap; gap:8px;}
+.info-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--blue-dim); background:rgba(77,163,255,.06); font-size:12.5px; margin:12px 0;}
+.tip-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--orange); background:rgba(255,171,64,.07); font-size:12.5px; margin:12px 0;}
+.mistake-box{padding:12px 14px; border-radius:10px; border-left:3px solid var(--red); background:rgba(255,59,48,.06); font-size:12.5px; margin:12px 0;}
+.hidden{display:none !important;}
+.chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+.chip{padding:8px 13px; background:var(--panel2); border:1px solid var(--border); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s;}
+.chip:hover{border-color:var(--text-faint);}
+.chip.active{background:var(--red-glow); border-color:var(--red-dim);}
+
+.quiz-q{margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border-soft);}
+.quiz-q:last-child{border:none;}
+.quiz-q .q-txt{font-weight:700; font-size:14px; margin-bottom:12px;}
+.q-opt{display:flex; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; cursor:pointer; transition:.15s; font-size:13px;}
+.q-opt:hover{border-color:var(--text-faint);}
+.q-opt.correct{border-color:var(--green-dim); background:rgba(61,220,132,.1);}
+.q-opt.incorrect{border-color:var(--red-dim); background:rgba(255,59,48,.1);}
+.q-explain{margin-top:8px; padding:10px 12px; background:var(--panel2); border-radius:9px; font-size:12px; color:var(--text-dim); display:none; border-left:3px solid var(--blue-dim);}
+.q-explain.show{display:block;}
+
+.ach-card{text-align:center; padding:20px 12px; border-radius:14px; border:1px solid var(--border); background:var(--panel); transition:.2s;}
+.ach-card.locked{opacity:.35; filter:grayscale(1);}
+.ach-card .ico{font-size:32px; margin-bottom:8px;}
+.ach-card h5{font-size:12.5px; margin-bottom:4px;}
+.ach-card p{font-size:10.5px; color:var(--text-dim);}
+
+.health-meter{margin-bottom:12px;}
+.health-meter .hm-lbl{display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-bottom:5px;}
+.hm-track{height:8px; border-radius:6px; background:var(--border-soft); overflow:hidden;}
+.hm-fill{height:100%; border-radius:6px; transition:width .5s ease;}
+
+.threat-card{border:1px solid var(--border); border-radius:12px; padding:14px; background:var(--panel2); margin-bottom:10px;}
+.threat-card.high{border-color:var(--red-dim);}
+.threat-card.medium{border-color:var(--orange);}
+.threat-card.low{border-color:var(--blue-dim);}
+
+.hier-tree{display:flex; flex-direction:column; gap:8px; padding-left:0;}
+.hier-node{padding:10px 14px; border-radius:9px; border:1px solid var(--border); background:var(--panel2); cursor:pointer; transition:.15s; font-size:13px; font-weight:600;}
+.hier-node.child{margin-left:26px;}
+.hier-node.selected{border-color:var(--red-dim); background:var(--red-glow);}
+.hier-node.covered{border-color:var(--green-dim);}
+.hier-node.exposed{border-color:var(--red-dim); background:rgba(255,59,48,.08);}
+
+.detector-row{display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:8px; background:var(--panel2);}
+.toggle{width:40px; height:22px; border-radius:20px; background:var(--border); position:relative; cursor:pointer; flex-shrink:0; transition:.2s;}
+.toggle.on{background:var(--green-dim);}
+.toggle .knob{width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:.2s;}
+.toggle.on .knob{left:20px;}
+
+.finding-row{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:6px; background:var(--panel2); font-size:12.5px;}
+.sev-badge{font-size:10px; font-weight:800; padding:2px 8px; border-radius:6px; text-transform:uppercase;}
+.sev-badge.critical{background:rgba(255,59,48,.2); color:var(--red);}
+.sev-badge.high{background:rgba(255,59,48,.14); color:var(--red);}
+.sev-badge.medium{background:rgba(255,171,64,.18); color:var(--orange);}
+.sev-badge.low{background:rgba(77,163,255,.18); color:var(--blue);}
+
+.gauge-wrap{text-align:center;}
+.gauge-track{height:8px; border-radius:6px; background:var(--border-soft); overflow:hidden; margin:8px 0;}
+.gauge-fill{height:100%; border-radius:6px; transition:width .6s ease;}
+
+.slider-wrap{margin:16px 0;}
+.slider-wrap input[type=range]{width:100%;}
+
+.state-json{background:#0a0d12; border:1px solid #232b36; border-radius:10px; padding:14px; font-family:var(--mono); font-size:11.5px; color:#c9d2dc; max-height:320px; overflow:auto; white-space:pre;}
+</style>
+</head>
+<body data-theme="dark">
+<div id="toast-wrap"></div>
+<div class="topbar">
+  <div class="brand"><div class="logo">C</div><div>Day 2 Lab <small>1Z0-1067-26 · Security &amp; Governance</small></div></div>
+  <div class="crumb">Home <span>›</span> <b id="crumbCurrent">Mission Control</b></div>
+  <div class="topbar-right">
+    <div class="xp-chip"><span class="dot"></span><span id="xpDisplay">0</span> XP</div>
+    <div class="rank-chip" id="rankChip">New Hire</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">◐</button>
+  </div>
+</div>
+<div class="app">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main"></div>
+</div>
+<script>
+/* ================= DATA ================= */
+const NAV = [
+  {id:'home', label:'SOC Dashboard', ico:'⌂', group:'main'},
+  {id:'missionmap', label:'Mission Map', ico:'🗺', group:'main'},
+  {id:'m1', label:'M1 · Enable Cloud Guard', ico:'①', group:'missions'},
+  {id:'m2', label:'M2 · Cloud Guard Target', ico:'②', group:'missions'},
+  {id:'m3', label:'M3 · Detector Recipes', ico:'③', group:'missions'},
+  {id:'m4', label:'M4 · Responder Recipes', ico:'④', group:'missions'},
+  {id:'m5', label:'M5 · Security Zones', ico:'⑤', group:'missions'},
+  {id:'m6', label:'M6 · Budgets', ico:'⑥', group:'missions'},
+  {id:'m7', label:'M7 · Cost Analysis', ico:'⑦', group:'missions'},
+  {id:'troubleshoot', label:'Troubleshooting', ico:'🧩', group:'extra'},
+  {id:'exam', label:'Exam Challenges', ico:'📝', group:'extra'},
+  {id:'achievements', label:'Achievements', ico:'🏆', group:'extra'},
+  {id:'capstone', label:'Capstone Lab', ico:'🎓', group:'extra'},
+];
+
+const MISSIONS = [
+  {id:'m1', num:1, title:'Enable Cloud Guard', desc:'Turn on tenancy-wide threat detection.', xp:100},
+  {id:'m2', num:2, title:'Create Cloud Guard Target', desc:'Choose what Cloud Guard actually watches.', xp:90},
+  {id:'m3', num:3, title:'Configure Detector Recipes', desc:'Tune the rules that spot risky resources.', xp:110},
+  {id:'m4', num:4, title:'Configure Responder Recipes', desc:'Automate remediation for common threats.', xp:120},
+  {id:'m5', num:5, title:'Deploy Security Zone', desc:'Make insecure deployments impossible.', xp:120},
+  {id:'m6', num:6, title:'Create Budgets', desc:'Set spending limits and alert thresholds.', xp:90},
+  {id:'m7', num:7, title:'Analyze Costs', desc:'Find and eliminate wasted cloud spend.', xp:110},
+];
+const MISSION_ORDER = MISSIONS.map(m=>m.id);
+
+const INSECURE_FINDINGS = [
+  {label:'Open Security List (0.0.0.0/0 : 22)', sev:'critical'},
+  {label:'Public Object Storage Bucket "app-backups"', sev:'high'},
+  {label:'No tenancy-wide threat monitoring', sev:'high'},
+  {label:'IAM user with no MFA and unused API key', sev:'medium'},
+];
+const CLOUD_GUARD_CONCEPTS = [
+  {term:'Cloud Guard', def:'OCI\'s native security posture and threat detection service — continuously monitors resources for misconfigurations and suspicious activity.'},
+  {term:'Detector Recipe', def:'A set of rules Cloud Guard uses to identify risky configurations (e.g. a public bucket).'},
+  {term:'Responder Recipe', def:'A set of automated or manual actions Cloud Guard can take when a problem is detected.'},
+  {term:'Target', def:'The compartment (or root tenancy) that a Detector/Responder Recipe pair actually applies to.'},
+];
+const ATTACK_ALERTS = [
+  {sev:'high', title:'Port scan detected from 203.0.113.9', desc:'An external IP swept common ports (22, 3389, 3306) against a public subnet.'},
+  {sev:'medium', title:'Unusual API call volume', desc:'A service account made 40x its normal number of ListBucket calls in 5 minutes.'},
+  {sev:'low', title:'New IAM user created outside business hours', desc:'A user account was created at 2:14 AM local time — worth a review, not necessarily malicious.'},
+];
+
+const HIERARCHY = [
+  {id:'root', label:'Root Tenancy', level:0},
+  {id:'dev', label:'Development', level:1},
+  {id:'test', label:'Testing', level:1},
+  {id:'prod', label:'Production', level:1},
+];
+
+const DETECTORS = [
+  {id:'pubstorage', label:'Public Object Storage', risk:'A bucket readable by anyone on the internet can leak sensitive data.', severity:'High',
+    example:'A misconfigured backups bucket exposed customer invoices for 11 days before detection.',
+    examtip:'Cloud Guard\'s Object Storage detector flags "Public Access Enabled" — know this is the primary control at exam time.',
+    mistake:'Teams often set a bucket public "temporarily" for a demo and forget to revert it.'},
+  {id:'pubcompute', label:'Public Compute', risk:'Instances with a public IP and permissive security rules are directly reachable by attackers.', severity:'High',
+    example:'A dev VM left with a public IP and open RDP port was compromised and used for crypto-mining.',
+    examtip:'Prefer a bastion/Load Balancer over assigning public IPs directly to instances.',
+    mistake:'Assigning a public IP "just in case" during testing, then shipping it to production unchanged.'},
+  {id:'openseclist', label:'Open Security Lists', risk:'A security list open to 0.0.0.0/0 on sensitive ports invites brute-force and scanning traffic.', severity:'Critical',
+    example:'SSH (port 22) open to the internet led to thousands of automated login attempts within hours.',
+    examtip:'Cloud Guard treats 0.0.0.0/0 ingress on management ports (22/3389) as a top-severity finding.',
+    mistake:'Copy-pasting a security list from a tutorial without narrowing the source CIDR.'},
+  {id:'weakiam', label:'Weak IAM Policy', risk:'Overly broad policies (e.g. "manage all-resources in tenancy" for a normal user) violate least privilege.', severity:'Medium',
+    example:'A contractor account had tenancy-admin rights months after the contract ended.',
+    examtip:'Detector checks for policies granting broad "manage" verbs at the tenancy level to non-admin groups.',
+    mistake:'Granting Administrators-level access "temporarily" to unblock someone, then never revoking it.'},
+  {id:'dbexposure', label:'Database Exposure', risk:'A database accessible from the public internet bypasses your application\'s access controls entirely.', severity:'Critical',
+    example:'An Autonomous Database left with a public endpoint was targeted by credential-stuffing bots.',
+    examtip:'Databases should sit in private subnets, reached only via application tiers or a bastion.',
+    mistake:'Enabling a public endpoint for "easy access during development" and never disabling it.'},
+];
+const SCAN_FINDINGS = [
+  {label:'Public Bucket Found', sev:'high'},
+  {label:'Security List Open to Internet', sev:'critical'},
+  {label:'Unencrypted Volume', sev:'medium'},
+  {label:'Unused IAM User', sev:'low'},
+];
+
+const RESPONDER_THREATS = [
+  {id:'pubbucket', label:'Public Bucket', correctAction:'makeprivate'},
+  {id:'openport', label:'Open Port', correctAction:'closeport'},
+  {id:'unuseduser', label:'Unused User', correctAction:'disableuser'},
+  {id:'unencrypted', label:'Unencrypted Volume', correctAction:'alert'},
+];
+const RESPONDER_ACTIONS = [
+  {id:'makeprivate', label:'Automatically Make Private'},
+  {id:'closeport', label:'Close Port'},
+  {id:'disableuser', label:'Disable User'},
+  {id:'alert', label:'Create Alert'},
+];
+
+const SECURITY_ZONE_RULES = [
+  'No Public Buckets', 'Mandatory Encryption', 'No Public IPs', 'No Internet Gateway', 'No Weak IAM Policies',
+];
+const BLOCKED_ATTEMPTS = [
+  {id:'pubbucket', label:'Create Public Bucket', reason:'Security Zone policy "No Public Buckets" blocks any bucket created with public visibility.'},
+  {id:'pubcompute', label:'Create Public Compute', reason:'Security Zone policy "No Public IPs" prevents attaching a public IP to any instance in this zone.'},
+  {id:'pubdb', label:'Create Public Database', reason:'Security Zone policy "No Public IPs" also blocks public database endpoints.'},
+  {id:'weakenc', label:'Deploy with Weak Encryption', reason:'Security Zone policy "Mandatory Encryption" requires customer-managed or Oracle-managed encryption on all storage.'},
+  {id:'igw', label:'Attach Internet Gateway', reason:'Security Zone policy "No Internet Gateway" keeps this compartment fully private — no direct internet route allowed.'},
+];
+const COMPLIANCE_AREAS = [
+  {label:'Encryption', pct:100, color:'--green'},
+  {label:'Identity', pct:85, color:'--blue'},
+  {label:'Networking', pct:100, color:'--green'},
+  {label:'Storage', pct:90, color:'--orange'},
+];
+
+const BUDGET_THRESHOLDS = [
+  {pct:50, label:'Email Alert', color:'--blue'},
+  {pct:80, label:'Warning Alert', color:'--orange'},
+  {pct:100, label:'Critical Alert', color:'--red'},
+];
+
+const COST_SERVICES = [
+  {name:'Compute', amount:18500}, {name:'Storage', amount:9200}, {name:'Networking', amount:4100}, {name:'Database', amount:12300},
+];
+const COST_COMPARTMENTS = [
+  {name:'Development', amount:8200}, {name:'Testing', amount:5100}, {name:'Production', amount:30800},
+];
+const WASTED_RESOURCES = [
+  {id:'vm', label:'Unused VM (dev-test-03)', savings:3200},
+  {id:'vol', label:'Idle Block Volume (50GB, unattached)', savings:900},
+  {id:'lb', label:'Unused Load Balancer', savings:1400},
+  {id:'snap', label:'Old Snapshots (90+ days)', savings:600},
+  {id:'pip', label:'Idle Public IP', savings:250},
+];
+
+const TROUBLESHOOT = [
+  {id:'ts1', title:'Cloud Guard Not Detecting Threats', scenario:'A public bucket was created 2 hours ago but Cloud Guard shows no finding.', opts:['The Target scope doesn\'t include that compartment','Cloud Guard only scans once per week','Buckets are never scanned by Cloud Guard','The bucket needs to be deleted and recreated'], a:0, ex:'If a compartment isn\'t inside the configured Target, nothing in it gets monitored at all — regardless of how risky it is.'},
+  {id:'ts2', title:'Security Zone Blocks Deployment', scenario:'A developer can\'t deploy a Compute instance with a public IP in the Production Security Zone.', opts:['This is expected — the zone\'s "No Public IPs" policy is working as designed','The developer\'s account is broken','The compartment quota is full','The shape doesn\'t support public IPs'], a:0, ex:'Security Zones are meant to make non-compliant deployments impossible, not just warn about them.'},
+  {id:'ts3', title:'Budget Alerts Not Received', scenario:'Spend crossed 80% last week but no warning email arrived.', opts:['The alert rule\'s notification/email subscription isn\'t configured or confirmed','Budgets only alert at 100%','The budget was deleted automatically','Email alerts require a paid support plan'], a:0, ex:'A budget alert rule needs a working ONS (Notifications) topic subscription — an unconfirmed subscription silently drops alerts.'},
+  {id:'ts4', title:'Detector Recipe Disabled Accidentally', scenario:'The "Open Security Lists" detector rule shows as disabled, and a genuinely open port wasn\'t flagged.', opts:['Re-enable the specific detector rule inside the Detector Recipe','Recreate the entire Cloud Guard configuration from scratch','Disable Cloud Guard and re-enable it','Nothing can be done — wait for the next release'], a:0, ex:'Individual rules inside a Detector Recipe can be toggled off — check the recipe\'s rule list before assuming a bigger failure.'},
+  {id:'ts5', title:'Responder Not Executing', scenario:'A Responder Recipe rule is enabled but the automatic action never runs.', opts:['The Cloud Guard service account lacks the IAM policy to perform that action','Responders only work manually, never automatically','The rule needs to be deleted and recreated daily','Responders require a support ticket to activate'], a:0, ex:'Automated responder actions still need IAM policy allowing the Cloud Guard service to act on the target resources.'},
+];
+
+const EXAM_CHALLENGES = [
+  {id:'e1', q:'A developer creates a public bucket inside Production. Which OCI Governance service blocks this automatically?', opts:['Security Zones','Cloud Guard (detection only)','Budgets','Cost Analysis'], a:0, ex:'Security Zones enforce policy at creation time and prevent the action; Cloud Guard would only detect it after the fact.'},
+  {id:'e2', q:'Cloud Guard detected an exposed database. Which component performs automatic remediation?', opts:['A Responder Recipe','A Detector Recipe','A Security Zone','A Budget'], a:0, ex:'Detector Recipes find problems; Responder Recipes are what actually take (or suggest) corrective action.'},
+  {id:'e3', q:'At which budget threshold should organizations typically receive an early warning?', opts:['50%','100%','Only at 100%','Budgets don\'t support thresholds'], a:0, ex:'A 50% threshold gives an early heads-up long before spend becomes critical, alongside later 80%/100% escalations.'},
+  {id:'e4', q:'What is the relationship between a Target and a Detector/Responder Recipe?', opts:['A Target defines which compartments the recipes actually apply to','A Target replaces the need for recipes','A Target is only used for Budgets','A Target is a type of Security Zone'], a:0, ex:'Recipes define the rules; the Target defines the scope those rules are enforced against.'},
+  {id:'e5', q:'Why might an Autonomous Database with a public endpoint be flagged by Cloud Guard?', opts:['It bypasses network-layer access controls, exposing it directly to the internet','Public endpoints are always free','Cloud Guard flags all databases regardless of configuration','It has nothing to do with security'], a:0, ex:'A public endpoint means anyone on the internet can attempt to reach the database directly, skipping VCN-level protections.'},
+];
+
+const ACHIEVEMENTS = [
+  {id:'a1', name:'Cloud Guardian', ico:'🛡', cond:'Enable Cloud Guard and configure its Target', check:s=>s.done.has('m1') && s.done.has('m2')},
+  {id:'a2', name:'Security Architect', ico:'🏛', cond:'Configure Detector &amp; Responder Recipes', check:s=>s.done.has('m3') && s.done.has('m4')},
+  {id:'a3', name:'Compliance Champion', ico:'📋', cond:'Deploy a Security Zone', check:s=>s.done.has('m5')},
+  {id:'a4', name:'Cost Optimizer', ico:'💰', cond:'Complete Budgets &amp; Cost Analysis', check:s=>s.done.has('m6') && s.done.has('m7')},
+  {id:'a5', name:'Threat Hunter', ico:'🎯', cond:'Solve every troubleshooting scenario', check:s=>Object.keys(s.tsSolved).length>=TROUBLESHOOT.length},
+];
+
+const QUIZZES = {
+  m1:[
+    {q:'What happens if Cloud Guard is disabled in a tenancy?', opts:['Misconfigurations and threats stop being automatically detected','Nothing — all security still works the same','Budgets automatically shut down','IAM policies are deleted'], a:0, ex:'Cloud Guard is the detection layer — without it, risky configurations can sit unnoticed indefinitely.'},
+    {q:'Which three components make up Cloud Guard\'s architecture?', opts:['Detector, Responder, Target','Compartment, Policy, Group','VCN, Subnet, Gateway','Budget, Alert, Threshold'], a:0, ex:'Detectors find problems, Responders act on them, and the Target defines where the rules apply.'},
+  ],
+  m2:[
+    {q:'If only the Development compartment is set as the Target, what happens to Production?', opts:['Production remains completely unmonitored by Cloud Guard','Production is monitored automatically anyway','Production gets extra protection','Nothing changes for either compartment'], a:0, ex:'Cloud Guard only watches what\'s inside its configured Target — anything outside that scope is invisible to it.'},
+    {q:'What is the broadest possible Cloud Guard Target?', opts:['The root tenancy','A single compute instance','A single user','A single VCN'], a:0, ex:'Targeting the root tenancy monitors every compartment beneath it, current and future.'},
+  ],
+  m3:[
+    {q:'What does a Detector Recipe actually contain?', opts:['A set of rules that identify risky configurations','A list of employees','A billing report','A network diagram'], a:0, ex:'Each rule in a Detector Recipe checks for a specific type of misconfiguration or suspicious pattern.'},
+    {q:'Which finding severity should be treated as most urgent?', opts:['Critical','Low','Medium','Informational'], a:0, ex:'Critical findings (e.g. a database or security list wide open) represent the most immediate exploitable risk.'},
+  ],
+  m4:[
+    {q:'In Cloud Guard\'s response flow, what comes right after "Threat Detected"?', opts:['Cloud Guard evaluates it against Responder Rules','The tenancy is immediately suspended','A budget alert fires','The resource is deleted automatically'], a:0, ex:'Detection feeds into Cloud Guard, which then checks whether a matching Responder Rule should act.'},
+    {q:'What is the appropriate automatic response to an unused IAM user, per this lab?', opts:['Disable the user','Delete the tenancy','Make it an administrator','Ignore it'], a:0, ex:'Disabling (not necessarily deleting) an unused account reduces attack surface while preserving an audit trail.'},
+  ],
+  m5:[
+    {q:'What is the main difference between a Security Zone and Cloud Guard?', opts:['Security Zones prevent non-compliant actions; Cloud Guard detects them after the fact','They are the exact same service','Security Zones only work for budgets','Cloud Guard is a paid add-on and Security Zones are free'], a:0, ex:'Security Zones enforce policy proactively at creation time; Cloud Guard\'s detectors flag issues after they exist.'},
+    {q:'Which of these would a Security Zone with "Mandatory Encryption" block?', opts:['A volume created without encryption','A volume created with encryption','A compartment rename','A budget update'], a:0, ex:'The zone rejects the creation outright if encryption isn\'t applied — it doesn\'t just warn.'},
+  ],
+  m6:[
+    {q:'What are the four typical fields when creating a Budget?', opts:['Name, Monthly Amount, Compartment, Description','Username, Password, Region, Shape','VCN, Subnet, CIDR, Gateway','Detector, Responder, Target, Recipe'], a:0, ex:'A Budget needs a name, a monetary cap, the compartment(s) it tracks, and an optional description.'},
+    {q:'Why configure multiple alert thresholds (50/80/100%)?', opts:['To give progressively urgent early warnings before spend becomes critical','Because OCI requires exactly three thresholds','To automatically stop all spending at 50%','Thresholds are only cosmetic'], a:0, ex:'Layered thresholds let teams react early instead of being surprised only when the budget is already exceeded.'},
+  ],
+  m7:[
+    {q:'Which view helps you see spend broken down by Compute, Storage, Networking, etc.?', opts:['Service breakdown in Cost Analysis','IAM policy list','Security Zone dashboard','Detector Recipe list'], a:0, ex:'Cost Analysis\'s service breakdown shows exactly where tenancy spend is concentrated.'},
+    {q:'Which of these is a classic source of wasted cloud spend?', opts:['An idle, unattached block volume still being billed','A right-sized, actively used Compute instance','A budget with alert thresholds configured','A Security Zone with strict policies'], a:0, ex:'Unattached volumes, idle load balancers, and old snapshots quietly accumulate cost with zero business value.'},
+  ],
+};
+
+
+/* ================= STATE ================= */
+const STATE = {
+  view:'home', xp:0, done:new Set(),
+  quizScores:{}, quizAnswered:{}, achUnlocked:new Set(),
+  m1:{enabled:false, attackShown:false, alertsShown:0},
+  m2:{targetScope:null},
+  m3:{detectors:{pubstorage:false, pubcompute:false, openseclist:false, weakiam:false, dbexposure:false}, selectedDetector:null, scanDone:false},
+  m4:{selectedAction:null, mapped:{}},
+  m5:{zoneEnabled:false, blocked:{}},
+  m6:{budget:null, created:false, spend:0, alerted:{}},
+  m7:{deleted:{}, filter:null},
+  tsSolved:{},
+  examSolved:{},
+  selectedChip:null,
+};
+
+function isUnlocked(id){
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx<=0) return true;
+  return STATE.done.has(MISSION_ORDER[idx-1]);
+}
+function rankFor(xp){
+  if(xp>=1300) return 'OCI Security & Governance Expert';
+  if(xp>=850) return 'Senior Security Engineer';
+  if(xp>=500) return 'Security Engineer';
+  if(xp>=150) return 'Associate Security Engineer';
+  return 'New Hire';
+}
+function computeSecurityScore(){
+  let s = 20;
+  if(STATE.m1.enabled) s += 20;
+  if(STATE.m2.targetScope==='root') s += 15; else if(STATE.m2.targetScope) s += 5;
+  s += Object.values(STATE.m3.detectors).filter(Boolean).length * 5;
+  s += Object.keys(STATE.m4.mapped).length * 5;
+  if(STATE.m5.zoneEnabled) s += 10;
+  if(STATE.m6.created) s += 3;
+  if(Object.keys(STATE.m7.deleted).length>=3) s += 2;
+  return Math.min(100, s);
+}
+function threatLevelFor(score){
+  if(score<40) return 'Critical';
+  if(score<60) return 'High';
+  if(score<80) return 'Medium';
+  return 'Low';
+}
+function complianceScore(){
+  if(STATE.m5.zoneEnabled) return 100;
+  const base = Math.round(COMPLIANCE_AREAS.reduce((a,c)=>a+c.pct,0)/COMPLIANCE_AREAS.length);
+  return base;
+}
+function monthlyCost(){
+  const total = COST_SERVICES.reduce((a,c)=>a+c.amount,0);
+  const saved = Object.keys(STATE.m7.deleted).reduce((a,id)=>a+(WASTED_RESOURCES.find(w=>w.id===id)?.savings||0),0);
+  return total - saved;
+}
+
+function addXP(n, label){
+  STATE.xp = Math.max(0, STATE.xp + n);
+  document.getElementById('xpDisplay').textContent = STATE.xp;
+  document.getElementById('rankChip').textContent = rankFor(STATE.xp);
+  toast(n>=0?'xp':'err', (n>=0?'+':'')+n+' XP', label||'');
+  checkAchievements();
+}
+function toast(type, title, msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const ico = type==='xp' ? '⭐' : type==='ok' ? '✅' : type==='err' ? '⛔' : 'ℹ';
+  el.innerHTML = `<div class="t-ico">${ico}</div><div><b>${title}</b><span>${msg||''}</span></div>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+function completeMission(id, xp){
+  if(STATE.done.has(id)) return;
+  STATE.done.add(id);
+  addXP(xp, MISSIONS.find(m=>m.id===id).title + ' complete');
+  toast('ok','Mission Complete', MISSIONS.find(m=>m.id===id).title);
+  renderSidebar();
+  const idx = MISSION_ORDER.indexOf(id);
+  if(idx>=0 && idx<MISSION_ORDER.length-1){
+    setTimeout(()=>toast('info','Next mission unlocked', MISSIONS[idx+1].title), 900);
+  }
+}
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(!STATE.achUnlocked.has(a.id) && a.check(STATE)){
+      STATE.achUnlocked.add(a.id);
+      setTimeout(()=>toast('ok','Achievement Unlocked 🏆', a.name), 600);
+    }
+  });
+}
+
+/* ================= NAV ================= */
+function renderSidebar(){
+  const groups = {main:'Overview', missions:'Mission Track', extra:'Beyond the Labs'};
+  let html = '';
+  Object.keys(groups).forEach(g=>{
+    html += `<h4>${groups[g]}</h4>`;
+    NAV.filter(n=>n.group===g).forEach(n=>{
+      let locked=false, done=false;
+      if(MISSION_ORDER.includes(n.id)){ locked=!isUnlocked(n.id); done=STATE.done.has(n.id); }
+      html += `<div class="nav-item ${STATE.view===n.id?'active':''} ${locked?'locked':''} ${done?'done':''}"
+        onclick="${locked?'':`setView('${n.id}')`}">
+        <span class="n-ico">${done?'✓':n.ico}</span>${n.label}
+        ${locked?'<span class="nav-badge">🔒</span>':''}
+      </div>`;
+    });
+  });
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  html += `<div class="progress-mini"><div class="lbl"><span>Mission Progress</span><span>${pct}%</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;
+  document.getElementById('sidebar').innerHTML = html;
+}
+function setView(id){
+  STATE.view = id;
+  const nav = NAV.find(n=>n.id===id);
+  document.getElementById('crumbCurrent').textContent = nav ? nav.label : id;
+  renderSidebar();
+  renderMain();
+  const mainEl = document.getElementById('main');
+  if(mainEl.scrollIntoView) mainEl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function renderMain(){
+  const map = {
+    home:renderHome, missionmap:renderMissionMap,
+    m1:renderM1, m2:renderM2, m3:renderM3, m4:renderM4, m5:renderM5, m6:renderM6, m7:renderM7,
+    troubleshoot:renderTroubleshoot, exam:renderExam, achievements:renderAchievements, capstone:renderCapstone,
+  };
+  const fn = map[STATE.view] || renderHome;
+  document.getElementById('main').innerHTML = `<div class="view active">${fn()}</div>`;
+  afterRenderHooks[STATE.view] && afterRenderHooks[STATE.view]();
+}
+const afterRenderHooks = {};
+
+function gauge(label, pct, colorVar){
+  return `<div class="gauge-wrap"><div class="page-sub" style="margin-bottom:2px;">${label}</div>
+    <div class="gauge-track"><div class="gauge-fill" style="width:${pct}%; background:var(${colorVar});"></div></div>
+    <b style="font-size:13px;">${pct}%</b></div>`;
+}
+
+/* ================= HOME (SOC Dashboard) ================= */
+function renderHome(){
+  const score = computeSecurityScore();
+  const threat = threatLevelFor(score);
+  const compliance = complianceScore();
+  const pct = Math.round((STATE.done.size/MISSION_ORDER.length)*100);
+  const nextMission = MISSIONS[STATE.done.size];
+  return `
+  <div class="section-head">
+    <div class="eyebrow">OCI Operations Professional · 1Z0-1067-26 · Day 2 Lab</div>
+    <h1 class="page-title">Secure Your Oracle Cloud Environment</h1>
+    <p class="page-sub">You've just joined ABC Enterprise as the new OCI Cloud Security Engineer. The CIO's mission: secure the entire tenancy before attackers exploit any vulnerability.</p>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-red">Security Score</div><h2 style="margin-top:10px;font-size:24px;">${score}%</h2></div>
+    <div class="card"><div class="pill ${threat==='Critical'||threat==='High'?'pill-red':threat==='Medium'?'pill-orange':'pill-green'}">Threat Level</div><h2 style="margin-top:10px;font-size:20px;">${threat}</h2></div>
+    <div class="card"><div class="pill pill-blue">Compliance</div><h2 style="margin-top:10px;font-size:24px;">${compliance}%</h2></div>
+    <div class="card"><div class="pill pill-orange">XP</div><h2 style="margin-top:10px;font-size:24px;">${STATE.xp}</h2></div>
+  </div>
+  <div class="grid grid-4" style="margin-bottom:16px;">
+    <div class="card"><div class="pill pill-gray">Cloud Guard Alerts</div><h3 style="margin-top:8px;">${STATE.m1.attackShown ? ATTACK_ALERTS.length : 0}</h3></div>
+    <div class="card"><div class="pill pill-gray">Security Zone Violations Blocked</div><h3 style="margin-top:8px;">${Object.keys(STATE.m5.blocked).length}</h3></div>
+    <div class="card"><div class="pill pill-gray">Current Budget</div><h3 style="margin-top:8px; font-size:14px;">${STATE.m6.created ? '₹'+STATE.m6.budget.amount : 'Not set'}</h3></div>
+    <div class="card"><div class="pill pill-gray">Monthly Cost</div><h3 style="margin-top:8px;">₹${monthlyCost().toLocaleString()}</h3></div>
+  </div>
+  <div class="card" style="text-align:center; padding:40px 24px; background:linear-gradient(180deg, var(--red-glow), var(--panel));">
+    <div style="font-size:13px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">Current Mission</div>
+    <h2 style="font-size:21px; margin-bottom:10px;">${nextMission ? 'Mission '+nextMission.num+' — '+nextMission.title : 'All Missions Complete!'}</h2>
+    <p class="page-sub" style="margin:0 auto 20px;">Mission progress: ${pct}%</p>
+    <button class="btn btn-primary" onclick="setView('missionmap')">🚀 Start Mission</button>
+  </div>`;
+}
+
+/* ================= MISSION MAP ================= */
+function renderMissionMap(){
+  let nodes = MISSIONS.map(m=>{
+    const locked = !isUnlocked(m.id); const done = STATE.done.has(m.id); const current = !locked && !done;
+    return `<div class="m-node ${locked?'locked':''} ${done?'done':''} ${current?'current':''}" onclick="${locked?'':`setView('${m.id}')`}">
+      <div class="m-num">${done?'✓':m.num}</div><h4>${m.title}</h4><p>${m.desc}</p>
+      <div class="m-xp">⭐ ${m.xp} XP</div>${locked?'<div class="pill pill-gray" style="margin-top:6px;">🔒 Locked</div>':''}
+    </div>`;
+  }).join('');
+  return `<div class="section-head"><div class="eyebrow">Security Operations Center</div><h1 class="page-title">Mission Map</h1>
+  <p class="page-sub">Secure the tenancy one mission at a time — each unlocks the next.</p></div>
+  <div class="mission-map"><div class="mission-track">${nodes}</div></div>`;
+}
+
+/* ================= M1: ENABLE CLOUD GUARD ================= */
+function renderM1(){
+  const done = STATE.done.has('m1');
+  const score = computeSecurityScore();
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 1 · 100 XP</div><h1 class="page-title">Enable Cloud Guard</h1>
+  <p class="page-sub">Your tenancy starts insecure. Turn on OCI's threat detection engine.</p></div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="tag-list" style="margin-bottom:10px;"><span class="pill pill-red">Security Score: ${score}%</span>${STATE.m1.enabled?'<span class="pill pill-green">Cloud Guard: Active</span>':'<span class="pill pill-gray">Cloud Guard: Disabled</span>'}</div>
+    ${!STATE.m1.enabled ? INSECURE_FINDINGS.map(f=>`<div class="finding-row"><span class="sev-badge ${f.sev}">${f.sev}</span>${f.label}</div>`).join('') : '<div class="info-box">✓ Cloud Guard is now scanning the tenancy continuously.</div>'}
+    ${!STATE.m1.enabled ? `<button class="btn btn-primary" style="margin-top:12px;" onclick="enableCloudGuard()">🛡 Enable Cloud Guard</button>` : ''}
+  </div>
+  <div class="grid grid-2" style="margin-bottom:16px;">
+    ${CLOUD_GUARD_CONCEPTS.map(c=>`<div class="card" style="padding:14px;"><b>${c.term}</b><p class="page-sub" style="margin-top:6px;">${c.def}</p></div>`).join('')}
+  </div>
+  ${STATE.m1.enabled ? `
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Real Attack Simulation</h4>
+  ${!STATE.m1.attackShown ? `<button class="btn btn-ghost" onclick="simulateAttack()">👤 Simulate Attacker Scanning the Cloud</button>` :
+    ATTACK_ALERTS.map(a=>`<div class="threat-card ${a.sev}"><div class="tag-list" style="margin-bottom:6px;"><span class="sev-badge ${a.sev}">${a.sev}</span><b>${a.title}</b></div><p class="page-sub">${a.desc}</p></div>`).join('')}
+  ` : ''}
+  ${STATE.m1.enabled && STATE.m1.attackShown && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m1',100); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m1') : ''}`;
+}
+function enableCloudGuard(){
+  toast('info','Deploying Cloud Guard…','Scanning tenancy for existing risks');
+  setTimeout(()=>{
+    STATE.m1.enabled = true;
+    addXP(15,'Cloud Guard active — Security Score rising');
+    renderMain();
+  }, 900);
+}
+function simulateAttack(){
+  STATE.m1.attackShown = true;
+  addXP(10,'Attack detected and logged');
+  renderMain();
+}
+
+/* ================= M2: CLOUD GUARD TARGET ================= */
+function renderM2(){
+  const done = STATE.done.has('m2');
+  const scope = STATE.m2.targetScope;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 2 · 90 XP</div><h1 class="page-title">Create Cloud Guard Target</h1>
+  <p class="page-sub">Choose what Cloud Guard actually watches. Click Root for full coverage, or a single compartment to see the tradeoff.</p></div>
+  <div class="hier-tree">
+    ${HIERARCHY.map(h=>{
+      let cls = h.level===1?'child':'';
+      if(scope==='root') cls += ' covered';
+      else if(scope===h.id) cls += ' covered selected';
+      else if(scope && h.level===1) cls += ' exposed';
+      return `<div class="hier-node ${cls}" onclick="selectTarget('${h.id}')">${h.label} ${scope==='root'||scope===h.id?'✓ Monitored':(scope&&h.level===1?'⚠ Unmonitored':'')}</div>`;
+    }).join('')}
+  </div>
+  <div class="info-box" style="margin-top:14px;">💡 Selecting Root Tenancy monitors every current and future compartment. Selecting a single compartment leaves the others completely blind to Cloud Guard.</div>
+  ${scope && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m2',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m2') : ''}`;
+}
+function selectTarget(id){
+  STATE.m2.targetScope = id;
+  addXP(10, id==='root' ? 'Root Tenancy targeted — full coverage' : id+' targeted — partial coverage');
+  renderMain();
+}
+
+/* ================= M3: DETECTOR RECIPES ================= */
+function renderM3(){
+  const done = STATE.done.has('m3');
+  const enabledCount = Object.values(STATE.m3.detectors).filter(Boolean).length;
+  const sel = STATE.m3.selectedDetector ? DETECTORS.find(d=>d.id===STATE.m3.selectedDetector) : null;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 3 · 110 XP</div><h1 class="page-title">Configure Detector Recipes</h1>
+  <p class="page-sub">Enable each rule, then click it to learn the risk, severity, and exam notes.</p></div>
+  ${DETECTORS.map(d=>`
+    <div class="detector-row">
+      <div class="toggle ${STATE.m3.detectors[d.id]?'on':''}" onclick="toggleDetector('${d.id}')"><div class="knob"></div></div>
+      <span style="flex:1; cursor:pointer;" onclick="selectDetector('${d.id}')"><b>${d.label}</b></span>
+      <span class="sev-badge ${d.severity.toLowerCase()}">${d.severity}</span>
+    </div>`).join('')}
+  <div class="card" style="margin-top:10px;">${sel ? `<h4 style="margin-bottom:8px;">${sel.label}</h4>
+    <p class="page-sub" style="margin-bottom:8px;"><b>Risk:</b> ${sel.risk}</p>
+    <p class="page-sub" style="margin-bottom:8px;"><b>Real example:</b> ${sel.example}</p>
+    <div class="tip-box">🎓 ${sel.examtip}</div>
+    <div class="mistake-box">⚠ Common mistake: ${sel.mistake}</div>` : 'Click a detector name above to see details.'}</div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Live Security Scan</h4>
+  ${!STATE.m3.scanDone ? `<button class="btn btn-ghost" ${enabledCount<3?'disabled':''} onclick="runScan()">🔍 Scan Entire Tenancy</button>${enabledCount<3?'<p class="page-sub" style="margin-top:6px;">Enable at least 3 detectors first.</p>':''}` :
+    SCAN_FINDINGS.map(f=>`<div class="finding-row"><span class="sev-badge ${f.sev}">${f.sev}</span>${f.label}</div>`).join('')}
+  ${enabledCount>=DETECTORS.length && STATE.m3.scanDone && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m3',110); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m3') : ''}`;
+}
+function toggleDetector(id){
+  STATE.m3.detectors[id] = !STATE.m3.detectors[id];
+  addXP(STATE.m3.detectors[id]?6:-2, id+' detector '+(STATE.m3.detectors[id]?'enabled':'disabled'));
+  renderMain();
+}
+function selectDetector(id){
+  STATE.m3.selectedDetector = id;
+  renderMain();
+}
+function runScan(){
+  STATE.m3.scanDone = true;
+  toast('info','Scan complete','4 findings across the tenancy');
+  addXP(15,'Tenancy scan complete');
+  renderMain();
+}
+
+/* ================= M4: RESPONDER RECIPES ================= */
+function renderM4(){
+  const done = STATE.done.has('m4');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 4 · 120 XP</div><h1 class="page-title">Configure Responder Recipes</h1>
+  <p class="page-sub">Select an action, then click the threat it should remediate. Wrong pairings won't stick.</p></div>
+  <div class="card" style="margin-bottom:14px;">
+    <div class="arch-diagram" style="display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;">
+      <span class="pill pill-red">Threat Detected</span><span>→</span><span class="pill pill-blue">Cloud Guard</span><span>→</span><span class="pill pill-orange">Responder Rule</span><span>→</span><span class="pill pill-green">Automatic Action</span>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <h4 style="margin-bottom:10px;">Responder Actions</h4>
+      <div class="chip-row">${RESPONDER_ACTIONS.map(a=>`<button class="chip ${STATE.m4.selectedAction===a.id?'active':''}" onclick="selectResponderAction('${a.id}')">${a.label}</button>`).join('')}</div>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:10px;">Threats</h4>
+      ${RESPONDER_THREATS.map(t=>{
+        const mapped = STATE.m4.mapped[t.id];
+        return `<div class="finding-row" style="cursor:pointer;" onclick="mapResponder('${t.id}')">
+          <span>${t.label}</span><span style="margin-left:auto;">${mapped ? '<span class="pill pill-green">'+RESPONDER_ACTIONS.find(a=>a.id===mapped).label+'</span>' : '<span class="pill pill-gray">unmapped</span>'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+  ${Object.keys(STATE.m4.mapped).length>=RESPONDER_THREATS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m4',120); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m4') : ''}`;
+}
+function selectResponderAction(id){
+  STATE.m4.selectedAction = id;
+  renderMain();
+}
+function mapResponder(threatId){
+  if(STATE.m4.mapped[threatId]) return;
+  if(!STATE.m4.selectedAction){ toast('err','Select an action first',''); return; }
+  const t = RESPONDER_THREATS.find(x=>x.id===threatId);
+  if(t.correctAction===STATE.m4.selectedAction){
+    STATE.m4.mapped[threatId] = STATE.m4.selectedAction;
+    toast('ok','Correct mapping', t.label);
+    addXP(12,'Responder configured: '+t.label);
+    STATE.m4.selectedAction = null;
+    renderMain();
+  } else {
+    toast('err','Wrong action','That won\'t fix '+t.label+'. Try again.');
+  }
+}
+
+/* ================= M5: SECURITY ZONES ================= */
+function renderM5(){
+  const done = STATE.done.has('m5');
+  const blockedCount = Object.keys(STATE.m5.blocked).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 5 · 120 XP</div><h1 class="page-title">Deploy Security Zone</h1>
+  <p class="page-sub">Make insecure deployments impossible in Production.</p></div>
+  ${!STATE.m5.zoneEnabled ? `
+  <div class="card">
+    <h4 style="margin-bottom:10px;">Security Zone Wizard</h4>
+    <div class="field"><label>Compartment</label><select id="zoneCompartment"><option>Production</option></select></div>
+    <button class="btn btn-primary" onclick="enableZone()">Enable Security Zone</button>
+  </div>` : `
+  <div class="card" style="margin-bottom:16px;">
+    <h4 style="margin-bottom:10px;">Active Policies — Production</h4>
+    <div class="tag-list">${SECURITY_ZONE_RULES.map(r=>`<span class="pill pill-red">🔒 ${r}</span>`).join('')}</div>
+  </div>
+  <h4 style="margin-bottom:10px;">Blocked Deployment Simulation (${blockedCount}/${BLOCKED_ATTEMPTS.length})</h4>
+  ${BLOCKED_ATTEMPTS.map(b=>`
+    <div class="card" style="margin-bottom:10px; padding:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <b>${b.label}</b>${STATE.m5.blocked[b.id]?'<span class="pill pill-red">✗ Blocked</span>':`<button class="btn btn-ghost btn-sm" onclick="attemptDeploy('${b.id}')">Attempt Deployment</button>`}
+      </div>
+      ${STATE.m5.blocked[b.id] ? `<p class="page-sub" style="margin-top:8px;">${b.reason}</p>` : ''}
+    </div>`).join('')}
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Security Compliance Dashboard</h4>
+  <div class="grid grid-4">${COMPLIANCE_AREAS.map(c=>gauge(c.label, c.pct, c.color)).join('')}</div>
+  `}
+  ${STATE.m5.zoneEnabled && blockedCount>=BLOCKED_ATTEMPTS.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m5',120); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m5') : ''}`;
+}
+function enableZone(){
+  STATE.m5.zoneEnabled = true;
+  toast('ok','Security Zone enabled','Production is now policy-protected.');
+  addXP(20,'Security Zone deployed');
+  renderMain();
+}
+function attemptDeploy(id){
+  STATE.m5.blocked[id] = true;
+  const b = BLOCKED_ATTEMPTS.find(x=>x.id===id);
+  toast('err','Deployment Blocked', b.label);
+  addXP(8,'Blocked: '+b.label);
+  renderMain();
+}
+
+/* ================= M6: BUDGETS ================= */
+function renderM6(){
+  const done = STATE.done.has('m6');
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 6 · 90 XP</div><h1 class="page-title">Create Budgets</h1>
+  <p class="page-sub">Company monthly budget: ₹50,000. Set it up with alert thresholds.</p></div>
+  ${!STATE.m6.created ? `
+  <div class="card">
+    <div class="field"><label>Budget Name</label><input id="bgName" placeholder="Monthly-Tenancy-Budget"></div>
+    <div class="field"><label>Monthly Amount (₹)</label><input id="bgAmount" value="50000"></div>
+    <div class="field"><label>Compartment</label><select id="bgComp"><option>Root Tenancy</option><option>Production</option><option>Development</option></select></div>
+    <div class="field"><label>Description</label><input id="bgDesc" placeholder="Tracks total enterprise cloud spend"></div>
+    <button class="btn btn-primary" onclick="createBudget()">Create Budget</button>
+  </div>` : `
+  <div class="card">
+    <h4 style="margin-bottom:8px;">${STATE.m6.budget.name}</h4>
+    <p class="page-sub" style="margin-bottom:14px;">₹${STATE.m6.budget.amount} / month · ${STATE.m6.budget.compartment}</p>
+    <div class="slider-wrap">
+      <label class="page-sub">Current Spend: ${STATE.m6.spend}% of budget</label>
+      <input type="range" min="0" max="120" value="${STATE.m6.spend}" oninput="updateSpend(this.value)">
+    </div>
+    <div class="tag-list">${BUDGET_THRESHOLDS.map(t=>`<span class="pill ${STATE.m6.alerted[t.pct]?'pill-red':'pill-gray'}">${STATE.m6.alerted[t.pct]?'🔔':'○'} ${t.pct}% — ${t.label}</span>`).join('')}</div>
+    <div id="budgetNotif"></div>
+  </div>`}
+  <div class="info-box">💡 Layered thresholds (50/80/100%) give progressively urgent warnings before spend becomes critical.</div>
+  ${STATE.m6.created && STATE.m6.alerted[100] && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m6',90); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m6') : ''}`;
+}
+function createBudget(){
+  const name = document.getElementById('bgName').value.trim() || 'Monthly-Tenancy-Budget';
+  const amount = document.getElementById('bgAmount').value.trim() || '50000';
+  const compartment = document.getElementById('bgComp').value;
+  const desc = document.getElementById('bgDesc').value.trim();
+  STATE.m6.budget = {name, amount, compartment, desc};
+  STATE.m6.created = true;
+  toast('ok','Budget created', name);
+  addXP(15,'Budget created');
+  renderMain();
+}
+function updateSpend(val){
+  STATE.m6.spend = parseInt(val,10);
+  BUDGET_THRESHOLDS.forEach(t=>{
+    if(STATE.m6.spend>=t.pct && !STATE.m6.alerted[t.pct]){
+      STATE.m6.alerted[t.pct] = true;
+      toast(t.pct>=100?'err':'info', t.label, `Spend crossed ${t.pct}%`);
+      addXP(5, t.label+' triggered');
+    }
+  });
+  renderMain();
+}
+
+/* ================= M7: COST ANALYSIS ================= */
+function renderM7(){
+  const done = STATE.done.has('m7');
+  const cost = monthlyCost();
+  const deletedCount = Object.keys(STATE.m7.deleted).length;
+  return `
+  <div class="section-head"><div class="eyebrow">Mission 7 · 110 XP</div><h1 class="page-title">Cost Analysis</h1>
+  <p class="page-sub">Current monthly cost: ₹${cost.toLocaleString()}. Filter, analyze, and cut waste.</p></div>
+  <div class="chip-row">${['Development','Testing','Production'].map(c=>`<button class="chip ${STATE.m7.filter===c?'active':''}" onclick="filterM7('${c}')">${c}</button>`).join('')}${STATE.m7.filter?`<button class="chip" onclick="filterM7(null)">Clear filter</button>`:''}</div>
+  <div class="two-col">
+    <div class="card">
+      <h4 style="margin-bottom:10px;">Service Breakdown</h4>
+      ${COST_SERVICES.map(s=>`<div class="finding-row"><span>${s.name}</span><span style="margin-left:auto;">₹${s.amount.toLocaleString()}</span></div>`).join('')}
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom:10px;">Compartment Usage</h4>
+      ${COST_COMPARTMENTS.filter(c=>!STATE.m7.filter || c.name===STATE.m7.filter).map(c=>`<div class="finding-row"><span>${c.name}</span><span style="margin-left:auto;">₹${c.amount.toLocaleString()}</span></div>`).join('')}
+    </div>
+  </div>
+  <div class="hr"></div>
+  <h4 style="margin-bottom:10px;">Cost Optimization Game (${deletedCount}/${WASTED_RESOURCES.length} cleaned up)</h4>
+  ${WASTED_RESOURCES.map(w=>`
+    <div class="finding-row">
+      <span>${w.label}</span>
+      <span style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+        <span class="pill pill-orange">saves ₹${w.savings}/mo</span>
+        ${STATE.m7.deleted[w.id] ? '<span class="pill pill-green">Deleted</span>' : `<button class="btn btn-ghost btn-sm" onclick="deleteWaste('${w.id}')">Delete</button>`}
+      </span>
+    </div>`).join('')}
+  ${deletedCount>=WASTED_RESOURCES.length && !done ? `<div style="margin-top:16px;"><button class="btn btn-primary" onclick="completeMission('m7',110); renderMain();">✓ Complete Mission</button></div>` : ''}
+  ${done ? renderQuizBlock('m7') : ''}`;
+}
+function filterM7(name){
+  STATE.m7.filter = name;
+  renderMain();
+}
+function deleteWaste(id){
+  if(STATE.m7.deleted[id]) return;
+  STATE.m7.deleted[id] = true;
+  const w = WASTED_RESOURCES.find(x=>x.id===id);
+  toast('ok','Resource deleted', `Saving ₹${w.savings}/mo`);
+  addXP(10, w.label+' removed');
+  renderMain();
+}
+
+/* ================= TROUBLESHOOTING ================= */
+function renderTroubleshoot(){
+  const solvedCount = Object.keys(STATE.tsSolved).length;
+  return `<div class="section-head"><div class="eyebrow">Troubleshooting Missions</div><h1 class="page-title">Fix What's Broken</h1>
+  <p class="page-sub">${solvedCount}/${TROUBLESHOOT.length} scenarios resolved.</p></div>
+  ${TROUBLESHOOT.map(t=>`
+    <div class="card" style="margin-bottom:12px;">
+      <h5 style="margin-bottom:6px;">${t.title} ${STATE.tsSolved[t.id]?'<span class="pill pill-green">Solved</span>':''}</h5>
+      <p class="page-sub" style="margin-bottom:10px;">${t.scenario}</p>
+      <div id="tswrap-${t.id}">
+        ${t.opts.map((o,i)=>`<div class="q-opt" onclick="answerTS('${t.id}',${i})">${o}</div>`).join('')}
+        <div class="q-explain" id="tsex-${t.id}">${t.ex}</div>
+      </div>
+    </div>`).join('')}`;
+}
+function answerTS(id, idx){
+  const t = TROUBLESHOOT.find(x=>x.id===id);
+  const container = document.getElementById('tswrap-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{ o.onclick=null; if(i===t.a) o.classList.add('correct'); else if(i===idx) o.classList.add('incorrect'); });
+  document.getElementById('tsex-'+id).classList.add('show');
+  if(idx===t.a){ if(!STATE.tsSolved[id]){ STATE.tsSolved[id]=true; addXP(12, t.title+' resolved'); } }
+  else toast('err','Not quite','Check the explanation below.');
+  renderSidebar();
+}
+
+/* ================= EXAM CHALLENGES ================= */
+function renderExam(){
+  const solvedCount = Object.keys(STATE.examSolved).length;
+  return `<div class="section-head"><div class="eyebrow">Certification Mode</div><h1 class="page-title">Exam Challenges</h1>
+  <p class="page-sub">${solvedCount}/${EXAM_CHALLENGES.length} answered correctly.</p></div>
+  ${EXAM_CHALLENGES.map(e=>`
+    <div class="quiz-q" style="margin-bottom:20px;">
+      <div class="q-txt">${e.q}</div>
+      <div id="examwrap-${e.id}">
+        ${e.opts.map((o,i)=>`<div class="q-opt" onclick="answerExam('${e.id}',${i})">${o}</div>`).join('')}
+        <div class="q-explain" id="examex-${e.id}">${e.ex}</div>
+      </div>
+    </div>`).join('')}`;
+}
+function answerExam(id, idx){
+  const e = EXAM_CHALLENGES.find(x=>x.id===id);
+  const container = document.getElementById('examwrap-'+id);
+  const opts = container.querySelectorAll('.q-opt');
+  opts.forEach((o,i)=>{ o.onclick=null; if(i===e.a) o.classList.add('correct'); else if(i===idx) o.classList.add('incorrect'); });
+  document.getElementById('examex-'+id).classList.add('show');
+  if(idx===e.a){ if(!STATE.examSolved[id]){ STATE.examSolved[id]=true; addXP(10, 'Exam challenge correct'); } }
+  else toast('err','Not quite','Review the explanation.');
+}
+
+/* ================= ACHIEVEMENTS ================= */
+function renderAchievements(){
+  return `<div class="section-head"><div class="eyebrow">Achievements</div><h1 class="page-title">Trophy Case</h1>
+  <p class="page-sub">${STATE.achUnlocked.size}/${ACHIEVEMENTS.length} unlocked</p></div>
+  <div class="grid grid-4">
+    ${ACHIEVEMENTS.map(a=>{ const u = STATE.achUnlocked.has(a.id);
+      return `<div class="ach-card ${u?'':'locked'}"><div class="ico">${a.ico}</div><h5>${a.name}</h5><p>${u?'Unlocked':a.cond}</p></div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ================= CAPSTONE ================= */
+function renderCapstone(){
+  const allDone = MISSION_ORDER.every(m=>STATE.done.has(m));
+  const score = computeSecurityScore();
+  const compliance = complianceScore();
+  const checklist = [
+    {label:'Enable Cloud Guard', ok:STATE.done.has('m1')},
+    {label:'Configure Target', ok:STATE.done.has('m2')},
+    {label:'Create Detector Recipe', ok:STATE.done.has('m3')},
+    {label:'Create Responder Recipe', ok:STATE.done.has('m4')},
+    {label:'Deploy Security Zone', ok:STATE.done.has('m5')},
+    {label:'Attempt insecure deployments', ok:Object.keys(STATE.m5.blocked).length>=BLOCKED_ATTEMPTS.length},
+    {label:'Configure Budget', ok:STATE.done.has('m6')},
+    {label:'Analyze Costs', ok:STATE.done.has('m7')},
+    {label:'Reduce Monthly Spend', ok:Object.keys(STATE.m7.deleted).length>=WASTED_RESOURCES.length},
+  ];
+  return `
+  <div class="section-head"><div class="eyebrow">Capstone Lab</div><h1 class="page-title">Enterprise Cloud Secured</h1>
+  <p class="page-sub">You inherited a completely insecure Oracle Cloud environment. Here's the full remediation checklist.</p></div>
+  <div class="card">${checklist.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);">
+    <span class="pill ${c.ok?'pill-green':'pill-gray'}">${c.ok?'✓':'○'}</span><span>${c.label}</span></div>`).join('')}</div>
+  ${allDone ? `
+  <div class="card" style="text-align:center; margin-top:18px; padding:44px; background:linear-gradient(180deg, rgba(61,220,132,.12), var(--panel));">
+    <div style="font-size:44px;margin-bottom:10px;">🎓</div>
+    <h2 style="margin-bottom:8px;">Mission Complete — Enterprise Cloud Secured</h2>
+    <div class="grid grid-4" style="margin:16px 0; text-align:left;">
+      <div class="card" style="padding:12px;"><div class="pill pill-red">Security Score</div><h3 style="margin-top:6px;">${score}%</h3></div>
+      <div class="card" style="padding:12px;"><div class="pill pill-blue">Compliance</div><h3 style="margin-top:6px;">${compliance}%</h3></div>
+      <div class="card" style="padding:12px;"><div class="pill pill-green">Budget</div><h3 style="margin-top:6px; font-size:14px;">Healthy</h3></div>
+      <div class="card" style="padding:12px;"><div class="pill pill-orange">Cloud Guard</div><h3 style="margin-top:6px; font-size:14px;">Active</h3></div>
+    </div>
+    <p class="page-sub" style="margin-bottom:14px;">OCI Security &amp; Governance Expert · XP ${STATE.xp}</p>
+    <div class="pill pill-green" style="font-size:13px; padding:8px 16px;">Certificate Ready</div>
+  </div>` : `<div class="tip-box" style="margin-top:16px;">Complete all 7 missions (and the bonus tasks above) to fully secure the tenancy.</div>`}`;
+}
+
+/* ================= QUIZ BLOCK (reused) ================= */
+function renderQuizBlock(missionId){
+  const qs = QUIZZES[missionId];
+  if(!qs) return '';
+  const answered = STATE.quizAnswered[missionId] || {};
+  return `<div class="card" style="margin-top:20px;"><h4 style="margin-bottom:14px;">🎯 Knowledge Check</h4>
+    ${qs.map((q,qi)=>`<div class="quiz-q"><div class="q-txt">${qi+1}. ${q.q}</div>
+      ${q.opts.map((o,oi)=>`<div class="q-opt ${answered[qi]===oi?(oi===q.a?'correct':'incorrect'):''}" onclick="answerQuiz('${missionId}',${qi},${oi})">${o}</div>`).join('')}
+      <div class="q-explain ${answered[qi]!==undefined?'show':''}">${q.ex}</div></div>`).join('')}
+  </div>`;
+}
+function answerQuiz(missionId, qi, oi){
+  if(!STATE.quizAnswered[missionId]) STATE.quizAnswered[missionId] = {};
+  if(STATE.quizAnswered[missionId][qi] !== undefined) return;
+  STATE.quizAnswered[missionId][qi] = oi;
+  const q = QUIZZES[missionId][qi];
+  if(oi===q.a){ STATE.quizScores[missionId] = (STATE.quizScores[missionId]||0)+1; addXP(10,'Correct answer'); }
+  else toast('err','Not quite','Review the explanation.');
+  renderMain();
+}
+
+/* ================= INIT ================= */
+function toggleTheme(){
+  const theme = document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', theme);
+}
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+renderSidebar();
+renderMain();
+window.STATE = STATE;
+Object.assign(window, {QUIZZES, MISSIONS, MISSION_ORDER, HIERARCHY, DETECTORS, SCAN_FINDINGS,
+  RESPONDER_THREATS, RESPONDER_ACTIONS, BLOCKED_ATTEMPTS, BUDGET_THRESHOLDS, WASTED_RESOURCES,
+  TROUBLESHOOT, EXAM_CHALLENGES, ACHIEVEMENTS, ATTACK_ALERTS});
+
+</script>
+</body>
+</html>
